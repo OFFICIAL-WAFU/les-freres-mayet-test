@@ -246,3 +246,9 @@ export function enregistrerBrouillon(
   notifierDocs();
   return id;
 }
+
+export function reinitialiserDocuments() {
+  documents = DOCUMENTS_DEMO;
+  compteurBrouillon = 0;
+  notifierDocs();
+}

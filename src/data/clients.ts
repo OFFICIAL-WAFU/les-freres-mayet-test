@@ -174,3 +174,8 @@ export function modifierClient(id: string, saisie: ClientSaisie): void {
   clients = clients.map((c) => (c.id === id ? { ...saisie, id } : c));
   notifier();
 }
+
+export function reinitialiserClients() {
+  clients = CLIENTS_DEMO;
+  notifier();
+}
