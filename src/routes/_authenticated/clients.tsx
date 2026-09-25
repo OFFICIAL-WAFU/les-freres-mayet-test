@@ -369,7 +369,7 @@ function FicheClient({
         <SheetDescription>{TYPE_CLIENT_LABELS[c.type]}</SheetDescription>
       </SheetHeader>
       {confirmation && (
-        <p role="status" className="mt-4 rounded-lg border border-success/40 bg-success/10 p-3 text-sm font-medium">
+        <p role="status" className="mt-4 rounded-lg border border-success/40 bg-success-soft p-3 text-sm font-medium">
           Client enregistré
         </p>
       )}
