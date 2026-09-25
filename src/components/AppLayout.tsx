@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LogOut, Menu } from "lucide-react";
+
+import { seDeconnecter } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -48,10 +50,23 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function BadgeDemo() {
+  const navigate = useNavigate();
+  const [enCours, setEnCours] = useState(false);
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-      Version de démonstration
-    </span>
+    <div className="flex flex-col gap-3">
+      <Button variant="outline" size="sm" className="justify-start" disabled={enCours}
+        onClick={async () => {
+          setEnCours(true);
+          await seDeconnecter();
+          navigate({ to: "/connexion", replace: true });
+        }}>
+        <LogOut /> {enCours ? "Déconnexion…" : "Se déconnecter"}
+      </Button>
+      <span className="inline-flex items-center self-start rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        Version de démonstration
+      </span>
+      <p className="text-xs text-muted-foreground">Démonstration : les données sont réinitialisées au rechargement.</p>
+    </div>
   );
 }
 

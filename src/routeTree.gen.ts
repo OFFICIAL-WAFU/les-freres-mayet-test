@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ConnexionRouteImport } from './routes/connexion'
+import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
+import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
 import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
@@ -23,6 +26,21 @@ import { Route as AuthenticatedDevisIdModifierRouteImport } from './routes/_auth
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+  id: '/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
+  id: '/reinitialiser-mot-de-passe',
+  path: '/reinitialiser-mot-de-passe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -82,6 +100,9 @@ const AuthenticatedDevisIdModifierRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/accueil': typeof AuthenticatedAccueilRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
@@ -93,6 +114,9 @@ export interface FileRoutesByFullPath {
   '/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/connexion': typeof ConnexionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/accueil': typeof AuthenticatedAccueilRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
@@ -107,6 +131,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/connexion': typeof ConnexionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
   '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
@@ -122,6 +149,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/connexion'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/accueil'
     | '/catalogue'
     | '/clients'
@@ -133,6 +163,9 @@ export interface FileRouteTypes {
     | '/devis/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/connexion'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/accueil'
     | '/catalogue'
     | '/clients'
@@ -146,6 +179,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/connexion'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
     | '/_authenticated/accueil'
     | '/_authenticated/catalogue'
     | '/_authenticated/clients'
@@ -160,6 +196,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ConnexionRoute: typeof ConnexionRoute
+  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
+  ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -169,6 +208,27 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mot-de-passe-oublie': {
+      id: '/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof MotDePasseOublieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reinitialiser-mot-de-passe': {
+      id: '/reinitialiser-mot-de-passe'
+      path: '/reinitialiser-mot-de-passe'
+      fullPath: '/reinitialiser-mot-de-passe'
+      preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -275,6 +335,9 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ConnexionRoute: ConnexionRoute,
+  MotDePasseOublieRoute: MotDePasseOublieRoute,
+  ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
