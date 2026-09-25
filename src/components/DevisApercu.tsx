@@ -8,6 +8,7 @@ import {
   validerLigne,
   type DevisBrouillon,
 } from "@/data/devis";
+import { formaterCapital, type Entreprise } from "@/data/entreprise";
 
 const fr = (iso: string) => iso.split("-").reverse().join("/");
 
@@ -22,20 +23,32 @@ export function versPublic(d: DevisBrouillon): DevisPublic {
   return reste;
 }
 
-export function DevisApercu({ devis: d, numero }: { devis: DevisPublic; numero: string }) {
+export function DevisApercu({ devis: d, numero, entreprise: ent }: { devis: DevisPublic; numero: string; entreprise: Entreprise }) {
+  const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
+  const coordonnees = [ent.adresse, ent.complement, villeLigne, ent.pays].filter(Boolean);
+  const contacts = [ent.telephone && `Tél. ${ent.telephone}`, ent.email, ent.site.replace(/^https?:\/\//, "").replace(/\/$/, "")].filter(Boolean) as string[];
+  const legal = [
+    [ent.raisonSociale, ent.formeJuridique].filter(Boolean).join(" — "),
+    ent.capital && `Capital social : ${formaterCapital(ent.capital)}`,
+    ent.siret && `SIRET : ${ent.siret}`,
+    ent.tva && `TVA intracommunautaire : ${ent.tva}`,
+    ent.immatriculation,
+  ].filter(Boolean) as string[];
   const recap = recapituler(d.lignes);
   const c = d.client;
   return (
     <article className="devis-doc mx-auto w-full max-w-[794px] bg-doc-paper px-5 py-6 text-[15px] leading-relaxed text-doc-ink shadow-sm sm:px-12 sm:py-12">
       {/* En-tête entreprise */}
       <header className="flex flex-col gap-4 border-b border-doc-line pb-6 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-doc-gold text-base font-semibold tracking-wide text-doc-gold">
             FM
           </span>
           <div className="min-w-0">
-            <p className="text-lg font-semibold">Les Frères Mayet</p>
-            <p className="text-sm text-doc-muted">Plomberie · Électricité · Climatisation</p>
+            <p className="break-words text-lg font-semibold" data-testid="apercu-nom">{ent.nomCommercial || ent.raisonSociale}</p>
+            {ent.activite && <p className="text-sm text-doc-muted">{ent.activite}</p>}
+            {coordonnees.map((l, i) => <p key={i} className="break-words text-xs text-doc-muted">{l}</p>)}
+            {contacts.map((l, i) => <p key={i} className="break-all text-xs text-doc-muted">{l}</p>)}
           </div>
         </div>
         <div className="sm:text-right">
@@ -154,6 +167,11 @@ export function DevisApercu({ devis: d, numero }: { devis: DevisPublic; numero: 
       <p className="mt-10 border-t border-doc-line pt-3 text-center text-xs text-doc-faint">
         Brouillon — non émis · Document de démonstration
       </p>
+      {legal.length > 0 && (
+        <footer className="mt-2 text-center text-[11px] leading-snug text-doc-faint" data-testid="apercu-pied">
+          {legal.map((l, i) => <p key={i} className="whitespace-pre-wrap break-words">{l}</p>)}
+        </footer>
+      )}
     </article>
   );
 }
