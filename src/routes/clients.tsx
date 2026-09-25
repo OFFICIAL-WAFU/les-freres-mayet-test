@@ -33,10 +33,10 @@ import {
   type ClientType,
 } from "@/data/clients";
 import {
-  DOCUMENTS_DEMO,
+  useDocuments,
   TYPE_LABELS,
   formaterMontant,
-  type DemoDocument,
+  type DocumentAvecDevis as DemoDocument,
 } from "@/data/documents";
 
 export const Route = createFileRoute("/clients")({
@@ -318,7 +318,7 @@ function FicheClient({
   onFermer: () => void;
 }) {
   const nom = nomClient(c);
-  const docs = DOCUMENTS_DEMO.filter((d) => d.clientId === c.id);
+  const docs = useDocuments().filter((d) => d.clientId === c.id);
   const adresse = [c.adresse, c.complement, [c.codePostal, c.ville].filter(Boolean).join(" "), c.pays]
     .map((s) => s.trim())
     .filter(Boolean);

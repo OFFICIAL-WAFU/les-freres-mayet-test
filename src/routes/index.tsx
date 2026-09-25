@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -22,13 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DOCUMENTS_DEMO,
+  useDocuments,
   STATUTS_PAR_TYPE,
   TOUS_LES_STATUTS,
   TYPE_FILTERS,
   TYPE_LABELS,
   formaterMontant,
-  type DemoDocument,
+  type DocumentAvecDevis,
   type DocumentStatut,
   type DocumentType,
 } from "@/data/documents";
@@ -57,10 +57,12 @@ function DocumentsPage() {
   const [recherche, setRecherche] = useState("");
   const [type, setType] = useState<DocumentType | "tous">("tous");
   const [statut, setStatut] = useState<DocumentStatut | "tous">("tous");
-  const [documentOuvert, setDocumentOuvert] = useState<DemoDocument | null>(null);
+  const [documentOuvert, setDocumentOuvert] = useState<DocumentAvecDevis | null>(null);
   const [creationOuverte, setCreationOuverte] = useState(false);
   const [typeChoisi, setTypeChoisi] = useState<DocumentType | null>(null);
 
+  const documents = useDocuments();
+  const navigate = useNavigate();
   const statutsDisponibles = type === "tous" ? TOUS_LES_STATUTS : STATUTS_PAR_TYPE[type];
 
   function changerType(nouveauType: DocumentType | "tous") {
@@ -77,7 +79,7 @@ function DocumentsPage() {
 
   const resultats = useMemo(() => {
     const q = recherche.trim().toLowerCase();
-    return DOCUMENTS_DEMO.filter((d) => {
+    return documents.filter((d) => {
       const correspondRecherche =
         q === "" ||
         d.client.toLowerCase().includes(q) ||
@@ -86,7 +88,7 @@ function DocumentsPage() {
       const correspondStatut = statut === "tous" || d.statut === statut;
       return correspondRecherche && correspondType && correspondStatut;
     });
-  }, [recherche, type, statut]);
+  }, [documents, recherche, type, statut]);
 
   return (
     <AppLayout titre="Documents">
@@ -148,7 +150,7 @@ function DocumentsPage() {
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           {resultats.length} document{resultats.length > 1 ? "s" : ""} affiché
-          {resultats.length > 1 ? "s" : ""} sur {DOCUMENTS_DEMO.length}
+          {resultats.length > 1 ? "s" : ""} sur {documents.length}
         </p>
       </div>
 
@@ -262,7 +264,7 @@ function DocumentsPage() {
                 key={t}
                 variant={typeChoisi === t ? "default" : "outline"}
                 className="justify-start"
-                onClick={() => setTypeChoisi(t)}
+                onClick={() => (t === "devis" ? navigate({ to: "/devis/nouveau" }) : setTypeChoisi(t))}
               >
                 {TYPE_LABELS[t]}
               </Button>
