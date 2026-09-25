@@ -128,7 +128,7 @@ export function DevisApercu({ devis: d, numero }: { devis: DevisPublic; numero: 
 
       {/* Totaux (moteur de calcul partagé) */}
       <section className="mt-6 flex sm:justify-end">
-        <dl className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1.5 text-sm sm:w-80">
+        <dl className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-y-1.5 [&_dd]:pl-4 text-sm sm:w-80">
           <dt>Total HT</dt><dd className="text-right font-medium">{formaterCentimes(recap.ht)}</dd>
           {recap.parTaux.map((t) => (
             <div key={t.taux} className="contents text-doc-muted">
