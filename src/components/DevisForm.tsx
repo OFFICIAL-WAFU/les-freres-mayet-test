@@ -339,6 +339,9 @@ export function DevisForm({
 
           {/* 3. Lignes */}
           <Section numero={3} titre="Lignes du devis">
+            <p className="text-xs text-muted-foreground">
+              Le taux de TVA est à choisir pour chaque ligne. Ce choix ne constitue pas une validation de l'éligibilité fiscale.
+            </p>
             {v.lignes.length === 0 && (
               <p id="d-lignes" tabIndex={-1} className="text-sm text-muted-foreground">
                 Aucune ligne pour l'instant.
