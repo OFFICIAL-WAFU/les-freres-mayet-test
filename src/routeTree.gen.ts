@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
 import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
@@ -20,68 +21,72 @@ import { Route as AuthenticatedDevisIdIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedDevisIdApercuRouteImport } from './routes/_authenticated/devis.$id.apercu'
 import { Route as AuthenticatedDevisIdModifierRouteImport } from './routes/_authenticated/devis.$id.modifier'
 
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAccueilRoute = AuthenticatedAccueilRouteImport.update({
-  id: '/_authenticated/accueil',
+  id: '/accueil',
   path: '/accueil',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCatalogueRoute = AuthenticatedCatalogueRouteImport.update({
-  id: '/_authenticated/catalogue',
+  id: '/catalogue',
   path: '/catalogue',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
-  id: '/_authenticated/clients',
+  id: '/clients',
   path: '/clients',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEntrepriseRoute = AuthenticatedEntrepriseRouteImport.update({
-  id: '/_authenticated/entreprise',
+  id: '/entreprise',
   path: '/entreprise',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReglagesRoute = AuthenticatedReglagesRouteImport.update({
-  id: '/_authenticated/reglages',
+  id: '/reglages',
   path: '/reglages',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDevisNouveauRoute =
   AuthenticatedDevisNouveauRouteImport.update({
-    id: '/_authenticated/devis/nouveau',
+    id: '/devis/nouveau',
     path: '/devis/nouveau',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDevisIdIndexRoute =
   AuthenticatedDevisIdIndexRouteImport.update({
-    id: '/_authenticated/devis/$id/',
+    id: '/devis/$id/',
     path: '/devis/$id/',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDevisIdApercuRoute =
   AuthenticatedDevisIdApercuRouteImport.update({
-    id: '/_authenticated/devis/$id/apercu',
+    id: '/devis/$id/apercu',
     path: '/devis/$id/apercu',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDevisIdModifierRoute =
   AuthenticatedDevisIdModifierRouteImport.update({
-    id: '/_authenticated/devis/$id/modifier',
+    id: '/devis/$id/modifier',
     path: '/devis/$id/modifier',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
   '/accueil': typeof AuthenticatedAccueilRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/reglages': typeof AuthenticatedReglagesRoute
-  '/': typeof AuthenticatedIndexRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
@@ -101,6 +106,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
   '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
@@ -115,12 +121,12 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/accueil'
     | '/catalogue'
     | '/clients'
     | '/entreprise'
     | '/reglages'
-    | '/'
     | '/devis/nouveau'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
@@ -139,6 +145,7 @@ export interface FileRouteTypes {
     | '/devis/$id'
   id:
     | '__root__'
+    | '/_authenticated'
     | '/_authenticated/accueil'
     | '/_authenticated/catalogue'
     | '/_authenticated/clients'
@@ -152,6 +159,92 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/accueil': {
+      id: '/_authenticated/accueil'
+      path: '/accueil'
+      fullPath: '/accueil'
+      preLoaderRoute: typeof AuthenticatedAccueilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/catalogue': {
+      id: '/_authenticated/catalogue'
+      path: '/catalogue'
+      fullPath: '/catalogue'
+      preLoaderRoute: typeof AuthenticatedCatalogueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/clients': {
+      id: '/_authenticated/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof AuthenticatedClientsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/entreprise': {
+      id: '/_authenticated/entreprise'
+      path: '/entreprise'
+      fullPath: '/entreprise'
+      preLoaderRoute: typeof AuthenticatedEntrepriseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reglages': {
+      id: '/_authenticated/reglages'
+      path: '/reglages'
+      fullPath: '/reglages'
+      preLoaderRoute: typeof AuthenticatedReglagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/devis/nouveau': {
+      id: '/_authenticated/devis/nouveau'
+      path: '/devis/nouveau'
+      fullPath: '/devis/nouveau'
+      preLoaderRoute: typeof AuthenticatedDevisNouveauRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/devis/$id/': {
+      id: '/_authenticated/devis/$id/'
+      path: '/devis/$id'
+      fullPath: '/devis/$id/'
+      preLoaderRoute: typeof AuthenticatedDevisIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/devis/$id/apercu': {
+      id: '/_authenticated/devis/$id/apercu'
+      path: '/devis/$id/apercu'
+      fullPath: '/devis/$id/apercu'
+      preLoaderRoute: typeof AuthenticatedDevisIdApercuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/devis/$id/modifier': {
+      id: '/_authenticated/devis/$id/modifier'
+      path: '/devis/$id/modifier'
+      fullPath: '/devis/$id/modifier'
+      preLoaderRoute: typeof AuthenticatedDevisIdModifierRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+  }
+}
+
+interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccueilRoute: typeof AuthenticatedAccueilRoute
   AuthenticatedCatalogueRoute: typeof AuthenticatedCatalogueRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
@@ -164,82 +257,7 @@ export interface RootRouteChildren {
   AuthenticatedDevisIdIndexRoute: typeof AuthenticatedDevisIdIndexRoute
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/accueil': {
-      id: '/_authenticated/accueil'
-      path: '/accueil'
-      fullPath: '/accueil'
-      preLoaderRoute: typeof AuthenticatedAccueilRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/catalogue': {
-      id: '/_authenticated/catalogue'
-      path: '/catalogue'
-      fullPath: '/catalogue'
-      preLoaderRoute: typeof AuthenticatedCatalogueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/clients': {
-      id: '/_authenticated/clients'
-      path: '/clients'
-      fullPath: '/clients'
-      preLoaderRoute: typeof AuthenticatedClientsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/entreprise': {
-      id: '/_authenticated/entreprise'
-      path: '/entreprise'
-      fullPath: '/entreprise'
-      preLoaderRoute: typeof AuthenticatedEntrepriseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/reglages': {
-      id: '/_authenticated/reglages'
-      path: '/reglages'
-      fullPath: '/reglages'
-      preLoaderRoute: typeof AuthenticatedReglagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/devis/nouveau': {
-      id: '/_authenticated/devis/nouveau'
-      path: '/devis/nouveau'
-      fullPath: '/devis/nouveau'
-      preLoaderRoute: typeof AuthenticatedDevisNouveauRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/devis/$id/': {
-      id: '/_authenticated/devis/$id/'
-      path: '/devis/$id'
-      fullPath: '/devis/$id/'
-      preLoaderRoute: typeof AuthenticatedDevisIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/devis/$id/apercu': {
-      id: '/_authenticated/devis/$id/apercu'
-      path: '/devis/$id/apercu'
-      fullPath: '/devis/$id/apercu'
-      preLoaderRoute: typeof AuthenticatedDevisIdApercuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/devis/$id/modifier': {
-      id: '/_authenticated/devis/$id/modifier'
-      path: '/devis/$id/modifier'
-      fullPath: '/devis/$id/modifier'
-      preLoaderRoute: typeof AuthenticatedDevisIdModifierRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
-}
-
-const rootRouteChildren: RootRouteChildren = {
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccueilRoute: AuthenticatedAccueilRoute,
   AuthenticatedCatalogueRoute: AuthenticatedCatalogueRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
@@ -250,6 +268,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedDevisIdApercuRoute: AuthenticatedDevisIdApercuRoute,
   AuthenticatedDevisIdModifierRoute: AuthenticatedDevisIdModifierRoute,
   AuthenticatedDevisIdIndexRoute: AuthenticatedDevisIdIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
