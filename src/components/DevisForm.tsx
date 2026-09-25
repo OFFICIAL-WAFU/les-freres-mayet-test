@@ -157,7 +157,7 @@ export function DevisForm({
     }
     const id = enregistrerBrouillon(v, Number(recap.ttc) / 100, documentId);
     enregistre.current = true;
-    navigate({ to: "/devis/$id", params: { id }, search: { vue: 1 } });
+    navigate({ to: "/devis/$id", params: { id }});
   }
 
   // --- Clients ------------------------------------------------------------
@@ -431,7 +431,7 @@ export function DevisForm({
               variant="outline"
               onClick={() =>
                 documentId
-                  ? navigate({ to: "/devis/$id", params: { id: documentId }, search: { vue: 1 } })
+                  ? navigate({ to: "/devis/$id", params: { id: documentId }})
                   : navigate({ to: "/" })
               }
             >
