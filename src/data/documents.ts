@@ -14,7 +14,10 @@ export interface DemoDocument {
   id: string;
   date: string; // JJ/MM/AAAA
   numero: string;
+  /** Nom du destinataire tel qu'établi sur le document (historique). */
   client: string;
+  /** Identifiant stable de la fiche client. */
+  clientId: string;
   type: DocumentType;
   montantTTC: number | null;
   statut: DocumentStatut;
@@ -80,6 +83,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "03/02/2026",
     numero: "DEV-2026-014",
     client: "Boulangerie Vergnaud",
+    clientId: "cli-vergnaud",
     type: "devis",
     montantTTC: 1250,
     statut: "Brouillon",
@@ -89,6 +93,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "05/02/2026",
     numero: "DEV-2026-015",
     client: "Camille Rouvier",
+    clientId: "cli-rouvier",
     type: "devis",
     montantTTC: 3480.5,
     statut: "En attente de signature",
@@ -98,6 +103,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "09/02/2026",
     numero: "DEV-2026-016",
     client: "Résidence Les Tilleuls",
+    clientId: "cli-tilleuls",
     type: "devis",
     montantTTC: 8920,
     statut: "Signé",
@@ -107,6 +113,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "11/02/2026",
     numero: "FAC-2026-032",
     client: "Garage Delmas",
+    clientId: "cli-delmas",
     type: "facture",
     montantTTC: 2145.9,
     statut: "En attente de paiement",
@@ -116,6 +123,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "12/02/2026",
     numero: "FAC-2026-033",
     client: "Cabinet Dentaire Loriol",
+    clientId: "cli-loriol",
     type: "facture",
     montantTTC: 5760,
     statut: "Payée",
@@ -125,6 +133,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "14/02/2026",
     numero: "ACO-2026-008",
     client: "Résidence Les Tilleuls",
+    clientId: "cli-tilleuls",
     type: "acompte",
     montantTTC: 2676,
     statut: "En attente de paiement",
@@ -134,6 +143,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "16/02/2026",
     numero: "ACO-2026-009",
     client: "Hôtel du Pont Vieux",
+    clientId: "cli-pont-vieux",
     type: "acompte",
     montantTTC: 1500,
     statut: "Payé",
@@ -143,6 +153,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "18/02/2026",
     numero: "AVO-2026-003",
     client: "Garage Delmas",
+    clientId: "cli-delmas",
     type: "avoir",
     montantTTC: 320.4,
     statut: "Émis",
@@ -152,6 +163,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "19/02/2026",
     numero: "RAP-2026-021",
     client: "Camille Rouvier",
+    clientId: "cli-rouvier",
     type: "rapport",
     montantTTC: null,
     statut: "Finalisé",
@@ -161,6 +173,7 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     date: "20/02/2026",
     numero: "RAP-2026-022",
     client: "Hôtel du Pont Vieux",
+    clientId: "cli-pont-vieux",
     type: "rapport",
     montantTTC: null,
     statut: "Finalisé",
