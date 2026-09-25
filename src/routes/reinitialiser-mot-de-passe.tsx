@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { effacerDonneesSession } from "@/lib/session";
 
 export const Route = createFileRoute("/reinitialiser-mot-de-passe")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Nouveau mot de passe — Les Frères Mayet" },

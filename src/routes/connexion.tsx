@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
 
@@ -11,12 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { destinationSure } from "@/lib/session";
 
 export const Route = createFileRoute("/connexion")({
-  ssr: false,
   validateSearch: z.object({ redirect: z.string().optional() }),
-  beforeLoad: async ({ search }) => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ to: destinationSure(search.redirect), replace: true });
-  },
   head: () => ({
     meta: [
       { title: "Connexion — Les Frères Mayet" },
@@ -42,6 +37,13 @@ function Connexion() {
   const [enCours, setEnCours] = useState(false);
   const [erreurs, setErreurs] = useState<{ email?: string; mdp?: string }>({});
   const [echec, setEchec] = useState("");
+
+  // Déjà connecté : on ouvre directement la page demandée.
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) navigate({ to: destinationSure(retour), replace: true });
+    });
+  }, [navigate, retour]);
 
   const soumettre = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { EMAIL_RE } from "@/routes/connexion";
 
 export const Route = createFileRoute("/mot-de-passe-oublie")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Mot de passe oublié — Les Frères Mayet" },
