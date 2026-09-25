@@ -13,13 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DocumentSheet } from "@/components/DocumentSheet";
 import {
   Dialog,
   DialogContent,
@@ -246,45 +240,8 @@ function DocumentsPage() {
       )}
 
       {/* Panneau de consultation */}
-      <Sheet open={documentOuvert !== null} onOpenChange={(o) => !o && setDocumentOuvert(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{documentOuvert?.numero}</SheetTitle>
-            <SheetDescription>
-              Document de démonstration — contenu détaillé à construire.
-            </SheetDescription>
-          </SheetHeader>
-          {documentOuvert && (
-            <dl className="mt-6 flex flex-col gap-4 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Date</dt>
-                <dd className="font-medium">{documentOuvert.date}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Client</dt>
-                <dd className="font-medium">{documentOuvert.client}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Type</dt>
-                <dd className="font-medium">{TYPE_LABELS[documentOuvert.type]}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Montant TTC</dt>
-                <dd className="font-medium">{formaterMontant(documentOuvert.montantTTC)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Statut</dt>
-                <dd className="mt-1">
-                  <StatutBadge statut={documentOuvert.statut} />
-                </dd>
-              </div>
-            </dl>
-          )}
-          <Button variant="outline" className="mt-8 w-full" onClick={() => setDocumentOuvert(null)}>
-            Fermer
-          </Button>
-        </SheetContent>
-      </Sheet>
+      <DocumentSheet document={documentOuvert} onClose={() => setDocumentOuvert(null)} />
+
 
       {/* Fenêtre de création */}
       <Dialog
