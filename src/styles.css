@@ -67,6 +67,13 @@
   --color-warning-soft: var(--warning-soft);
   --color-info-soft: var(--info-soft);
   --color-neutral-soft: var(--neutral-soft);
+  --color-doc-paper: var(--doc-paper);
+  --color-doc-ink: var(--doc-ink);
+  --color-doc-muted: var(--doc-muted);
+  --color-doc-faint: var(--doc-faint);
+  --color-doc-gold: var(--doc-gold);
+  --color-doc-gold-ink: var(--doc-gold-ink);
+  --color-doc-line: var(--doc-line);
   --font-sans: var(--font-sans);
 }
 
@@ -113,6 +120,14 @@
   --sidebar-accent-foreground: oklch(0.415 0.183 266);
   --sidebar-border: oklch(0.9 0.018 258);
   --sidebar-ring: oklch(0.415 0.183 266);
+  /* Habillage du document de devis (indépendant de l'interface) */
+  --doc-paper: oklch(1 0 0);
+  --doc-ink: oklch(0.25 0.008 250);
+  --doc-muted: oklch(0.48 0.012 250);
+  --doc-faint: oklch(0.63 0.01 250);
+  --doc-gold: oklch(0.65 0.1 80);
+  --doc-gold-ink: oklch(0.52 0.09 78);
+  --doc-line: oklch(0.93 0.012 85);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
 }
 

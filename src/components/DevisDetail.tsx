@@ -19,11 +19,18 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <StatutBadge statut="Brouillon" />
         <span className="text-muted-foreground">Référence provisoire {doc.numero} — brouillon non émis</span>
       </div>
-      <Button asChild variant="action" className="self-start">
-        <Link to="/devis/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>
-          Modifier le brouillon
-        </Link>
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button asChild variant="action">
+          <Link to="/devis/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>
+            Modifier le brouillon
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/devis/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>
+            Aperçu du devis
+          </Link>
+        </Button>
+      </div>
 
       <section>
         <h3 className="font-semibold">Informations du devis</h3>
@@ -38,6 +45,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <h3 className="font-semibold">Client (coordonnées enregistrées avec le brouillon)</h3>
         <div className="mt-2">
           <p className="font-medium">{d.client.nom}</p>
+          {d.client.contact && <p>Contact : {d.client.contact}</p>}
           {d.client.telephone && <p>{d.client.telephone}</p>}
           {d.client.email && <p className="break-all">{d.client.email}</p>}
           {d.client.adresse.map((l, i) => <p key={i}>{l}</p>)}

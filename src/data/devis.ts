@@ -26,6 +26,7 @@ export interface LigneSaisie {
 
 export interface CoordonneesClient {
   nom: string;
+  contact?: string;
   telephone: string;
   email: string;
   adresse: string[];
@@ -138,3 +139,17 @@ export function formaterCentimes(c: bigint): string {
 
 let cle = 0;
 export const nouvelleCle = () => `l-${Date.now()}-${++cle}`;
+
+/** Quantité au format français, sans zéros décimaux inutiles. */
+export function formaterQuantite(s: string): string {
+  const v = analyserQuantite(s);
+  if (typeof v === "string") return s;
+  const e = (v / 1000n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const d = (v % 1000n).toString().padStart(3, "0").replace(/0+$/, "");
+  return d ? `${e},${d}` : e;
+}
+
+export function formaterPrixSaisi(s: string): string {
+  const v = analyserPrixCentimes(s);
+  return typeof v === "string" ? s : formaterCentimes(v);
+}

@@ -57,6 +57,7 @@ function aujourdhui() {
 export function copierCoordonnees(c: Client): CoordonneesClient {
   return {
     nom: nomClient(c),
+    contact: c.type === "entreprise" ? c.nom.trim() : "",
     telephone: c.telephone.trim(),
     email: c.email.trim(),
     adresse: [c.adresse, c.complement, [c.codePostal, c.ville].filter(Boolean).join(" "), c.pays]
@@ -261,6 +262,7 @@ export function DevisForm({
             ) : v.clientId && !choixClient ? (
               <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
                 <p className="font-semibold">{v.client.nom}</p>
+                {v.client.contact && <p>Contact : {v.client.contact}</p>}
                 {v.client.telephone && <p>{v.client.telephone}</p>}
                 {v.client.email && <p className="break-all">{v.client.email}</p>}
                 {v.client.adresse.map((l, i) => <p key={i}>{l}</p>)}

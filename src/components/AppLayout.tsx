@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 
@@ -57,6 +57,14 @@ function BadgeDemo() {
 
 export function AppLayout({ titre, children }: { titre: string; children: ReactNode }) {
   const [menuOuvert, setMenuOuvert] = useState(false);
+
+  // Un panneau fermé par un changement de page peut laisser la page non cliquable : on rétablit.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!document.querySelector("[role=dialog],[role=alertdialog]")) document.body.style.pointerEvents = "";
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
