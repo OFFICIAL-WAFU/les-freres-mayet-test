@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -287,7 +286,6 @@ export function ClientForm({
           Annuler
         </Button>
         <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
-          {enCours && <Loader2 className="animate-spin" />}
           {enCours ? "Enregistrement…" : "Enregistrer le client"}
         </Button>
       </div>
