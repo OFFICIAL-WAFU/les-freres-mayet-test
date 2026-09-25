@@ -103,3 +103,7 @@ export function formaterCapital(c: string): string {
   const e = (ent ?? "0").replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return `${e},${dec.padEnd(2, "0")} €`;
 }
+
+export function reinitialiserEntreprise() {
+  enregistrerEntreprise(ENTREPRISE_DEPART);
+}

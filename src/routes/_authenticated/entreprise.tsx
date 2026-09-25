@@ -25,7 +25,7 @@ import {
   type ErreursEntreprise,
 } from "@/data/entreprise";
 
-export const Route = createFileRoute("/entreprise")({
+export const Route = createFileRoute("/_authenticated/entreprise")({
   head: () => ({
     meta: [
       { title: "Entreprise — Les Frères Mayet" },

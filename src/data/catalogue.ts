@@ -163,3 +163,8 @@ export function definirArchive(id: string, archive: boolean): void {
   articles = articles.map((x) => (x.id === id ? { ...x, archive } : x));
   notifier();
 }
+
+export function reinitialiserCatalogue() {
+  articles = ARTICLES_DEMO;
+  notifier();
+}
