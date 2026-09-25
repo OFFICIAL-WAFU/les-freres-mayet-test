@@ -3,9 +3,9 @@ import { AppLayout } from "@/components/AppLayout";
 import { DevisDetail } from "@/components/DevisDetail";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/data/documents";
-import { Introuvable } from "./devis.$id.modifier";
+import { Introuvable } from "@/routes/_authenticated/devis.$id.modifier";
 
-export const Route = createFileRoute("/devis/$id/")({
+export const Route = createFileRoute("/_authenticated/devis/$id/")({
   head: () => ({
     meta: [
       { title: "Brouillon de devis — Les Frères Mayet" },

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { DevisForm } from "@/components/DevisForm";
 
-export const Route = createFileRoute("/devis/nouveau")({
+export const Route = createFileRoute("/_authenticated/devis/nouveau")({
   head: () => ({
     meta: [
       { title: "Nouveau devis — Les Frères Mayet" },

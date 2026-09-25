@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageBientot } from "@/components/AppLayout";
 
-export const Route = createFileRoute("/reglages")({
+export const Route = createFileRoute("/_authenticated/reglages")({
   head: () => ({
     meta: [
       { title: "Réglages — Les Frères Mayet" },

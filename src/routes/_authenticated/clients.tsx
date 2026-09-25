@@ -39,7 +39,7 @@ import {
   type DocumentAvecDevis as DemoDocument,
 } from "@/data/documents";
 
-export const Route = createFileRoute("/clients")({
+export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
     meta: [
       { title: "Clients — Les Frères Mayet" },

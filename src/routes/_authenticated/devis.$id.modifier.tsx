@@ -4,7 +4,7 @@ import { DevisForm } from "@/components/DevisForm";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/data/documents";
 
-export const Route = createFileRoute("/devis/$id/modifier")({
+export const Route = createFileRoute("/_authenticated/devis/$id/modifier")({
   head: () => ({
     meta: [
       { title: "Modifier le brouillon — Les Frères Mayet" },

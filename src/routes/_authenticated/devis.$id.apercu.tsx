@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/data/documents";
 import { useEntreprise } from "@/data/entreprise";
 import { telechargerDevisPdf } from "@/lib/devisPdf";
-import { Introuvable } from "./devis.$id.modifier";
+import { Introuvable } from "@/routes/_authenticated/devis.$id.modifier";
 
-export const Route = createFileRoute("/devis/$id/apercu")({
+export const Route = createFileRoute("/_authenticated/devis/$id/apercu")({
   head: () => ({
     meta: [
       { title: "Aperçu du devis — Les Frères Mayet" },

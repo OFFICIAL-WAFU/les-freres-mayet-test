@@ -29,7 +29,7 @@ import {
   type Metier,
 } from "@/data/catalogue";
 
-export const Route = createFileRoute("/catalogue")({
+export const Route = createFileRoute("/_authenticated/catalogue")({
   head: () => ({
     meta: [
       { title: "Catalogue — Les Frères Mayet" },
