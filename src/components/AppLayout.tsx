@@ -35,7 +35,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           key={r.to}
           to={r.to}
+          activeOptions={{ exact: r.to === "/" }}
           onClick={onNavigate}
+
           className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
         >
           {r.label}
