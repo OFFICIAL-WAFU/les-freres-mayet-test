@@ -17,6 +17,7 @@ import { Route as EntrepriseRouteImport } from './routes/entreprise'
 import { Route as ReglagesRouteImport } from './routes/reglages'
 import { Route as DevisNouveauRouteImport } from './routes/devis.nouveau'
 import { Route as DevisIdIndexRouteImport } from './routes/devis.$id.index'
+import { Route as DevisIdApercuRouteImport } from './routes/devis.$id.apercu'
 import { Route as DevisIdModifierRouteImport } from './routes/devis.$id.modifier'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const DevisIdIndexRoute = DevisIdIndexRouteImport.update({
   path: '/devis/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevisIdApercuRoute = DevisIdApercuRouteImport.update({
+  id: '/devis/$id/apercu',
+  path: '/devis/$id/apercu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevisIdModifierRoute = DevisIdModifierRouteImport.update({
   id: '/devis/$id/modifier',
   path: '/devis/$id/modifier',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
   '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/apercu': typeof DevisIdApercuRoute
   '/devis/$id/modifier': typeof DevisIdModifierRoute
   '/devis/$id/': typeof DevisIdIndexRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
   '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/apercu': typeof DevisIdApercuRoute
   '/devis/$id/modifier': typeof DevisIdModifierRoute
   '/devis/$id': typeof DevisIdIndexRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
   '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/apercu': typeof DevisIdApercuRoute
   '/devis/$id/modifier': typeof DevisIdModifierRoute
   '/devis/$id/': typeof DevisIdIndexRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/reglages'
     | '/devis/nouveau'
+    | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/devis/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/reglages'
     | '/devis/nouveau'
+    | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/devis/$id'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/reglages'
     | '/devis/nouveau'
+    | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/devis/$id/'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   EntrepriseRoute: typeof EntrepriseRoute
   ReglagesRoute: typeof ReglagesRoute
   DevisNouveauRoute: typeof DevisNouveauRoute
+  DevisIdApercuRoute: typeof DevisIdApercuRoute
   DevisIdModifierRoute: typeof DevisIdModifierRoute
   DevisIdIndexRoute: typeof DevisIdIndexRoute
 }
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevisIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devis/$id/apercu': {
+      id: '/devis/$id/apercu'
+      path: '/devis/$id/apercu'
+      fullPath: '/devis/$id/apercu'
+      preLoaderRoute: typeof DevisIdApercuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/devis/$id/modifier': {
       id: '/devis/$id/modifier'
       path: '/devis/$id/modifier'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrepriseRoute: EntrepriseRoute,
   ReglagesRoute: ReglagesRoute,
   DevisNouveauRoute: DevisNouveauRoute,
+  DevisIdApercuRoute: DevisIdApercuRoute,
   DevisIdModifierRoute: DevisIdModifierRoute,
   DevisIdIndexRoute: DevisIdIndexRoute,
 }
