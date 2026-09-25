@@ -7,26 +7,34 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { TYPE_LABELS, formaterMontant, type DemoDocument } from "@/data/documents";
+import { DevisDetail } from "@/components/DevisDetail";
+import { TYPE_LABELS, formaterMontant, type DocumentAvecDevis } from "@/data/documents";
 
 /** Panneau de consultation d'un document (étape 1), partagé entre Documents et Clients. */
 export function DocumentSheet({
   document: doc,
   onClose,
 }: {
-  document: DemoDocument | null;
+  document: DocumentAvecDevis | null;
   onClose: () => void;
 }) {
   return (
     <Sheet open={doc !== null} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>{doc?.numero}</SheetTitle>
           <SheetDescription>
-            Document de démonstration — contenu détaillé à construire.
+            {doc?.devis
+              ? `Devis — ${doc.devis.objet}`
+              : "Document de démonstration — contenu détaillé à construire."}
           </SheetDescription>
         </SheetHeader>
-        {doc && (
+        {doc?.devis && (
+          <div className="mt-6">
+            <DevisDetail doc={doc} onNavigate={onClose} />
+          </div>
+        )}
+        {doc && !doc.devis && (
           <dl className="mt-6 flex flex-col gap-4 text-sm">
             <div>
               <dt className="text-muted-foreground">Date</dt>

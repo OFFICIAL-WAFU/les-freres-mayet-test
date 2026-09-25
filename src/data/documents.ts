@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+import type { DevisBrouillon } from "@/data/devis";
 export type DocumentType = "devis" | "facture" | "acompte" | "avoir" | "rapport";
 
 export type DocumentStatut =
@@ -179,3 +181,68 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
     statut: "Finalisé",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Étape 4 : documents en mémoire (démo + brouillons de devis créés pendant la session)
+// ---------------------------------------------------------------------------
+
+export interface DocumentAvecDevis extends DemoDocument {
+  /** Présent uniquement pour les brouillons créés avec le formulaire de devis. */
+  devis?: DevisBrouillon;
+}
+
+let documents: DocumentAvecDevis[] = DOCUMENTS_DEMO;
+const abonnesDocs = new Set<() => void>();
+const notifierDocs = () => abonnesDocs.forEach((f) => f());
+
+export function useDocuments(): DocumentAvecDevis[] {
+  return useSyncExternalStore(
+    (f) => {
+      abonnesDocs.add(f);
+      return () => abonnesDocs.delete(f);
+    },
+    () => documents,
+    () => DOCUMENTS_DEMO,
+  );
+}
+
+export function lireDocument(id: string): DocumentAvecDevis | undefined {
+  return documents.find((d) => d.id === id);
+}
+
+let compteurBrouillon = 0;
+/** Crée ou met à jour un brouillon de devis. Renvoie l'identifiant stable. */
+export function enregistrerBrouillon(
+  devis: DevisBrouillon,
+  montantTTC: number,
+  id?: string,
+): string {
+  const [a, m, j] = devis.date.split("-");
+  const date = `${j}/${m}/${a}`;
+  if (id) {
+    documents = documents.map((d) =>
+      d.id === id
+        ? { ...d, date, client: devis.client.nom, clientId: devis.clientId, montantTTC, devis }
+        : d,
+    );
+  } else {
+    compteurBrouillon += 1;
+    id = `devis-brouillon-${compteurBrouillon}`;
+    documents = [
+      ...documents,
+      {
+        id,
+        date,
+        numero: `BROUILLON-${String(compteurBrouillon).padStart(3, "0")}`,
+        client: devis.client.nom,
+        clientId: devis.clientId,
+        type: "devis",
+        montantTTC,
+        statut: "Brouillon",
+        devis,
+      },
+    ];
+  }
+  notifierDocs();
+  return id;
+}

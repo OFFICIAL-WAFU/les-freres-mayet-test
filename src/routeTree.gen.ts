@@ -15,6 +15,9 @@ import { Route as CatalogueRouteImport } from './routes/catalogue'
 import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as EntrepriseRouteImport } from './routes/entreprise'
 import { Route as ReglagesRouteImport } from './routes/reglages'
+import { Route as DevisNouveauRouteImport } from './routes/devis.nouveau'
+import { Route as DevisIdIndexRouteImport } from './routes/devis.$id.index'
+import { Route as DevisIdModifierRouteImport } from './routes/devis.$id.modifier'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +49,21 @@ const ReglagesRoute = ReglagesRouteImport.update({
   path: '/reglages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevisNouveauRoute = DevisNouveauRouteImport.update({
+  id: '/devis/nouveau',
+  path: '/devis/nouveau',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevisIdIndexRoute = DevisIdIndexRouteImport.update({
+  id: '/devis/$id/',
+  path: '/devis/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevisIdModifierRoute = DevisIdModifierRouteImport.update({
+  id: '/devis/$id/modifier',
+  path: '/devis/$id/modifier',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +72,9 @@ export interface FileRoutesByFullPath {
   '/clients': typeof ClientsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
+  '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/modifier': typeof DevisIdModifierRoute
+  '/devis/$id/': typeof DevisIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +83,9 @@ export interface FileRoutesByTo {
   '/clients': typeof ClientsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
+  '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/modifier': typeof DevisIdModifierRoute
+  '/devis/$id': typeof DevisIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +95,33 @@ export interface FileRoutesById {
   '/clients': typeof ClientsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
+  '/devis/nouveau': typeof DevisNouveauRoute
+  '/devis/$id/modifier': typeof DevisIdModifierRoute
+  '/devis/$id/': typeof DevisIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/accueil' | '/catalogue' | '/clients' | '/entreprise' | '/reglages'
+    | '/'
+    | '/accueil'
+    | '/catalogue'
+    | '/clients'
+    | '/entreprise'
+    | '/reglages'
+    | '/devis/nouveau'
+    | '/devis/$id/modifier'
+    | '/devis/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/accueil' | '/catalogue' | '/clients' | '/entreprise' | '/reglages'
+  to:
+    | '/'
+    | '/accueil'
+    | '/catalogue'
+    | '/clients'
+    | '/entreprise'
+    | '/reglages'
+    | '/devis/nouveau'
+    | '/devis/$id/modifier'
+    | '/devis/$id'
   id:
     | '__root__'
     | '/'
@@ -86,6 +130,9 @@ export interface FileRouteTypes {
     | '/clients'
     | '/entreprise'
     | '/reglages'
+    | '/devis/nouveau'
+    | '/devis/$id/modifier'
+    | '/devis/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,6 +142,9 @@ export interface RootRouteChildren {
   ClientsRoute: typeof ClientsRoute
   EntrepriseRoute: typeof EntrepriseRoute
   ReglagesRoute: typeof ReglagesRoute
+  DevisNouveauRoute: typeof DevisNouveauRoute
+  DevisIdModifierRoute: typeof DevisIdModifierRoute
+  DevisIdIndexRoute: typeof DevisIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +191,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReglagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devis/nouveau': {
+      id: '/devis/nouveau'
+      path: '/devis/nouveau'
+      fullPath: '/devis/nouveau'
+      preLoaderRoute: typeof DevisNouveauRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devis/$id/': {
+      id: '/devis/$id/'
+      path: '/devis/$id'
+      fullPath: '/devis/$id/'
+      preLoaderRoute: typeof DevisIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devis/$id/modifier': {
+      id: '/devis/$id/modifier'
+      path: '/devis/$id/modifier'
+      fullPath: '/devis/$id/modifier'
+      preLoaderRoute: typeof DevisIdModifierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -151,6 +222,9 @@ const rootRouteChildren: RootRouteChildren = {
   ClientsRoute: ClientsRoute,
   EntrepriseRoute: EntrepriseRoute,
   ReglagesRoute: ReglagesRoute,
+  DevisNouveauRoute: DevisNouveauRoute,
+  DevisIdModifierRoute: DevisIdModifierRoute,
+  DevisIdIndexRoute: DevisIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
