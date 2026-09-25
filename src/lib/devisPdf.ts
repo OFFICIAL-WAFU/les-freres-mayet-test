@@ -88,7 +88,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
               width: 40,
               stack: [
                 { canvas: [{ type: "ellipse", x: 18, y: 18, r1: 17, r2: 17, lineColor: OR, lineWidth: 1.5 }] },
-                { text: "FM", color: OR, bold: true, fontSize: 11, absolutePosition: undefined, margin: [0, -24, 0, 0], alignment: "center", width: 36 } as Content,
+                { text: "FM", color: OR, bold: true, fontSize: 11, alignment: "center", margin: [0, -25, 4, 0] },
               ],
             },
             {
