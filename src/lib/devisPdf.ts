@@ -28,6 +28,21 @@ const FILET = "#e8e3d8";
 const t = (s: string) => s.replace(/\u202f/g, "\u00a0");
 const fr = (iso: string) => iso.split("-").reverse().join("/");
 
+/** Découpe un texte long en morceaux d'environ 900 caractères, aux espaces. */
+function decouper(s: string): string[] {
+  if (!s) return [];
+  const out: string[] = [];
+  let reste = s;
+  while (reste.length > 1100) {
+    let coupe = reste.lastIndexOf(" ", 900);
+    if (coupe < 400) coupe = 900;
+    out.push(reste.slice(0, coupe).trimEnd());
+    reste = reste.slice(coupe).trimStart();
+  }
+  out.push(reste);
+  return out;
+}
+
 export function nomFichierDevis(numero: string) {
   const propre = numero.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
   return `Devis_${propre || "brouillon"}.pdf`;
@@ -50,19 +65,31 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
   const titreSection = (s: string): Content => ({ text: s.toUpperCase(), style: "section" });
   const entete = (s: string, align: "left" | "right" = "left") => ({ text: s.toUpperCase(), style: "th", alignment: align });
 
-  const corps = d.lignes.map((l) => {
+  // Chaque ligne reste sur une page (dontBreakRows). Une description très longue est découpée
+  // en lignes de suite, sans filet, pour pouvoir continuer sur la page suivante sans perte.
+  const suites = new Set<number>(); // index (dans body) des lignes de suite
+  const corps: Content[][] = [];
+  d.lignes.forEach((l) => {
     const calc = validerLigne(l).calcul;
+    const morceaux = decouper(l.description.trim());
     const desig: Content[] = [{ text: l.designation, bold: true }];
-    if (l.description.trim()) desig.push({ text: l.description, color: GRIS, margin: [0, 2, 0, 0] });
-    desig.push({ text: TYPE_ARTICLE_LABELS[l.type].toUpperCase(), fontSize: 7, color: PALE, characterSpacing: 0.4, margin: [0, 2, 0, 0] });
-    return [
+    if (morceaux[0]) desig.push({ text: morceaux[0], color: GRIS, margin: [0, 2, 0, 0] });
+    const type: Content = { text: TYPE_ARTICLE_LABELS[l.type].toUpperCase(), fontSize: 7, color: PALE, margin: [0, 2, 0, 0] };
+    if (morceaux.length <= 1) desig.push(type);
+    corps.push([
       { stack: desig },
       { text: t(formaterQuantite(l.quantite)), alignment: "right" },
       { text: l.unite ? UNITE_LABELS[l.unite] : "" },
       { text: t(formaterPrixSaisi(l.prix)), alignment: "right", noWrap: true },
       { text: l.taux !== null ? t(labelTaux(l.taux)) : "", alignment: "right", noWrap: true },
       { text: calc ? t(formaterCentimes(calc.ht)) : "", alignment: "right", noWrap: true, bold: true },
-    ] as Content[];
+    ] as Content[]);
+    morceaux.slice(1).forEach((m, i, arr) => {
+      suites.add(corps.length + 1);
+      const pile: Content[] = [{ text: m, color: GRIS }];
+      if (i === arr.length - 1) pile.push(type);
+      corps.push([{ stack: pile }, "", "", "", "", ""]);
+    });
   });
 
   const totaux: Content[][] = [
@@ -107,7 +134,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
           width: "auto",
           alignment: "right",
           stack: [
-            { text: "DEVIS — BROUILLON", fontSize: 15, bold: true, characterSpacing: 0.5 },
+            { text: "DEVIS — BROUILLON", fontSize: 15, bold: true },
             { text: `Réf. provisoire ${numero}`, color: GRIS, fontSize: 9 },
             { text: "BROUILLON — NON ÉMIS", color: OR_TEXTE, fontSize: 8, bold: true, margin: [0, 4, 0, 0] },
           ],
@@ -144,7 +171,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
     {
       table: {
         headerRows: 1,
-        dontBreakRows: false,
+        dontBreakRows: true,
         widths: ["*", 38, 42, 62, 34, 66],
         body: [
           [entete("Désignation"), entete("Qté", "right"), entete("Unité"), entete("P.U. HT", "right"), entete("TVA", "right"), entete("Total HT", "right")],
@@ -152,13 +179,13 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
         ],
       },
       layout: {
-        hLineWidth: (i) => (i === 1 ? 1.2 : 0.6),
+        hLineWidth: (i) => (i === 1 ? 1.2 : suites.has(i) ? 0 : 0.6),
         hLineColor: (i) => (i === 1 ? OR : FILET),
         vLineWidth: () => 0,
         paddingLeft: (i) => (i === 0 ? 0 : 4),
         paddingRight: (i, node) => (i === (node.table.widths?.length ?? 1) - 1 ? 0 : 4),
-        paddingTop: () => 6,
-        paddingBottom: () => 6,
+        paddingTop: (i) => (suites.has(i) ? 0 : 6),
+        paddingBottom: (i) => (suites.has(i + 1) ? 0 : 6),
       },
     },
     {
@@ -203,8 +230,8 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
     info: { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
     defaultStyle: { font: "Roboto", fontSize: 9.5, color: ENCRE, lineHeight: 1.2 },
     styles: {
-      section: { fontSize: 7.5, bold: true, color: OR_TEXTE, characterSpacing: 0.8, margin: [0, 0, 0, 4] },
-      th: { fontSize: 7.5, bold: true, color: OR_TEXTE, characterSpacing: 0.6 },
+      section: { fontSize: 7.5, bold: true, color: OR_TEXTE, margin: [0, 0, 0, 4] },
+      th: { fontSize: 7.5, bold: true, color: OR_TEXTE },
     },
     header: (page) =>
       page > 1
