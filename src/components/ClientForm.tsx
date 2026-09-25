@@ -44,9 +44,9 @@ function Champ({
 }: {
   id: string;
   label: string;
-  facultatif?: boolean;
-  erreur?: string;
-  aide?: string;
+  facultatif?: boolean | undefined;
+  erreur?: string | undefined;
+  aide?: string | undefined;
   children: React.ReactNode;
 }) {
   return (
