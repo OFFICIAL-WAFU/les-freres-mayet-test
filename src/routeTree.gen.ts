@@ -9,243 +9,247 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AccueilRouteImport } from './routes/accueil'
-import { Route as CatalogueRouteImport } from './routes/catalogue'
-import { Route as ClientsRouteImport } from './routes/clients'
-import { Route as EntrepriseRouteImport } from './routes/entreprise'
-import { Route as ReglagesRouteImport } from './routes/reglages'
-import { Route as DevisNouveauRouteImport } from './routes/devis.nouveau'
-import { Route as DevisIdIndexRouteImport } from './routes/devis.$id.index'
-import { Route as DevisIdApercuRouteImport } from './routes/devis.$id.apercu'
-import { Route as DevisIdModifierRouteImport } from './routes/devis.$id.modifier'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
+import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
+import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedEntrepriseRouteImport } from './routes/_authenticated/entreprise'
+import { Route as AuthenticatedReglagesRouteImport } from './routes/_authenticated/reglages'
+import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authenticated/devis.nouveau'
+import { Route as AuthenticatedDevisIdIndexRouteImport } from './routes/_authenticated/devis.$id.index'
+import { Route as AuthenticatedDevisIdApercuRouteImport } from './routes/_authenticated/devis.$id.apercu'
+import { Route as AuthenticatedDevisIdModifierRouteImport } from './routes/_authenticated/devis.$id.modifier'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccueilRoute = AccueilRouteImport.update({
-  id: '/accueil',
+const AuthenticatedAccueilRoute = AuthenticatedAccueilRouteImport.update({
+  id: '/_authenticated/accueil',
   path: '/accueil',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CatalogueRoute = CatalogueRouteImport.update({
-  id: '/catalogue',
+const AuthenticatedCatalogueRoute = AuthenticatedCatalogueRouteImport.update({
+  id: '/_authenticated/catalogue',
   path: '/catalogue',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClientsRoute = ClientsRouteImport.update({
-  id: '/clients',
+const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
+  id: '/_authenticated/clients',
   path: '/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EntrepriseRoute = EntrepriseRouteImport.update({
-  id: '/entreprise',
+const AuthenticatedEntrepriseRoute = AuthenticatedEntrepriseRouteImport.update({
+  id: '/_authenticated/entreprise',
   path: '/entreprise',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReglagesRoute = ReglagesRouteImport.update({
-  id: '/reglages',
+const AuthenticatedReglagesRoute = AuthenticatedReglagesRouteImport.update({
+  id: '/_authenticated/reglages',
   path: '/reglages',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevisNouveauRoute = DevisNouveauRouteImport.update({
-  id: '/devis/nouveau',
-  path: '/devis/nouveau',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevisIdIndexRoute = DevisIdIndexRouteImport.update({
-  id: '/devis/$id/',
-  path: '/devis/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevisIdApercuRoute = DevisIdApercuRouteImport.update({
-  id: '/devis/$id/apercu',
-  path: '/devis/$id/apercu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevisIdModifierRoute = DevisIdModifierRouteImport.update({
-  id: '/devis/$id/modifier',
-  path: '/devis/$id/modifier',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedDevisNouveauRoute =
+  AuthenticatedDevisNouveauRouteImport.update({
+    id: '/_authenticated/devis/nouveau',
+    path: '/devis/nouveau',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedDevisIdIndexRoute =
+  AuthenticatedDevisIdIndexRouteImport.update({
+    id: '/_authenticated/devis/$id/',
+    path: '/devis/$id/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedDevisIdApercuRoute =
+  AuthenticatedDevisIdApercuRouteImport.update({
+    id: '/_authenticated/devis/$id/apercu',
+    path: '/devis/$id/apercu',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedDevisIdModifierRoute =
+  AuthenticatedDevisIdModifierRouteImport.update({
+    id: '/_authenticated/devis/$id/modifier',
+    path: '/devis/$id/modifier',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/accueil': typeof AccueilRoute
-  '/catalogue': typeof CatalogueRoute
-  '/clients': typeof ClientsRoute
-  '/entreprise': typeof EntrepriseRoute
-  '/reglages': typeof ReglagesRoute
-  '/devis/nouveau': typeof DevisNouveauRoute
-  '/devis/$id/apercu': typeof DevisIdApercuRoute
-  '/devis/$id/modifier': typeof DevisIdModifierRoute
-  '/devis/$id/': typeof DevisIdIndexRoute
+  '/accueil': typeof AuthenticatedAccueilRoute
+  '/catalogue': typeof AuthenticatedCatalogueRoute
+  '/clients': typeof AuthenticatedClientsRoute
+  '/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/reglages': typeof AuthenticatedReglagesRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
+  '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/accueil': typeof AccueilRoute
-  '/catalogue': typeof CatalogueRoute
-  '/clients': typeof ClientsRoute
-  '/entreprise': typeof EntrepriseRoute
-  '/reglages': typeof ReglagesRoute
-  '/devis/nouveau': typeof DevisNouveauRoute
-  '/devis/$id/apercu': typeof DevisIdApercuRoute
-  '/devis/$id/modifier': typeof DevisIdModifierRoute
-  '/devis/$id': typeof DevisIdIndexRoute
+  '/accueil': typeof AuthenticatedAccueilRoute
+  '/catalogue': typeof AuthenticatedCatalogueRoute
+  '/clients': typeof AuthenticatedClientsRoute
+  '/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/reglages': typeof AuthenticatedReglagesRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
+  '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/devis/$id': typeof AuthenticatedDevisIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/accueil': typeof AccueilRoute
-  '/catalogue': typeof CatalogueRoute
-  '/clients': typeof ClientsRoute
-  '/entreprise': typeof EntrepriseRoute
-  '/reglages': typeof ReglagesRoute
-  '/devis/nouveau': typeof DevisNouveauRoute
-  '/devis/$id/apercu': typeof DevisIdApercuRoute
-  '/devis/$id/modifier': typeof DevisIdModifierRoute
-  '/devis/$id/': typeof DevisIdIndexRoute
+  '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
+  '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
+  '/_authenticated/clients': typeof AuthenticatedClientsRoute
+  '/_authenticated/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/_authenticated/reglages': typeof AuthenticatedReglagesRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/_authenticated/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
+  '/_authenticated/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/_authenticated/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/accueil'
     | '/catalogue'
     | '/clients'
     | '/entreprise'
     | '/reglages'
+    | '/'
     | '/devis/nouveau'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/devis/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/accueil'
     | '/catalogue'
     | '/clients'
     | '/entreprise'
     | '/reglages'
+    | '/'
     | '/devis/nouveau'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/devis/$id'
   id:
     | '__root__'
-    | '/'
-    | '/accueil'
-    | '/catalogue'
-    | '/clients'
-    | '/entreprise'
-    | '/reglages'
-    | '/devis/nouveau'
-    | '/devis/$id/apercu'
-    | '/devis/$id/modifier'
-    | '/devis/$id/'
+    | '/_authenticated/accueil'
+    | '/_authenticated/catalogue'
+    | '/_authenticated/clients'
+    | '/_authenticated/entreprise'
+    | '/_authenticated/reglages'
+    | '/_authenticated/'
+    | '/_authenticated/devis/nouveau'
+    | '/_authenticated/devis/$id/apercu'
+    | '/_authenticated/devis/$id/modifier'
+    | '/_authenticated/devis/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AccueilRoute: typeof AccueilRoute
-  CatalogueRoute: typeof CatalogueRoute
-  ClientsRoute: typeof ClientsRoute
-  EntrepriseRoute: typeof EntrepriseRoute
-  ReglagesRoute: typeof ReglagesRoute
-  DevisNouveauRoute: typeof DevisNouveauRoute
-  DevisIdApercuRoute: typeof DevisIdApercuRoute
-  DevisIdModifierRoute: typeof DevisIdModifierRoute
-  DevisIdIndexRoute: typeof DevisIdIndexRoute
+  AuthenticatedAccueilRoute: typeof AuthenticatedAccueilRoute
+  AuthenticatedCatalogueRoute: typeof AuthenticatedCatalogueRoute
+  AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
+  AuthenticatedEntrepriseRoute: typeof AuthenticatedEntrepriseRoute
+  AuthenticatedReglagesRoute: typeof AuthenticatedReglagesRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedDevisNouveauRoute: typeof AuthenticatedDevisNouveauRoute
+  AuthenticatedDevisIdApercuRoute: typeof AuthenticatedDevisIdApercuRoute
+  AuthenticatedDevisIdModifierRoute: typeof AuthenticatedDevisIdModifierRoute
+  AuthenticatedDevisIdIndexRoute: typeof AuthenticatedDevisIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/accueil': {
-      id: '/accueil'
+    '/_authenticated/accueil': {
+      id: '/_authenticated/accueil'
       path: '/accueil'
       fullPath: '/accueil'
-      preLoaderRoute: typeof AccueilRouteImport
+      preLoaderRoute: typeof AuthenticatedAccueilRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/catalogue': {
-      id: '/catalogue'
+    '/_authenticated/catalogue': {
+      id: '/_authenticated/catalogue'
       path: '/catalogue'
       fullPath: '/catalogue'
-      preLoaderRoute: typeof CatalogueRouteImport
+      preLoaderRoute: typeof AuthenticatedCatalogueRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/clients': {
-      id: '/clients'
+    '/_authenticated/clients': {
+      id: '/_authenticated/clients'
       path: '/clients'
       fullPath: '/clients'
-      preLoaderRoute: typeof ClientsRouteImport
+      preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/entreprise': {
-      id: '/entreprise'
+    '/_authenticated/entreprise': {
+      id: '/_authenticated/entreprise'
       path: '/entreprise'
       fullPath: '/entreprise'
-      preLoaderRoute: typeof EntrepriseRouteImport
+      preLoaderRoute: typeof AuthenticatedEntrepriseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reglages': {
-      id: '/reglages'
+    '/_authenticated/reglages': {
+      id: '/_authenticated/reglages'
       path: '/reglages'
       fullPath: '/reglages'
-      preLoaderRoute: typeof ReglagesRouteImport
+      preLoaderRoute: typeof AuthenticatedReglagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/devis/nouveau': {
-      id: '/devis/nouveau'
+    '/_authenticated/devis/nouveau': {
+      id: '/_authenticated/devis/nouveau'
       path: '/devis/nouveau'
       fullPath: '/devis/nouveau'
-      preLoaderRoute: typeof DevisNouveauRouteImport
+      preLoaderRoute: typeof AuthenticatedDevisNouveauRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/devis/$id/': {
-      id: '/devis/$id/'
+    '/_authenticated/devis/$id/': {
+      id: '/_authenticated/devis/$id/'
       path: '/devis/$id'
       fullPath: '/devis/$id/'
-      preLoaderRoute: typeof DevisIdIndexRouteImport
+      preLoaderRoute: typeof AuthenticatedDevisIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/devis/$id/apercu': {
-      id: '/devis/$id/apercu'
+    '/_authenticated/devis/$id/apercu': {
+      id: '/_authenticated/devis/$id/apercu'
       path: '/devis/$id/apercu'
       fullPath: '/devis/$id/apercu'
-      preLoaderRoute: typeof DevisIdApercuRouteImport
+      preLoaderRoute: typeof AuthenticatedDevisIdApercuRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/devis/$id/modifier': {
-      id: '/devis/$id/modifier'
+    '/_authenticated/devis/$id/modifier': {
+      id: '/_authenticated/devis/$id/modifier'
       path: '/devis/$id/modifier'
       fullPath: '/devis/$id/modifier'
-      preLoaderRoute: typeof DevisIdModifierRouteImport
+      preLoaderRoute: typeof AuthenticatedDevisIdModifierRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AccueilRoute: AccueilRoute,
-  CatalogueRoute: CatalogueRoute,
-  ClientsRoute: ClientsRoute,
-  EntrepriseRoute: EntrepriseRoute,
-  ReglagesRoute: ReglagesRoute,
-  DevisNouveauRoute: DevisNouveauRoute,
-  DevisIdApercuRoute: DevisIdApercuRoute,
-  DevisIdModifierRoute: DevisIdModifierRoute,
-  DevisIdIndexRoute: DevisIdIndexRoute,
+  AuthenticatedAccueilRoute: AuthenticatedAccueilRoute,
+  AuthenticatedCatalogueRoute: AuthenticatedCatalogueRoute,
+  AuthenticatedClientsRoute: AuthenticatedClientsRoute,
+  AuthenticatedEntrepriseRoute: AuthenticatedEntrepriseRoute,
+  AuthenticatedReglagesRoute: AuthenticatedReglagesRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedDevisNouveauRoute: AuthenticatedDevisNouveauRoute,
+  AuthenticatedDevisIdApercuRoute: AuthenticatedDevisIdApercuRoute,
+  AuthenticatedDevisIdModifierRoute: AuthenticatedDevisIdModifierRoute,
+  AuthenticatedDevisIdIndexRoute: AuthenticatedDevisIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
