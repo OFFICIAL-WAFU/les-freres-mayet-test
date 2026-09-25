@@ -7,12 +7,13 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 
 const RUBRIQUES = [
   { to: "/accueil", label: "Accueil" },
-  { to: "/documents", label: "Documents" },
+  { to: "/", label: "Documents" },
   { to: "/clients", label: "Clients" },
   { to: "/catalogue", label: "Catalogue" },
   { to: "/entreprise", label: "Entreprise" },
   { to: "/reglages", label: "Réglages" },
 ] as const;
+
 
 function Marque() {
   return (

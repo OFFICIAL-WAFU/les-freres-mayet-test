@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccueilRouteImport } from './routes/accueil'
 import { Route as CatalogueRouteImport } from './routes/catalogue'
 import { Route as ClientsRouteImport } from './routes/clients'
-import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as EntrepriseRouteImport } from './routes/entreprise'
 import { Route as ReglagesRouteImport } from './routes/reglages'
 
@@ -37,11 +36,6 @@ const ClientsRoute = ClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocumentsRoute = DocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const EntrepriseRoute = EntrepriseRouteImport.update({
   id: '/entreprise',
   path: '/entreprise',
@@ -58,7 +52,6 @@ export interface FileRoutesByFullPath {
   '/accueil': typeof AccueilRoute
   '/catalogue': typeof CatalogueRoute
   '/clients': typeof ClientsRoute
-  '/documents': typeof DocumentsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
 }
@@ -67,7 +60,6 @@ export interface FileRoutesByTo {
   '/accueil': typeof AccueilRoute
   '/catalogue': typeof CatalogueRoute
   '/clients': typeof ClientsRoute
-  '/documents': typeof DocumentsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
 }
@@ -77,36 +69,21 @@ export interface FileRoutesById {
   '/accueil': typeof AccueilRoute
   '/catalogue': typeof CatalogueRoute
   '/clients': typeof ClientsRoute
-  '/documents': typeof DocumentsRoute
   '/entreprise': typeof EntrepriseRoute
   '/reglages': typeof ReglagesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/accueil'
-    | '/catalogue'
-    | '/clients'
-    | '/documents'
-    | '/entreprise'
-    | '/reglages'
+    '/' | '/accueil' | '/catalogue' | '/clients' | '/entreprise' | '/reglages'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/accueil'
-    | '/catalogue'
-    | '/clients'
-    | '/documents'
-    | '/entreprise'
-    | '/reglages'
+  to: '/' | '/accueil' | '/catalogue' | '/clients' | '/entreprise' | '/reglages'
   id:
     | '__root__'
     | '/'
     | '/accueil'
     | '/catalogue'
     | '/clients'
-    | '/documents'
     | '/entreprise'
     | '/reglages'
   fileRoutesById: FileRoutesById
@@ -116,7 +93,6 @@ export interface RootRouteChildren {
   AccueilRoute: typeof AccueilRoute
   CatalogueRoute: typeof CatalogueRoute
   ClientsRoute: typeof ClientsRoute
-  DocumentsRoute: typeof DocumentsRoute
   EntrepriseRoute: typeof EntrepriseRoute
   ReglagesRoute: typeof ReglagesRoute
 }
@@ -151,13 +127,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/documents': {
-      id: '/documents'
-      path: '/documents'
-      fullPath: '/documents'
-      preLoaderRoute: typeof DocumentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/entreprise': {
       id: '/entreprise'
       path: '/entreprise'
@@ -180,7 +149,6 @@ const rootRouteChildren: RootRouteChildren = {
   AccueilRoute: AccueilRoute,
   CatalogueRoute: CatalogueRoute,
   ClientsRoute: ClientsRoute,
-  DocumentsRoute: DocumentsRoute,
   EntrepriseRoute: EntrepriseRoute,
   ReglagesRoute: ReglagesRoute,
 }
