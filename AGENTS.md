@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Management pages live under src/routes/_authenticated/ (client-only session gate → /connexion); why: the whole app is private, only sign-in and password recovery are public.
+- Sign-out must call effacerDonneesSession() (src/lib/session.ts); why: in-memory demo business data must not survive a session.
