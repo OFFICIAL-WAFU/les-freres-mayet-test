@@ -444,7 +444,8 @@ export function DevisForm({
         </aside>
       </form>
 
-      <AlertDialog open={blocker.status === "blocked"}>
+      {blocker.status === "blocked" && (
+      <AlertDialog open>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Abandonner les modifications non enregistrées ?</AlertDialogTitle>
@@ -456,6 +457,7 @@ export function DevisForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
     </>
   );
 }
