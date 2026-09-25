@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { Plus, Search, X } from "lucide-react";
 
@@ -118,6 +118,14 @@ export function DevisForm({
   const [rechercheArticle, setRechercheArticle] = useState("");
   const [typeArticle, setTypeArticle] = useState<ArticleType | "tous">("tous");
   const enregistre = useRef(false);
+
+  // Un panneau fermé pendant la navigation peut laisser la page non cliquable : on rétablit.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!document.querySelector("[role=dialog],[role=alertdialog]")) document.body.style.pointerEvents = "";
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
 
   const modifie = JSON.stringify(v) !== depart;
   const blocker = useBlocker({
