@@ -21,9 +21,11 @@ export interface Client {
   ville: string;
   pays: string;
   notes: string;
+  /** Version enregistrée (date de dernière modification côté serveur). */
+  majLe?: string;
 }
 
-export type ClientSaisie = Omit<Client, "id">;
+export type ClientSaisie = Omit<Client, "id" | "majLe">;
 
 export const TYPE_CLIENT_LABELS: Record<ClientType, string> = {
   particulier: "Particulier",
