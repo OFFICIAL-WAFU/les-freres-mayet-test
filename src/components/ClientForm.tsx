@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   TYPE_CLIENT_LABELS,
+  ConflitVersion,
   clientVide,
   nomClient,
   normaliserNom,
@@ -77,14 +78,21 @@ export function ClientForm({
   onCancel,
   onSave,
   onVoirExistant,
+  onRecharger,
 }: {
   initial?: ClientSaisie;
   clientId?: string;
   clients: Client[];
   onCancel: () => void;
-  onSave: (v: ClientSaisie) => void;
+  /** Rejette ConflitVersion si la fiche a changé ailleurs, une autre erreur si la sauvegarde échoue. */
+  onSave: (v: ClientSaisie, idTentative: string) => Promise<void>;
   onVoirExistant: (c: Client) => void;
+  onRecharger?: () => void;
 }) {
+  // Identifiant stable pour cette tentative de création : un nouvel essai ne crée pas de doublon.
+  const idTentative = useRef(crypto.randomUUID());
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState<"reseau" | "conflit" | null>(null);
   const [valeurs, setValeurs] = useState<ClientSaisie | null>(initial ?? null);
   const [erreurs, setErreurs] = useState<Erreurs>({});
   const [homonyme, setHomonyme] = useState<Client | null>(null);
@@ -142,11 +150,12 @@ export function ClientForm({
         return;
       }
     }
-    onSave({
-      ...v,
-      email: v.email.trim(),
-      siret: v.siret.trim(),
-    });
+    if (enCours) return;
+    setEnCours(true);
+    setEchec(null);
+    onSave({ ...v, email: v.email.trim(), siret: v.siret.trim() }, idTentative.current)
+      .catch((err: unknown) => setEchec(err instanceof ConflitVersion ? "conflit" : "reseau"))
+      .finally(() => setEnCours(false));
   }
 
   return (
@@ -256,12 +265,28 @@ export function ClientForm({
         </p>
       )}
 
+      {echec === "reseau" && (
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          La fiche n'a pas pu être enregistrée. Vos saisies sont conservées : vérifiez votre connexion puis réessayez.
+        </p>
+      )}
+      {echec === "conflit" && (
+        <div role="alert" className="flex flex-col gap-2 rounded-lg border border-warning/50 bg-warning-soft p-3 text-sm">
+          <p>Une version plus récente de cette fiche a été enregistrée ailleurs (par exemple dans un autre onglet). Vos saisies n'ont pas été enregistrées et restent affichées.</p>
+          {onRecharger && (
+            <Button type="button" size="sm" variant="outline" className="self-start" onClick={onRecharger}>
+              Recharger la fiche
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={enCours}>
           Annuler
         </Button>
-        <Button type="submit" variant="action">
-          Enregistrer le client
+        <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
+          {enCours ? "Enregistrement…" : "Enregistrer le client"}
         </Button>
       </div>
     </form>

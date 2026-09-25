@@ -1,4 +1,7 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type ClientType = "particulier" | "entreprise";
 
@@ -18,9 +21,11 @@ export interface Client {
   ville: string;
   pays: string;
   notes: string;
+  /** Version enregistrée (date de dernière modification côté serveur). */
+  majLe?: string;
 }
 
-export type ClientSaisie = Omit<Client, "id">;
+export type ClientSaisie = Omit<Client, "id" | "majLe">;
 
 export const TYPE_CLIENT_LABELS: Record<ClientType, string> = {
   particulier: "Particulier",
@@ -55,127 +60,175 @@ export function normaliserNom(n: string): string {
   return n.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-const base = (type: ClientType, v: Partial<ClientSaisie>): ClientSaisie => ({
-  ...clientVide(type),
-  ...v,
-});
+// ---------------------------------------------------------------------------
+// Stockage : base Lovable Cloud (table clients, protégée par propriétaire).
+// Le navigateur ne garde qu'une copie de travail, effacée à la déconnexion.
+// ---------------------------------------------------------------------------
 
-const CLIENTS_DEMO: Client[] = [
-  {
-    id: "cli-rouvier",
-    ...base("particulier", {
-      prenom: "Camille",
-      nom: "Rouvier",
-      telephone: "06 12 34 56 78",
-      email: "camille.rouvier@example.com",
-      adresse: "12 chemin des Aubépines",
-      codePostal: "07200",
-      ville: "Aubenas",
-    }),
-  },
-  {
-    id: "cli-marchetti",
-    ...base("particulier", {
-      prenom: "Julien",
-      nom: "Marchetti",
-      telephone: "07 45 88 21 09",
-      email: "julien.marchetti@example.com",
-      ville: "Privas",
-      codePostal: "07000",
-      notes: "Premier contact par téléphone, souhaite un devis de climatisation.",
-    }),
-  },
-  {
-    id: "cli-vergnaud",
-    ...base("entreprise", {
-      raisonSociale: "Boulangerie Vergnaud",
-      nom: "Paul Vergnaud",
-      telephone: "04 75 10 20 30",
-      email: "contact@boulangerie-vergnaud.example.com",
-      adresse: "3 place de l'Église",
-      codePostal: "07200",
-      ville: "Aubenas",
-    }),
-  },
-  {
-    id: "cli-tilleuls",
-    ...base("entreprise", {
-      raisonSociale: "Résidence Les Tilleuls",
-      nom: "Mme Garnier (syndic)",
-      telephone: "04 75 44 55 66",
-      email: "syndic@tilleuls.example.com",
-      adresse: "45 avenue de la Gare",
-      codePostal: "07100",
-      ville: "Annonay",
-    }),
-  },
-  {
-    id: "cli-delmas",
-    ...base("entreprise", {
-      raisonSociale: "Garage Delmas",
-      nom: "Éric Delmas",
-      telephone: "04 75 93 12 12",
-      email: "garage.delmas@example.com",
-      codePostal: "07400",
-      ville: "Le Teil",
-    }),
-  },
-  {
-    id: "cli-loriol",
-    ...base("entreprise", {
-      raisonSociale: "Cabinet Dentaire Loriol",
-      telephone: "04 75 61 70 80",
-      email: "accueil@cabinet-loriol.example.com",
-      codePostal: "26270",
-      ville: "Loriol-sur-Drôme",
-    }),
-  },
-  {
-    id: "cli-pont-vieux",
-    ...base("entreprise", {
-      raisonSociale: "Hôtel du Pont Vieux",
-      nom: "Sophie Arnaud",
-      telephone: "04 75 35 00 11",
-      email: "reception@pontvieux.example.com",
-      codePostal: "07150",
-      ville: "Vallon-Pont-d'Arc",
-    }),
-  },
-];
+type Ligne = Database["public"]["Tables"]["clients"]["Row"];
 
-// Stockage en mémoire pour la session (réinitialisé au rechargement).
-let clients: Client[] = CLIENTS_DEMO;
+function depuisLigne(l: Ligne): Client {
+  return {
+    id: l.id,
+    type: l.type as ClientType,
+    prenom: l.prenom,
+    nom: l.type === "entreprise" ? l.nom_contact : l.nom,
+    raisonSociale: l.raison_sociale,
+    telephone: l.telephone,
+    email: l.email,
+    siret: l.siret,
+    tva: l.tva,
+    adresse: l.adresse,
+    complement: l.complement,
+    codePostal: l.code_postal,
+    ville: l.ville,
+    pays: l.pays,
+    notes: l.notes,
+    majLe: l.updated_at,
+  };
+}
+
+function versLigne(v: ClientSaisie) {
+  const t = (x: string) => x.trim();
+  const ent = v.type === "entreprise";
+  return {
+    type: v.type,
+    prenom: ent ? "" : t(v.prenom),
+    nom: ent ? "" : t(v.nom),
+    raison_sociale: ent ? t(v.raisonSociale) : "",
+    nom_contact: ent ? t(v.nom) : "",
+    telephone: t(v.telephone),
+    email: t(v.email),
+    siret: ent ? v.siret.replace(/\s/g, "") : "",
+    tva: ent ? t(v.tva) : "",
+    adresse: t(v.adresse),
+    complement: t(v.complement),
+    code_postal: t(v.codePostal),
+    ville: t(v.ville),
+    pays: t(v.pays),
+    notes: v.notes,
+  };
+}
+
+export type EtatClients =
+  | { statut: "inactif" | "chargement"; clients: Client[] }
+  | { statut: "pret"; clients: Client[] }
+  | { statut: "erreur"; clients: Client[] };
+
+const INITIAL: EtatClients = { statut: "inactif", clients: [] };
+let etat: EtatClients = INITIAL;
+let generation = 0;
 const abonnes = new Set<() => void>();
-function notifier() {
+function definir(e: EtatClients) {
+  etat = e;
   abonnes.forEach((f) => f());
 }
 
-export function useClients(): Client[] {
-  return useSyncExternalStore(
+export function useEtatClients(): EtatClients {
+  const e = useSyncExternalStore(
     (f) => {
       abonnes.add(f);
       return () => abonnes.delete(f);
     },
-    () => clients,
-    () => CLIENTS_DEMO,
+    () => etat,
+    () => INITIAL,
   );
+  useEffect(() => {
+    if (etat.statut === "inactif") void chargerClients();
+  }, []);
+  return e;
 }
 
-let compteur = 0;
-export function ajouterClient(saisie: ClientSaisie): Client {
-  compteur += 1;
-  const nouveau: Client = { ...saisie, id: `cli-nouveau-${Date.now()}-${compteur}` };
-  clients = [...clients, nouveau];
-  notifier();
-  return nouveau;
+/** Liste des clients enregistrés (vide tant qu'elle n'est pas chargée). */
+export function useClients(): Client[] {
+  return useEtatClients().clients;
 }
 
-export function modifierClient(id: string, saisie: ClientSaisie): void {
-  clients = clients.map((c) => (c.id === id ? { ...saisie, id } : c));
-  notifier();
+const PAGE = 1000;
+/** Charge toutes les pages : aucune limite silencieuse. */
+export async function chargerClients(): Promise<void> {
+  const g = ++generation;
+  definir({ statut: "chargement", clients: etat.clients });
+  try {
+    const tous: Client[] = [];
+    for (let debut = 0; ; debut += PAGE) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(debut, debut + PAGE - 1);
+      if (error) throw error;
+      tous.push(...data.map(depuisLigne));
+      if (data.length < PAGE) break;
+    }
+    if (g === generation) definir({ statut: "pret", clients: tous });
+  } catch {
+    if (g === generation) definir({ statut: "erreur", clients: etat.clients });
+  }
 }
 
+function remplacer(c: Client) {
+  const existe = etat.clients.some((x) => x.id === c.id);
+  definir({
+    statut: etat.statut === "inactif" ? "pret" : etat.statut,
+    clients: existe ? etat.clients.map((x) => (x.id === c.id ? c : x)) : [...etat.clients, c],
+  });
+}
+
+export class ErreurSauvegarde extends Error {}
+export class ConflitVersion extends Error {}
+
+/**
+ * Crée une fiche avec un identifiant fourni par l'appelant (stable pour une même
+ * tentative) : une nouvelle tentative après une réponse incertaine ne crée pas de doublon.
+ */
+export async function creerClient(id: string, v: ClientSaisie): Promise<Client> {
+  const { data, error } = await supabase.from("clients").insert({ id, ...versLigne(v) }).select().single();
+  if (error) {
+    if (error.code === "23505") {
+      // Déjà enregistrée lors d'une tentative précédente : on relit la fiche.
+      const relue = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
+      if (relue.data) {
+        const c = depuisLigne(relue.data);
+        remplacer(c);
+        return c;
+      }
+    }
+    throw new ErreurSauvegarde(error.message);
+  }
+  const c = depuisLigne(data);
+  remplacer(c);
+  return c;
+}
+
+/** Met à jour seulement si la fiche n'a pas changé depuis son ouverture. */
+export async function modifierClient(id: string, v: ClientSaisie, versionLue: string): Promise<Client> {
+  const { data, error } = await supabase
+    .from("clients")
+    .update(versLigne(v))
+    .eq("id", id)
+    .eq("updated_at", versionLue)
+    .select();
+  if (error) throw new ErreurSauvegarde(error.message);
+  if (!data || data.length === 0) throw new ConflitVersion();
+  const c = depuisLigne(data[0]!);
+  remplacer(c);
+  return c;
+}
+
+/** Relit une fiche depuis la base (après un conflit). */
+export async function relireClient(id: string): Promise<Client | null> {
+  const { data, error } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
+  if (error) throw new ErreurSauvegarde(error.message);
+  if (!data) return null;
+  const c = depuisLigne(data);
+  remplacer(c);
+  return c;
+}
+
+/** Déconnexion : efface la copie en mémoire (les fiches restent en base). */
 export function reinitialiserClients() {
-  clients = CLIENTS_DEMO;
-  notifier();
+  generation++;
+  definir(INITIAL);
 }

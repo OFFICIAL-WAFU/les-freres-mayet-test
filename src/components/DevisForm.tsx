@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { nomClient, useClients, type Client } from "@/data/clients";
+import { chargerClients, nomClient, useEtatClients, type Client } from "@/data/clients";
 import {
   TYPE_ARTICLE_LABELS,
   UNITE_LABELS,
@@ -108,7 +108,8 @@ export function DevisForm({
   numero?: string;
 }) {
   const navigate = useNavigate();
-  const clients = useClients();
+  const etatClients = useEtatClients();
+  const clients = etatClients.clients;
   const articles = useArticles();
   const depart = useMemo(() => JSON.stringify(initial ?? vide()), [initial]);
   const [v, setV] = useState<DevisBrouillon>(() => JSON.parse(depart));
@@ -255,7 +256,16 @@ export function DevisForm({
         <div className="flex min-w-0 flex-col gap-6">
           {/* 1. Client */}
           <Section numero={1} titre="Client">
-            {clients.length === 0 ? (
+            {etatClients.statut === "erreur" && clients.length === 0 ? (
+              <div role="alert" className="text-sm">
+                <p>Impossible de charger vos clients pour le moment.</p>
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => void chargerClients()}>
+                  Réessayer
+                </Button>
+              </div>
+            ) : etatClients.statut !== "pret" && clients.length === 0 ? (
+              <p role="status" className="text-sm text-muted-foreground">Chargement de vos clients…</p>
+            ) : clients.length === 0 ? (
               <p className="text-sm">
                 Aucun client n'existe encore. Créez d'abord un client dans la rubrique Clients.
               </p>

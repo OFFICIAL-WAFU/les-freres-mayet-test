@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/sheet";
 import {
   TYPE_CLIENT_LABELS,
-  ajouterClient,
+  chargerClients,
+  creerClient,
   modifierClient,
+  relireClient,
+  useEtatClients,
   nomClient,
-  useClients,
   type Client,
   type ClientSaisie,
   type ClientType,
@@ -66,7 +68,9 @@ type Panneau =
   | null;
 
 function ClientsPage() {
-  const clients = useClients();
+  const etat = useEtatClients();
+  const clients = etat.clients;
+  const [confirmation, setConfirmation] = useState(false);
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<ClientType | "tous">("tous");
   const [panneau, setPanneau] = useState<Panneau>(null);
@@ -98,14 +102,22 @@ function ClientsPage() {
     setPanneau({ mode: "ajout" });
   }
 
-  function sauver(v: ClientSaisie) {
+  async function sauver(v: ClientSaisie, idTentative: string) {
     if (panneau?.mode === "edition") {
-      modifierClient(panneau.id, v);
+      const courant = clients.find((c) => c.id === panneau.id);
+      await modifierClient(panneau.id, v, courant?.majLe ?? "");
       setPanneau({ mode: "fiche", id: panneau.id });
     } else {
-      const c = ajouterClient(v);
+      const c = await creerClient(idTentative, v);
       setPanneau({ mode: "fiche", id: c.id });
     }
+    setConfirmation(true);
+    void chargerClients();
+  }
+
+  async function rechargerFiche(id: string) {
+    await relireClient(id).catch(() => null);
+    setFormKey((k) => k + 1);
   }
 
   return (
@@ -114,7 +126,7 @@ function ClientsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Clients</h1>
           <p className="mt-2 text-xs text-muted-foreground">
-            Démonstration : les modifications sont réinitialisées au rechargement.
+            Vos fiches clients sont enregistrées dans votre espace privé.
           </p>
         </div>
         <Button variant="action" size="lg" onClick={ouvrirAjout}>
@@ -122,9 +134,21 @@ function ClientsPage() {
         </Button>
       </div>
 
-      {clients.length === 0 ? (
+      {etat.statut === "erreur" ? (
+        <div role="alert" className="mt-6 rounded-2xl border border-destructive/40 bg-card p-8 text-center">
+          <p className="text-sm font-medium">Impossible de charger vos clients pour le moment.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Vérifiez votre connexion internet puis réessayez.</p>
+          <Button variant="outline" className="mt-4" onClick={() => void chargerClients()}>
+            Réessayer
+          </Button>
+        </div>
+      ) : etat.statut !== "pret" && clients.length === 0 ? (
+        <div role="status" className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">Chargement de vos clients…</p>
+        </div>
+      ) : clients.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
-          <p className="text-sm font-medium">Vous n'avez encore aucun client.</p>
+          <p className="text-sm font-medium">Ajoutez votre premier client.</p>
           <Button variant="action" className="mt-4" onClick={ouvrirAjout}>
             <Plus /> Ajouter votre premier client
           </Button>
@@ -247,7 +271,15 @@ function ClientsPage() {
         </>
       )}
 
-      <Sheet open={panneau !== null} onOpenChange={(o) => !o && setPanneau(null)}>
+      <Sheet
+        open={panneau !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPanneau(null);
+            setConfirmation(false);
+          }
+        }}
+      >
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
           {panneau?.mode === "ajout" && (
             <>
@@ -271,7 +303,8 @@ function ClientsPage() {
                 <SheetDescription>{nomClient(clientCourant)}</SheetDescription>
               </SheetHeader>
               <ClientForm
-                key={clientCourant.id}
+                key={`${clientCourant.id}-${formKey}`}
+                onRecharger={() => void rechargerFiche(clientCourant.id)}
                 initial={clientCourant}
                 clientId={clientCourant.id}
                 clients={clients}
@@ -284,7 +317,11 @@ function ClientsPage() {
           {panneau?.mode === "fiche" && clientCourant && (
             <FicheClient
               client={clientCourant}
-              onModifier={() => setPanneau({ mode: "edition", id: clientCourant.id })}
+              confirmation={confirmation}
+              onModifier={() => {
+                setConfirmation(false);
+                setPanneau({ mode: "edition", id: clientCourant.id });
+              }}
               onVoirDocument={setDocOuvert}
               onFermer={() => setPanneau(null)}
             />
@@ -308,11 +345,13 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 
 function FicheClient({
   client: c,
+  confirmation,
   onModifier,
   onVoirDocument,
   onFermer,
 }: {
   client: Client;
+  confirmation: boolean;
   onModifier: () => void;
   onVoirDocument: (d: DemoDocument) => void;
   onFermer: () => void;
@@ -329,6 +368,11 @@ function FicheClient({
         <SheetTitle className="break-words pr-6">{nom}</SheetTitle>
         <SheetDescription>{TYPE_CLIENT_LABELS[c.type]}</SheetDescription>
       </SheetHeader>
+      {confirmation && (
+        <p role="status" className="mt-4 rounded-lg border border-success/40 bg-success-soft p-3 text-sm font-medium">
+          Client enregistré
+        </p>
+      )}
       <Button variant="outline" className="mt-4 self-start" onClick={onModifier}>
         Modifier
       </Button>
@@ -369,6 +413,9 @@ function FicheClient({
 
       <section className="mt-6">
         <h3 className="text-sm font-semibold">Documents associés</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Les devis sont encore temporaires et seront sauvegardés durablement lors d'une prochaine étape.
+        </p>
         {docs.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">Aucun document associé à ce client.</p>
         ) : (
