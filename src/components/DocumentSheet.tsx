@@ -31,7 +31,7 @@ export function DocumentSheet({
         </SheetHeader>
         {doc?.devis && (
           <div className="mt-6">
-            <DevisDetail doc={doc} onNavigate={onClose} />
+            <DevisDetail doc={doc} />
           </div>
         )}
         {doc && !doc.devis && (
