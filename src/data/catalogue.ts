@@ -229,7 +229,7 @@ export async function ajouterArticle(id: string, s: ArticleSaisie): Promise<Arti
   return a;
 }
 
-async function majVersionnee(id: string, champs: Record<string, unknown>, versionLue: string): Promise<Article> {
+async function majVersionnee(id: string, champs: Database["public"]["Tables"]["articles"]["Update"], versionLue: string): Promise<Article> {
   const { data, error } = await supabase
     .from("articles")
     .update(champs)
