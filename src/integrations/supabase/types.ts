@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      articles: {
+        Row: {
+          archive: boolean
+          created_at: string
+          description: string
+          designation: string
+          id: string
+          marque: string
+          metier: string
+          notes: string
+          owner_id: string
+          prix_ht_centimes: number
+          reference: string
+          reference_fabricant: string
+          reference_normalisee: string | null
+          type: string
+          unite: string
+          updated_at: string
+        }
+        Insert: {
+          archive?: boolean
+          created_at?: string
+          description?: string
+          designation: string
+          id?: string
+          marque?: string
+          metier: string
+          notes?: string
+          owner_id?: string
+          prix_ht_centimes: number
+          reference: string
+          reference_fabricant?: string
+          reference_normalisee?: string | null
+          type: string
+          unite: string
+          updated_at?: string
+        }
+        Update: {
+          archive?: boolean
+          created_at?: string
+          description?: string
+          designation?: string
+          id?: string
+          marque?: string
+          metier?: string
+          notes?: string
+          owner_id?: string
+          prix_ht_centimes?: number
+          reference?: string
+          reference_fabricant?: string
+          reference_normalisee?: string | null
+          type?: string
+          unite?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           adresse: string
