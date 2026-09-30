@@ -10,5 +10,6 @@
 <!-- LOVABLE:END -->
 - Management pages live under src/routes/_authenticated/ (client-only session gate → /connexion); why: the whole app is private, only sign-in and password recovery are public.
 - Sign-out must call effacerDonneesSession() (src/lib/session.ts); why: in-memory demo business data must not survive a session.
-- Clients are stored in the `clients` table (RLS owner_id = auth.uid(), no delete, anon revoked, server-managed dates); src/data/clients.ts is the only access point. Why: step 9 moved clients to durable per-owner storage while catalogue/entreprise/devis stay in memory.
+- Clients are stored in the `clients` table (RLS owner_id = auth.uid(), no delete, anon revoked, server-managed dates); src/data/clients.ts is the only access point. Why: step 9 moved clients to durable per-owner storage while entreprise/devis stay in memory.
 - Client edits use optimistic concurrency (update … where updated_at = version read) and creations use a client-generated stable UUID per attempt. Why: avoid silent overwrites across tabs and duplicates on retry.
+- Catalogue articles are stored in the `articles` table (same RLS/grant/trigger pattern as clients, price in integer cents, unique (owner_id, lower(trim(reference))) incl. archived); src/data/catalogue.ts is the only access point. Why: step 10 persisted the catalogue; quote lines copy article values and stay independent.
