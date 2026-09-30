@@ -137,6 +137,75 @@ export type Database = {
         }
         Relationships: []
       }
+      entreprises: {
+        Row: {
+          activite: string
+          adresse: string
+          capital: number | null
+          code_postal: string
+          complement: string
+          created_at: string
+          email: string
+          forme_juridique: string
+          id: string
+          immatriculation: string
+          nom_commercial: string
+          owner_id: string
+          pays: string
+          raison_sociale: string
+          siret: string
+          site: string
+          telephone: string
+          tva: string
+          updated_at: string
+          ville: string
+        }
+        Insert: {
+          activite?: string
+          adresse?: string
+          capital?: number | null
+          code_postal?: string
+          complement?: string
+          created_at?: string
+          email?: string
+          forme_juridique?: string
+          id?: string
+          immatriculation?: string
+          nom_commercial?: string
+          owner_id?: string
+          pays?: string
+          raison_sociale: string
+          siret?: string
+          site?: string
+          telephone?: string
+          tva?: string
+          updated_at?: string
+          ville?: string
+        }
+        Update: {
+          activite?: string
+          adresse?: string
+          capital?: number | null
+          code_postal?: string
+          complement?: string
+          created_at?: string
+          email?: string
+          forme_juridique?: string
+          id?: string
+          immatriculation?: string
+          nom_commercial?: string
+          owner_id?: string
+          pays?: string
+          raison_sociale?: string
+          siret?: string
+          site?: string
+          telephone?: string
+          tva?: string
+          updated_at?: string
+          ville?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
