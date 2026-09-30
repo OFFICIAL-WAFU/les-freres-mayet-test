@@ -29,7 +29,8 @@ import {
   TYPE_ARTICLE_LABELS,
   UNITE_LABELS,
   formaterPrix,
-  useArticles,
+  chargerCatalogue,
+  useEtatCatalogue,
   type Article,
   type ArticleType,
   type Unite,
@@ -110,7 +111,8 @@ export function DevisForm({
   const navigate = useNavigate();
   const etatClients = useEtatClients();
   const clients = etatClients.clients;
-  const articles = useArticles();
+  const etatCatalogue = useEtatCatalogue();
+  const articles = etatCatalogue.articles;
   const depart = useMemo(() => JSON.stringify(initial ?? vide()), [initial]);
   const [v, setV] = useState<DevisBrouillon>(() => JSON.parse(depart));
   const [tentative, setTentative] = useState(false);
@@ -418,7 +420,20 @@ export function DevisForm({
                   </Select>
                 </div>
                 <ul className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto">
-                  {articlesTrouves.length === 0 && <li className="p-2 text-sm text-muted-foreground">Aucun article ne correspond.</li>}
+                  {etatCatalogue.statut === "erreur" && (
+                    <li role="alert" className="flex flex-wrap items-center gap-2 p-2 text-sm text-destructive">
+                      Le catalogue n'a pas pu être chargé.
+                      <Button type="button" size="sm" variant="outline" onClick={() => void chargerCatalogue()}>Réessayer</Button>
+                    </li>
+                  )}
+                  {(etatCatalogue.statut === "chargement" || etatCatalogue.statut === "inactif") && (
+                    <li className="p-2 text-sm text-muted-foreground">Chargement du catalogue…</li>
+                  )}
+                  {etatCatalogue.statut === "pret" && articlesTrouves.length === 0 && (
+                    <li className="p-2 text-sm text-muted-foreground">
+                      {articles.some((a) => !a.archive) ? "Aucun article ne correspond." : "Aucun article actif dans votre catalogue."}
+                    </li>
+                  )}
                   {articlesTrouves.map((a) => (
                     <li key={a.id} className="flex items-center justify-between gap-3 rounded-lg bg-card p-2 text-sm">
                       <div className="min-w-0">

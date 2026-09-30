@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
   METIER_LABELS,
   TYPE_ARTICLE_LABELS,
   UNITE_LABELS,
+  ConflitVersionArticle,
+  ReferenceDejaUtilisee,
   analyserPrix,
   normaliserReference,
   type Article,
@@ -81,16 +83,21 @@ function Champ({ id, label, facultatif, erreur, aide, children }: {
   );
 }
 
-export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistant }: {
+export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistant, onRecharger }: {
   initial?: Article;
   articles: Article[];
   onCancel: () => void;
-  onSave: (s: ArticleSaisie) => void;
+  /** Résout après confirmation du serveur ; rejette en cas d'échec. */
+  onSave: (s: ArticleSaisie, idTentative: string) => Promise<unknown>;
   onVoirExistant: (a: Article) => void;
+  onRecharger?: () => void;
 }) {
   const [v, setV] = useState<Valeurs | null>(initial ? versValeurs(initial) : null);
   const [erreurs, setErreurs] = useState<Erreurs>({});
   const [doublon, setDoublon] = useState<Article | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState<"reseau" | "conflit" | null>(null);
+  const idTentative = useRef<string>(crypto.randomUUID());
 
   if (!v) {
     return (
@@ -140,7 +147,10 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
     setDoublon(d);
     setErreurs(e);
     if (Object.keys(e).length > 0 || typeof prix === "string") return;
+    if (enCours) return;
     const materiel = val.type === "materiel";
+    setEnCours(true);
+    setEchec(null);
     onSave({
       type: val.type,
       reference: val.reference.trim(),
@@ -152,7 +162,22 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
       marque: materiel ? val.marque.trim() : "",
       referenceFabricant: materiel ? val.referenceFabricant.trim() : "",
       notes: val.notes.trim(),
-    });
+    }, idTentative.current)
+      .catch((err: unknown) => {
+        if (err instanceof ReferenceDejaUtilisee) {
+          const x = err.existant;
+          setDoublon(x);
+          setErreurs((prev) => ({
+            ...prev,
+            reference: x
+              ? `Cette référence est déjà utilisée par « ${x.designation} »${x.archive ? " (article archivé)" : ""}.`
+              : "Cette référence est déjà utilisée par un autre article.",
+          }));
+        } else {
+          setEchec(err instanceof ConflitVersionArticle ? "conflit" : "reseau");
+        }
+      })
+      .finally(() => setEnCours(false));
   }
 
   return (
@@ -221,9 +246,26 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
       {Object.values(erreurs).some(Boolean) && (
         <p className="text-sm font-medium text-destructive">Certains champs sont à corriger avant d'enregistrer.</p>
       )}
+      {echec === "reseau" && (
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          L'article n'a pas pu être enregistré. Vos saisies sont conservées : vérifiez votre connexion puis réessayez.
+        </p>
+      )}
+      {echec === "conflit" && (
+        <div role="alert" className="flex flex-col gap-2 rounded-lg border border-warning/50 bg-warning-soft p-3 text-sm">
+          <p>Une version plus récente de cet article a été enregistrée ailleurs (par exemple dans un autre onglet). Vos saisies n'ont pas été enregistrées et restent affichées.</p>
+          {onRecharger && (
+            <Button type="button" size="sm" variant="outline" className="self-start" onClick={onRecharger}>
+              Recharger l'article
+            </Button>
+          )}
+        </div>
+      )}
       <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-        <Button type="submit" variant="action">Enregistrer l'article</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={enCours}>Annuler</Button>
+        <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
+          {enCours ? "Enregistrement…" : "Enregistrer l'article"}
+        </Button>
       </div>
     </form>
   );

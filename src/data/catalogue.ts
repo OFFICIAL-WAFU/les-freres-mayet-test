@@ -1,4 +1,7 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type ArticleType = "materiel" | "prestation";
 export type Metier = "plomberie" | "electricite" | "climatisation" | "general";
@@ -17,9 +20,11 @@ export interface Article {
   referenceFabricant: string;
   notes: string;
   archive: boolean;
+  /** Version enregistrée (date de dernière modification côté serveur). */
+  majLe?: string;
 }
 
-export type ArticleSaisie = Omit<Article, "id" | "archive">;
+export type ArticleSaisie = Omit<Article, "id" | "archive" | "majLe">;
 
 export const TYPE_ARTICLE_LABELS: Record<ArticleType, string> = {
   materiel: "Matériel",
@@ -72,99 +77,198 @@ export function analyserPrix(saisie: string): number | string {
   return n;
 }
 
-const a = (
-  id: string,
-  type: ArticleType,
-  reference: string,
-  designation: string,
-  metier: Metier,
-  unite: Unite,
-  prixHT: number,
-  extra: Partial<ArticleSaisie> = {},
-): Article => ({
-  id,
-  type,
-  reference,
-  designation,
-  metier,
-  unite,
-  prixHT,
-  description: "",
-  marque: "",
-  referenceFabricant: "",
-  notes: "",
-  archive: false,
-  ...extra,
-});
+// ---------------------------------------------------------------------------
+// Stockage : base Lovable Cloud (table articles, protégée par propriétaire).
+// Prix conservé en centimes entiers ; le navigateur ne garde qu'une copie de travail.
+// ---------------------------------------------------------------------------
 
-const ARTICLES_DEMO: Article[] = [
-  a("art-001", "materiel", "MAT-PLB-001", "Siphon de lavabo", "plomberie", "piece", 14.5, {
-    marque: "Marque démo A", referenceFabricant: "SPH-32", description: "Siphon PVC diamètre 32 mm.",
-  }),
-  a("art-002", "materiel", "MAT-PLB-002", "Mitigeur de lavabo", "plomberie", "piece", 89, {
-    marque: "Marque démo B", referenceFabricant: "MTG-L100", description: "Mitigeur chromé, cartouche céramique.",
-  }),
-  a("art-003", "materiel", "MAT-ELE-001", "Prise électrique 2P+T", "electricite", "piece", 9.8, {
-    marque: "Marque démo C", referenceFabricant: "PR-16A",
-  }),
-  a("art-004", "materiel", "MAT-ELE-002", "Disjoncteur 16 A", "electricite", "piece", 18.9, {
-    marque: "Marque démo C", referenceFabricant: "DJ-16",
-  }),
-  a("art-005", "materiel", "MAT-CLI-001", "Support de climatisation mural", "climatisation", "piece", 45, {
-    marque: "Marque démo D", referenceFabricant: "SUP-450",
-  }),
-  a("art-006", "materiel", "MAT-CLI-002", "Liaison frigorifique 1/4 - 3/8", "climatisation", "metre", 22, {
-    marque: "Marque démo D", notes: "Vendue au mètre linéaire.",
-  }),
-  a("art-007", "prestation", "PRE-PLB-001", "Remplacement d'un mitigeur", "plomberie", "forfait", 95, {
-    description: "Dépose de l'ancien mitigeur et pose du nouveau, hors fourniture.",
-  }),
-  a("art-008", "prestation", "PRE-PLB-002", "Recherche de fuite", "plomberie", "forfait", 180),
-  a("art-009", "prestation", "PRE-ELE-001", "Main-d'œuvre en électricité", "electricite", "heure", 60),
-  a("art-010", "prestation", "PRE-ELE-002", "Remplacement d'une prise", "electricite", "forfait", 45),
-  a("art-011", "prestation", "PRE-CLI-001", "Entretien de climatisation", "climatisation", "forfait", 120, {
-    description: "Nettoyage des filtres, contrôle de fonctionnement.",
-  }),
-  a("art-012", "prestation", "PRE-GEN-001", "Déplacement", "general", "forfait", 35, {
-    notes: "Zone d'intervention habituelle.",
-  }),
-];
+type LigneArticle = Database["public"]["Tables"]["articles"]["Row"];
 
-let articles: Article[] = ARTICLES_DEMO;
+export function versCentimes(prix: number): number {
+  return Math.round(prix * 100);
+}
+
+function depuisLigne(l: LigneArticle): Article {
+  return {
+    id: l.id,
+    type: l.type as ArticleType,
+    reference: l.reference,
+    designation: l.designation,
+    description: l.description,
+    metier: l.metier as Metier,
+    unite: l.unite as Unite,
+    prixHT: Number(l.prix_ht_centimes) / 100,
+    marque: l.marque,
+    referenceFabricant: l.reference_fabricant,
+    notes: l.notes,
+    archive: l.archive,
+    majLe: l.updated_at,
+  };
+}
+
+function versLigne(s: ArticleSaisie) {
+  const materiel = s.type === "materiel";
+  return {
+    type: s.type,
+    reference: s.reference.trim(),
+    designation: s.designation.trim(),
+    description: s.description.trim(),
+    metier: s.metier,
+    unite: s.unite,
+    prix_ht_centimes: versCentimes(s.prixHT),
+    marque: materiel ? s.marque.trim() : "",
+    reference_fabricant: materiel ? s.referenceFabricant.trim() : "",
+    notes: s.notes.trim(),
+  };
+}
+
+export type EtatCatalogue = { statut: "inactif" | "chargement" | "pret" | "erreur"; articles: Article[] };
+
+const INITIAL: EtatCatalogue = { statut: "inactif", articles: [] };
+let etat: EtatCatalogue = INITIAL;
+let generation = 0;
 const abonnes = new Set<() => void>();
-const notifier = () => abonnes.forEach((f) => f());
+function definir(e: EtatCatalogue) {
+  etat = e;
+  abonnes.forEach((f) => f());
+}
 
-export function useArticles(): Article[] {
-  return useSyncExternalStore(
+export function useEtatCatalogue(): EtatCatalogue {
+  const e = useSyncExternalStore(
     (f) => {
       abonnes.add(f);
       return () => abonnes.delete(f);
     },
-    () => articles,
-    () => ARTICLES_DEMO,
+    () => etat,
+    () => INITIAL,
   );
+  useEffect(() => {
+    if (etat.statut === "inactif") void chargerCatalogue();
+  }, []);
+  return e;
 }
 
-let compteur = 0;
-export function ajouterArticle(s: ArticleSaisie): Article {
-  compteur += 1;
-  const nouveau: Article = { ...s, id: `art-nouveau-${Date.now()}-${compteur}`, archive: false };
-  articles = [...articles, nouveau];
-  notifier();
-  return nouveau;
+export function useArticles(): Article[] {
+  return useEtatCatalogue().articles;
 }
 
-export function modifierArticle(id: string, s: ArticleSaisie): void {
-  articles = articles.map((x) => (x.id === id ? { ...s, id, archive: x.archive } : x));
-  notifier();
+const PAGE = 1000;
+/** Charge toutes les pages : la recherche porte sur le catalogue complet. */
+export async function chargerCatalogue(): Promise<void> {
+  const g = ++generation;
+  definir({ statut: "chargement", articles: etat.articles });
+  try {
+    const tous: Article[] = [];
+    for (let debut = 0; ; debut += PAGE) {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(debut, debut + PAGE - 1);
+      if (error) throw error;
+      tous.push(...data.map(depuisLigne));
+      if (data.length < PAGE) break;
+    }
+    if (g === generation) definir({ statut: "pret", articles: tous });
+  } catch {
+    if (g === generation) definir({ statut: "erreur", articles: etat.articles });
+  }
 }
 
-export function definirArchive(id: string, archive: boolean): void {
-  articles = articles.map((x) => (x.id === id ? { ...x, archive } : x));
-  notifier();
+function remplacer(a: Article) {
+  const existe = etat.articles.some((x) => x.id === a.id);
+  definir({
+    statut: etat.statut === "inactif" ? "pret" : etat.statut,
+    articles: existe ? etat.articles.map((x) => (x.id === a.id ? a : x)) : [...etat.articles, a],
+  });
 }
 
+export class ErreurSauvegardeArticle extends Error {}
+export class ConflitVersionArticle extends Error {}
+/** La référence est déjà utilisée par un autre article du propriétaire. */
+export class ReferenceDejaUtilisee extends Error {
+  constructor(public existant: Article | null) {
+    super("reference");
+  }
+}
+
+async function referenceExistante(reference: string, sauf?: string): Promise<Article | null> {
+  const { data } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("reference_normalisee", normaliserReference(reference));
+  const l = (data ?? []).find((x) => x.id !== sauf);
+  if (!l) return null;
+  const a = depuisLigne(l);
+  remplacer(a);
+  return a;
+}
+
+function estDoublonReference(e: { code?: string; message?: string }) {
+  return e.code === "23505" && (e.message ?? "").includes("articles_reference_unique");
+}
+
+/** Création avec identifiant stable par tentative : pas de doublon en cas de nouvel essai. */
+export async function ajouterArticle(id: string, s: ArticleSaisie): Promise<Article> {
+  const { data, error } = await supabase.from("articles").insert({ id, ...versLigne(s) }).select().single();
+  if (error) {
+    if (error.code === "23505") {
+      const relue = await supabase.from("articles").select("*").eq("id", id).maybeSingle();
+      if (relue.data) {
+        const a = depuisLigne(relue.data);
+        remplacer(a);
+        return a;
+      }
+      if (estDoublonReference(error)) throw new ReferenceDejaUtilisee(await referenceExistante(s.reference));
+    }
+    throw new ErreurSauvegardeArticle(error.message);
+  }
+  const a = depuisLigne(data);
+  remplacer(a);
+  return a;
+}
+
+async function majVersionnee(id: string, champs: Database["public"]["Tables"]["articles"]["Update"], versionLue: string): Promise<Article> {
+  const { data, error } = await supabase
+    .from("articles")
+    .update(champs)
+    .eq("id", id)
+    .eq("updated_at", versionLue)
+    .select();
+  if (error) {
+    if (estDoublonReference(error)) {
+      throw new ReferenceDejaUtilisee(await referenceExistante(String(champs["reference"] ?? ""), id));
+    }
+    throw new ErreurSauvegardeArticle(error.message);
+  }
+  if (!data || data.length === 0) throw new ConflitVersionArticle();
+  const a = depuisLigne(data[0]!);
+  remplacer(a);
+  return a;
+}
+
+/** Modifie seulement si l'article n'a pas changé depuis son ouverture. */
+export function modifierArticle(id: string, s: ArticleSaisie, versionLue: string): Promise<Article> {
+  return majVersionnee(id, versLigne(s), versionLue);
+}
+
+/** Archivage / réactivation : simple changement d'état, jamais une suppression. */
+export function definirArchive(id: string, archive: boolean, versionLue: string): Promise<Article> {
+  return majVersionnee(id, { archive }, versionLue);
+}
+
+export async function relireArticle(id: string): Promise<Article | null> {
+  const { data, error } = await supabase.from("articles").select("*").eq("id", id).maybeSingle();
+  if (error) throw new ErreurSauvegardeArticle(error.message);
+  if (!data) return null;
+  const a = depuisLigne(data);
+  remplacer(a);
+  return a;
+}
+
+/** Déconnexion : efface la copie en mémoire (les articles restent en base). */
 export function reinitialiserCatalogue() {
-  articles = ARTICLES_DEMO;
-  notifier();
+  generation++;
+  definir(INITIAL);
 }

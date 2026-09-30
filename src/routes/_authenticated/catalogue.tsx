@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
@@ -19,10 +20,12 @@ import {
   TYPE_ARTICLE_LABELS,
   UNITE_LABELS,
   ajouterArticle,
+  chargerCatalogue,
   definirArchive,
   formaterPrix,
   modifierArticle,
-  useArticles,
+  relireArticle,
+  useEtatCatalogue,
   type Article,
   type ArticleSaisie,
   type ArticleType,
@@ -77,7 +80,8 @@ function Filtre<T extends string>({ value, onChange, options, label }: {
 }
 
 function CataloguePage() {
-  const articles = useArticles();
+  const etatCatalogue = useEtatCatalogue();
+  const articles = etatCatalogue.articles;
   const [recherche, setRecherche] = useState("");
   const [type, setType] = useState<ArticleType | "tous">("tous");
   const [metier, setMetier] = useState<Metier | "tous">("tous");
@@ -102,13 +106,24 @@ function CataloguePage() {
   const courant = panneau && panneau.mode !== "ajout" ? articles.find((a) => a.id === panneau.id) : undefined;
 
   function ouvrirAjout() { setFormKey((k) => k + 1); setPanneau({ mode: "ajout" }); }
-  function sauver(s: ArticleSaisie) {
+  async function sauver(s: ArticleSaisie, idTentative: string) {
     if (panneau?.mode === "edition") {
-      modifierArticle(panneau.id, s);
-      setPanneau({ mode: "fiche", id: panneau.id });
+      const id = panneau.id;
+      const version = articles.find((a) => a.id === id)?.majLe ?? "";
+      await modifierArticle(id, s, version);
+      setPanneau({ mode: "fiche", id });
     } else {
-      const a = ajouterArticle(s);
+      const a = await ajouterArticle(idTentative, s);
       setPanneau({ mode: "fiche", id: a.id });
+    }
+    toast.success("Article enregistré");
+  }
+  async function rechargerArticle(id: string) {
+    try {
+      await relireArticle(id);
+      setFormKey((k) => k + 1);
+    } catch {
+      toast.error("L'article n'a pas pu être rechargé. Réessayez.");
     }
   }
   const voir = (a: Article) => setPanneau({ mode: "fiche", id: a.id });
@@ -120,16 +135,25 @@ function CataloguePage() {
           <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Catalogue</h1>
           <p className="mt-2 text-sm text-muted-foreground">Votre matériel et vos prestations habituelles.</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Catalogue de démonstration — prix fictifs. Démonstration : les modifications sont réinitialisées au rechargement.
+            Votre catalogue est enregistré dans votre espace privé.
           </p>
         </div>
         <Button variant="action" size="lg" onClick={ouvrirAjout}><Plus /> Ajouter un article</Button>
       </div>
 
-      {articles.length === 0 ? (
+      {etatCatalogue.statut === "erreur" ? (
+        <div role="alert" className="mt-6 rounded-2xl border border-destructive/40 bg-card p-8 text-center">
+          <p className="text-sm font-medium text-destructive">Le catalogue n'a pas pu être chargé. Vérifiez votre connexion.</p>
+          <Button variant="outline" className="mt-4" onClick={() => void chargerCatalogue()}>Réessayer</Button>
+        </div>
+      ) : etatCatalogue.statut !== "pret" ? (
+        <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center" aria-busy="true">
+          <p className="text-sm text-muted-foreground">Chargement du catalogue…</p>
+        </div>
+      ) : articles.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
-          <p className="text-sm font-medium">Votre catalogue est vide.</p>
-          <Button variant="action" className="mt-4" onClick={ouvrirAjout}><Plus /> Ajouter votre premier article</Button>
+          <p className="text-sm font-medium">Ajoutez votre premier article de matériel ou votre première prestation.</p>
+          <Button variant="action" className="mt-4" onClick={ouvrirAjout}><Plus /> Ajouter un article</Button>
         </div>
       ) : (
         <>
@@ -243,11 +267,11 @@ function CataloguePage() {
                 <SheetTitle>Modifier l'article</SheetTitle>
                 <SheetDescription>{courant.reference}</SheetDescription>
               </SheetHeader>
-              <ArticleForm key={courant.id} initial={courant} articles={articles} onCancel={() => voir(courant)} onSave={sauver} onVoirExistant={voir} />
+              <ArticleForm key={`${courant.id}-${formKey}`} initial={courant} articles={articles} onCancel={() => voir(courant)} onSave={sauver} onVoirExistant={voir} onRecharger={() => void rechargerArticle(courant.id)} />
             </>
           )}
           {panneau?.mode === "fiche" && courant && (
-            <FicheArticle article={courant} onModifier={() => setPanneau({ mode: "edition", id: courant.id })} onFermer={() => setPanneau(null)} />
+            <FicheArticle key={courant.id} article={courant} onModifier={() => setPanneau({ mode: "edition", id: courant.id })} onFermer={() => setPanneau(null)} />
           )}
         </SheetContent>
       </Sheet>
@@ -273,6 +297,21 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 }
 
 function FicheArticle({ article: a, onModifier, onFermer }: { article: Article; onModifier: () => void; onFermer: () => void }) {
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState(false);
+  async function basculer(archive: boolean) {
+    if (enCours) return;
+    setEnCours(true);
+    setEchec(false);
+    try {
+      await definirArchive(a.id, archive, a.majLe ?? "");
+      toast.success(archive ? "Article archivé" : "Article réactivé");
+    } catch {
+      setEchec(true);
+    } finally {
+      setEnCours(false);
+    }
+  }
   return (
     <>
       <SheetHeader>
@@ -300,13 +339,18 @@ function FicheArticle({ article: a, onModifier, onFermer }: { article: Article; 
         {a.archive ? (
           <>
             <p className="text-muted-foreground">Cet article est archivé : il n'apparaît plus dans le catalogue actif.</p>
-            <Button variant="outline" className="mt-3" onClick={() => definirArchive(a.id, false)}>Réactiver cet article</Button>
+            <Button variant="outline" className="mt-3" disabled={enCours} onClick={() => void basculer(false)}>{enCours ? "Enregistrement…" : "Réactiver cet article"}</Button>
           </>
         ) : (
           <>
             <p className="text-muted-foreground">Cet article sera masqué du catalogue actif. Vous pourrez le réactiver.</p>
-            <Button variant="outline" className="mt-3" onClick={() => definirArchive(a.id, true)}>Archiver cet article</Button>
+            <Button variant="outline" className="mt-3" disabled={enCours} onClick={() => void basculer(true)}>{enCours ? "Enregistrement…" : "Archiver cet article"}</Button>
           </>
+        )}
+        {echec && (
+          <p role="alert" className="mt-3 text-sm font-medium text-destructive">
+            Le changement n'a pas été enregistré (connexion ou version plus récente ailleurs). L'état précédent est conservé ; réessayez.
+          </p>
         )}
       </section>
 
