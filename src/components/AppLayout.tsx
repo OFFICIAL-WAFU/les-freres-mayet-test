@@ -65,7 +65,7 @@ function BadgeDemo() {
       <span className="inline-flex items-center self-start rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
         Version de démonstration
       </span>
-      <p className="text-xs text-muted-foreground">Clients sauvegardés · Catalogue, entreprise et devis encore en démonstration.</p>
+      <p className="text-xs text-muted-foreground">Clients et catalogue sauvegardés · Entreprise et devis encore temporaires.</p>
     </div>
   );
 }
