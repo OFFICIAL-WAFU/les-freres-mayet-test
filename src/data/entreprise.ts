@@ -114,7 +114,7 @@ function depuisLigne(l: Ligne): Entreprise {
   };
 }
 function normaliserCapital(s: string): string {
-  const [e, d = ""] = s.split(".");
+  const [e = "0", d = ""] = s.split(".");
   const dec = d.replace(/0+$/, "");
   return dec ? `${e}.${dec}` : e;
 }
@@ -182,9 +182,10 @@ export async function enregistrerEntreprise(e: Entreprise, versionLue: string | 
   const { data, error } = await supabase.from("entreprises").update(valeurs)
     .eq("updated_at", versionLue).select("*");
   if (error) throw error;
-  if (!data || data.length === 0) throw new ConflitEntreprise();
-  const fiche = depuisLigne(data[0]);
-  publier({ statut: "pret", fiche, majLe: data[0].updated_at });
+  const ligne = data?.[0];
+  if (!ligne) throw new ConflitEntreprise();
+  const fiche = depuisLigne(ligne);
+  publier({ statut: "pret", fiche, majLe: ligne.updated_at });
   return fiche;
 }
 
