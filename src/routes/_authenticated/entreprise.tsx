@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
-import { CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
 import {
@@ -18,8 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  chargerEntreprise,
+  ConflitEntreprise,
+  ENTREPRISE_DEPART,
   enregistrerEntreprise,
-  useEntreprise,
+  useEtatEntreprise,
   validerEntreprise,
   type Entreprise,
   type ErreursEntreprise,
@@ -42,10 +45,36 @@ export const Route = createFileRoute("/_authenticated/entreprise")({
 type Cle = keyof Entreprise;
 
 function EntreprisePage() {
-  const enregistree = useEntreprise();
+  const etat = useEtatEntreprise();
+  if (etat.statut === "inactif" || etat.statut === "chargement")
+    return <AppLayout titre="Entreprise"><p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Chargement des informations de l'entreprise…</p></AppLayout>;
+  if (etat.statut === "erreur")
+    return (
+      <AppLayout titre="Entreprise">
+        <h1 className="text-2xl font-semibold lg:text-3xl">Entreprise</h1>
+        <div role="alert" className="mt-4 flex max-w-3xl flex-col gap-3 rounded-xl border border-destructive/40 bg-card p-4 text-sm sm:flex-row sm:items-center">
+          <AlertTriangle className="size-4 shrink-0 text-destructive" />
+          <p className="flex-1">Les informations de l'entreprise n'ont pas pu être chargées. Vérifiez votre connexion puis réessayez.</p>
+          <Button variant="outline" size="sm" onClick={() => void chargerEntreprise()}>Réessayer</Button>
+        </div>
+      </AppLayout>
+    );
+  return <Formulaire
+    key={etat.statut === "pret" ? etat.majLe : "absente"}
+    enregistree={etat.statut === "pret" ? etat.fiche : ENTREPRISE_DEPART}
+    version={etat.statut === "pret" ? etat.majLe : null} />;
+}
+
+function Formulaire({ enregistree, version }: { enregistree: Entreprise; version: string | null }) {
   const [saisie, setSaisie] = useState<Entreprise>(enregistree);
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState<null | "reseau" | "conflit">(null);
+
   const [erreurs, setErreurs] = useState<ErreursEntreprise>({});
   const [confirme, setConfirme] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem("entreprise-confirmee")) { sessionStorage.removeItem("entreprise-confirmee"); setConfirme(true); }
+  }, []);
 
   const modifie = (Object.keys(saisie) as Cle[]).some((k) => saisie[k] !== enregistree[k]);
   const blocker = useBlocker({ shouldBlockFn: () => modifie, withResolver: true, enableBeforeUnload: false });
@@ -56,8 +85,9 @@ function EntreprisePage() {
     if (erreurs[k]) setErreurs((e) => ({ ...e, [k]: undefined }));
   };
 
-  const enregistrer = (ev: React.FormEvent) => {
+  const enregistrer = async (ev: React.FormEvent) => {
     ev.preventDefault();
+    if (enCours) return;
     const { erreurs: e, propre } = validerEntreprise(saisie);
     setErreurs(e);
     if (!propre) {
@@ -67,12 +97,21 @@ function EntreprisePage() {
       el?.focus();
       return;
     }
-    enregistrerEntreprise(propre);
-    setSaisie(propre);
-    setConfirme(true);
+    setEnCours(true);
+    setEchec(null);
+    try {
+      // Marqueur relu par le formulaire remonté avec la nouvelle version.
+      sessionStorage.setItem("entreprise-confirmee", "1");
+      await enregistrerEntreprise(propre, version);
+    } catch (err) {
+      sessionStorage.removeItem("entreprise-confirmee");
+      setEchec(err instanceof ConflitEntreprise ? "conflit" : "reseau");
+      setEnCours(false);
+    }
   };
 
   const annuler = () => {
+    setEchec(null);
     setSaisie(enregistree);
     setErreurs({});
     setConfirme(false);
@@ -111,8 +150,11 @@ function EntreprisePage() {
       <h1 className="text-2xl font-semibold lg:text-3xl">Entreprise</h1>
       <p className="mt-1 text-sm text-muted-foreground">Les informations reprises dans l'aperçu de vos devis.</p>
       <p className="mt-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
-        Démonstration : les informations sont réinitialisées au rechargement.
+        Les informations enregistrées sont conservées dans votre espace privé.
       </p>
+      {version === null && (
+        <p className="mt-3 max-w-3xl rounded-xl border border-border bg-card p-3 text-sm">Complétez puis enregistrez les informations de votre entreprise.</p>
+      )}
 
       <form onSubmit={enregistrer} noValidate className="mt-6 flex max-w-3xl flex-col gap-5">
         {section("Identité", <>
@@ -139,14 +181,25 @@ function EntreprisePage() {
         </>)}
 
         <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-border bg-background/95 px-4 py-3 sm:static sm:mx-0 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0">
-          <Button type="submit" variant="action">Enregistrer les informations</Button>
-          <Button type="button" variant="outline" onClick={annuler} disabled={!modifie}>Annuler les modifications</Button>
+          <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
+            {enCours && <Loader2 className="animate-spin" />}{enCours ? "Enregistrement…" : "Enregistrer les informations"}
+          </Button>
+          <Button type="button" variant="outline" onClick={annuler} disabled={!modifie || enCours}>Annuler les modifications</Button>
           {confirme && !modifie && (
             <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-success">
-              <CheckCircle2 className="size-4" /> Informations enregistrées.
+              <CheckCircle2 className="size-4" /> Informations de l'entreprise enregistrées.
             </p>
           )}
         </div>
+        {echec && (
+          <div role="alert" className="flex flex-col gap-2 rounded-xl border border-destructive/40 bg-card p-3 text-sm sm:flex-row sm:items-center">
+            <AlertTriangle className="size-4 shrink-0 text-destructive" />
+            <p className="flex-1">{echec === "conflit"
+              ? "Une version plus récente de la fiche a été enregistrée ailleurs. Vos saisies sont conservées ici ; rechargez la fiche pour consulter la version enregistrée (vos saisies seront alors remplacées)."
+              : "L'enregistrement a échoué. Vos saisies sont conservées ; vous pouvez réessayer."}</p>
+            {echec === "conflit" && <Button type="button" size="sm" variant="outline" onClick={() => void chargerEntreprise()}>Recharger la fiche</Button>}
+          </div>
+        )}
       </form>
 
       {blocker.status === "blocked" && (
