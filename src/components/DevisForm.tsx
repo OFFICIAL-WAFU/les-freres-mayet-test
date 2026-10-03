@@ -47,7 +47,7 @@ import {
   type LigneSaisie,
   type TauxTVA,
 } from "@/data/devis";
-import { enregistrerBrouillon } from "@/data/documents";
+import { chargerDocuments, ConflitDevis, enregistrerBrouillon } from "@/data/documents";
 
 function aujourdhui() {
   const d = new Date();
@@ -103,11 +103,17 @@ export function DevisForm({
   initial,
   documentId,
   numero,
+  version,
 }: {
   initial?: DevisBrouillon;
   documentId?: string;
   numero?: string;
+  version?: number;
 }) {
+  const idTentative = useRef<string>(documentId ?? crypto.randomUUID());
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState<null | "reseau" | "conflit">(null);
+  const [confirmerRecharge, setConfirmerRecharge] = useState(false);
   const navigate = useNavigate();
   const etatClients = useEtatClients();
   const clients = etatClients.clients;
@@ -158,7 +164,8 @@ export function DevisForm({
   const recap = recapituler(v.lignes);
   const err = (id: string) => (tentative ? erreurs[id] : undefined);
 
-  function enregistrer() {
+  async function enregistrer() {
+    if (enCours) return;
     setTentative(true);
     const premier = Object.keys(erreurs)[0];
     if (premier) {
@@ -167,9 +174,16 @@ export function DevisForm({
       el?.focus();
       return;
     }
-    const id = enregistrerBrouillon(v, Number(recap.ttc) / 100, documentId);
-    enregistre.current = true;
-    navigate({ to: "/devis/$id", params: { id }});
+    setEnCours(true);
+    setEchec(null);
+    try {
+      const doc = await enregistrerBrouillon(idTentative.current, v, version ?? null);
+      enregistre.current = true;
+      navigate({ to: "/devis/$id", params: { id: doc.id }, search: { enregistre: 1 } as never });
+    } catch (e) {
+      setEchec(e instanceof ConflitDevis ? "conflit" : "reseau");
+      setEnCours(false);
+    }
   }
 
   // --- Clients ------------------------------------------------------------
@@ -242,7 +256,7 @@ export function DevisForm({
           {numero && <p className="mt-1 text-sm text-muted-foreground">Référence provisoire : {numero}</p>}
           <p className="mt-2 text-sm text-muted-foreground">Démonstration — aucun document ne sera envoyé.</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Démonstration : les brouillons sont réinitialisés au rechargement.
+            Les brouillons enregistrés sont conservés dans votre espace privé.
           </p>
         </div>
       </div>
@@ -463,7 +477,26 @@ export function DevisForm({
             {tentative && Object.keys(erreurs).length > 0 && (
               <p className="text-sm font-medium text-destructive">Certains champs sont à corriger avant d'enregistrer.</p>
             )}
-            <Button type="submit" variant="action" size="lg">Enregistrer le brouillon</Button>
+            <p role="status" className="text-sm text-muted-foreground">
+              {enCours ? "Enregistrement…" : modifie
+                ? "Modifications non enregistrées — enregistrez-les pour les retrouver dans l'aperçu et le PDF."
+                : documentId ? "Version enregistrée." : ""}
+            </p>
+            {echec && (
+              <div role="alert" className="rounded-xl border border-destructive/40 bg-card p-3 text-sm">
+                <p>{echec === "conflit"
+                  ? "Une version plus récente de ce brouillon a été enregistrée ailleurs. Vos saisies sont conservées ici et n'ont pas été enregistrées."
+                  : "L'enregistrement a échoué. Rien n'a été modifié ; vos saisies sont conservées et vous pouvez réessayer."}</p>
+                {echec === "conflit" && (
+                  <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setConfirmerRecharge(true)}>
+                    Recharger la version enregistrée
+                  </Button>
+                )}
+              </div>
+            )}
+            <Button type="submit" variant="action" size="lg" disabled={enCours} aria-busy={enCours}>
+              {enCours ? "Enregistrement…" : "Enregistrer le brouillon"}
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -479,6 +512,20 @@ export function DevisForm({
         </aside>
       </form>
 
+      {confirmerRecharge && (
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Recharger la version enregistrée ?</AlertDialogTitle>
+            <AlertDialogDescription>Vos saisies non enregistrées sur cette page seront perdues.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmerRecharge(false)}>Garder mes saisies</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmerRecharge(false); void chargerDocuments(); }}>Recharger</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      )}
       {blocker.status === "blocked" && (
       <AlertDialog open>
         <AlertDialogContent>
