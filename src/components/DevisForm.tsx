@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { Plus, Search, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
@@ -179,7 +180,8 @@ export function DevisForm({
     try {
       const doc = await enregistrerBrouillon(idTentative.current, v, version ?? null);
       enregistre.current = true;
-      navigate({ to: "/devis/$id", params: { id: doc.id }, search: { enregistre: 1 } as never });
+      toast.success("Brouillon enregistré");
+      navigate({ to: "/devis/$id", params: { id: doc.id } });
     } catch (e) {
       setEchec(e instanceof ConflitDevis ? "conflit" : "reseau");
       setEnCours(false);
