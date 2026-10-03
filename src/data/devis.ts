@@ -137,8 +137,8 @@ export function formaterCentimes(c: bigint): string {
   return `${neg ? "-" : ""}${e},${d} €`;
 }
 
-let cle = 0;
-export const nouvelleCle = () => `l-${Date.now()}-${++cle}`;
+/** Identifiant stable de ligne (UUID), conservé en base. */
+export const nouvelleCle = () => crypto.randomUUID();
 
 /** Quantité au format français, sans zéros décimaux inutiles. */
 export function formaterQuantite(s: string): string {
