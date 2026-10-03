@@ -109,7 +109,7 @@ export function DevisForm({
   initial?: DevisBrouillon;
   documentId?: string;
   numero?: string;
-  version?: number;
+  version?: number | undefined;
 }) {
   const idTentative = useRef<string>(documentId ?? crypto.randomUUID());
   const [enCours, setEnCours] = useState(false);
