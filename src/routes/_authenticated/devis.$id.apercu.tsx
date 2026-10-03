@@ -5,18 +5,18 @@ import { AlertTriangle, ArrowLeft, Download, Info, Loader2 } from "lucide-react"
 import { AppLayout } from "@/components/AppLayout";
 import { DevisApercu, versPublic } from "@/components/DevisApercu";
 import { Button } from "@/components/ui/button";
-import { useDocuments } from "@/data/documents";
+import { useEtatDocuments } from "@/data/documents";
 import { chargerEntreprise, useEtatEntreprise } from "@/data/entreprise";
 import { telechargerDevisPdf } from "@/lib/devisPdf";
-import { Introuvable } from "@/routes/_authenticated/devis.$id.modifier";
+import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
 
 export const Route = createFileRoute("/_authenticated/devis/$id/apercu")({
   head: () => ({
     meta: [
       { title: "Aperçu du devis — Les Frères Mayet" },
-      { name: "description", content: "Aperçu d'un brouillon de devis de démonstration." },
+      { name: "description", content: "Aperçu d'un brouillon de devis enregistré." },
       { property: "og:title", content: "Aperçu du devis — Les Frères Mayet" },
-      { property: "og:description", content: "Aperçu d'un brouillon de devis de démonstration." },
+      { property: "og:description", content: "Aperçu d'un brouillon de devis enregistré." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -30,7 +30,8 @@ function Page() {
   const entreprise = etatEnt.statut === "pret" ? etatEnt.fiche : null;
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState(false);
-  const doc = useDocuments().find((d) => d.id === id);
+  const etatDocs = useEtatDocuments();
+  const doc = etatDocs.brouillons.find((d) => d.id === id);
   const telecharger = async () => {
     if (!doc?.devis || !entreprise || enCours) return;
     // Instantané des données enregistrées au moment du clic.
@@ -57,7 +58,7 @@ function Page() {
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
           <h1 className=" text-2xl font-semibold lg:text-3xl">Aperçu du devis</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Document de démonstration — non émis</p>
+          <p className="mt-1 text-sm text-muted-foreground">Document enregistré — non émis</p>
           </div>
           <Button variant="action" onClick={telecharger} disabled={enCours || !entreprise} aria-busy={enCours} className="shrink-0">
             {enCours ? <Loader2 className="animate-spin" /> : <Download />}
@@ -99,7 +100,7 @@ function Page() {
           </div>}
         </div>
       ) : (
-        <Introuvable />
+        <EtatBrouillon statut={etatDocs.statut} />
       )}
     </AppLayout>
   );

@@ -22,7 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  useDocuments,
+  chargerDocuments,
+  useEtatDocuments,
   STATUTS_PAR_TYPE,
   TOUS_LES_STATUTS,
   TYPE_FILTERS,
@@ -61,7 +62,8 @@ function DocumentsPage() {
   const [creationOuverte, setCreationOuverte] = useState(false);
   const [typeChoisi, setTypeChoisi] = useState<DocumentType | null>(null);
 
-  const documents = useDocuments();
+  const etatDocs = useEtatDocuments();
+  const documents = etatDocs.liste;
   const navigate = useNavigate();
   const statutsDisponibles = type === "tous" ? TOUS_LES_STATUTS : STATUTS_PAR_TYPE[type];
 
@@ -154,7 +156,22 @@ function DocumentsPage() {
         </p>
       </div>
 
-      {resultats.length === 0 ? (
+      {etatDocs.demo && (
+        <p className="mt-4 rounded-xl border border-border bg-card p-3 text-sm">Mode démonstration activé : les documents marqués « Fictif » ne sont pas enregistrés. Désactivez-le dans Réglages.</p>
+      )}
+      {(etatDocs.statut === "inactif" || etatDocs.statut === "chargement") && documents.length === 0 ? (
+        <p role="status" className="mt-6 text-sm text-muted-foreground">Chargement de vos documents…</p>
+      ) : etatDocs.statut === "erreur" ? (
+        <div role="alert" className="mt-6 rounded-2xl border border-destructive/40 bg-card p-8 text-center">
+          <p className="text-sm font-medium">Vos documents n'ont pas pu être chargés. Vérifiez votre connexion puis réessayez.</p>
+          <Button variant="outline" className="mt-4" onClick={() => void chargerDocuments()}>Réessayer</Button>
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
+          <p className="text-sm font-medium">Aucun document enregistré pour le moment.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Créez votre premier devis avec « Créer un document ».</p>
+        </div>
+      ) : resultats.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-sm font-medium text-foreground">
             Aucun document ne correspond à votre recherche.
@@ -183,7 +200,7 @@ function DocumentsPage() {
                 {resultats.map((d) => (
                   <tr key={d.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 whitespace-nowrap">{d.date}</td>
-                    <td className="px-4 py-3 font-medium whitespace-nowrap">{d.numero}</td>
+                    <td className="px-4 py-3 font-medium whitespace-nowrap">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs">Fictif</span>}</td>
                     <td className="px-4 py-3">{d.client}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABELS[d.type]}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -209,7 +226,7 @@ function DocumentsPage() {
               <div key={d.id} className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold">{d.numero}</p>
+                    <p className="font-semibold">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-normal">Fictif</span>}</p>
                     <p className="truncate text-sm text-muted-foreground">{d.client}</p>
                   </div>
                   <StatutBadge statut={d.statut} />

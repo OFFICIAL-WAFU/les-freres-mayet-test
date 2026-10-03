@@ -1,5 +1,14 @@
-import { useSyncExternalStore } from "react";
-import type { DevisBrouillon } from "@/data/devis";
+import { useEffect, useSyncExternalStore } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import {
+  analyserPrixCentimes,
+  analyserQuantite,
+  type CoordonneesClient,
+  type DevisBrouillon,
+  type TauxTVA,
+} from "@/data/devis";
 export type DocumentType = "devis" | "facture" | "acompte" | "avoir" | "rapport";
 
 export type DocumentStatut =
@@ -183,72 +192,139 @@ export const DOCUMENTS_DEMO: DemoDocument[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Étape 4 : documents en mémoire (démo + brouillons de devis créés pendant la session)
+// Étape 12 : brouillons de devis sauvegardés en base. Les documents fictifs
+// des premières étapes ne sont affichés qu'en mode démonstration (désactivé par défaut).
 // ---------------------------------------------------------------------------
 
 export interface DocumentAvecDevis extends DemoDocument {
-  /** Présent uniquement pour les brouillons créés avec le formulaire de devis. */
+  /** Présent uniquement pour les brouillons de devis enregistrés. */
   devis?: DevisBrouillon;
+  /** Version enregistrée du brouillon. */
+  version?: number;
+  fictif?: boolean;
 }
 
-let documents: DocumentAvecDevis[] = DOCUMENTS_DEMO;
-const abonnesDocs = new Set<() => void>();
-const notifierDocs = () => abonnesDocs.forEach((f) => f());
+export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
+interface EtatDocs { statut: StatutDocuments; brouillons: DocumentAvecDevis[]; demo: boolean; liste: DocumentAvecDevis[] }
 
-export function useDocuments(): DocumentAvecDevis[] {
-  return useSyncExternalStore(
-    (f) => {
-      abonnesDocs.add(f);
-      return () => abonnesDocs.delete(f);
-    },
-    () => documents,
-    () => DOCUMENTS_DEMO,
+const DEMO_MARQUES: DocumentAvecDevis[] = DOCUMENTS_DEMO.map((d) => ({ ...d, id: `demo-${d.id}`, fictif: true }));
+let etat: EtatDocs = { statut: "inactif", brouillons: [], demo: false, liste: [] };
+const abonnes = new Set<() => void>();
+function publier(patch: Partial<EtatDocs>) {
+  const n = { ...etat, ...patch };
+  n.liste = n.demo ? [...n.brouillons, ...DEMO_MARQUES] : n.brouillons;
+  etat = n;
+  abonnes.forEach((f) => f());
+}
+const VIDE: EtatDocs = { statut: "inactif", brouillons: [], demo: false, liste: [] };
+
+export function useEtatDocuments(): EtatDocs {
+  const e = useSyncExternalStore(
+    (f) => { abonnes.add(f); return () => abonnes.delete(f); },
+    () => etat,
+    () => VIDE,
   );
+  useEffect(() => { if (etat.statut === "inactif") void chargerDocuments(); }, []);
+  return e;
+}
+export function useDocuments(): DocumentAvecDevis[] {
+  return useEtatDocuments().liste;
+}
+export function definirModeDemo(actif: boolean) { publier({ demo: actif }); }
+
+// --- Conversion base <-> application ---------------------------------------
+
+interface LigneBase {
+  id: string; position: number; type: "materiel" | "prestation"; article_id: string | null;
+  reference: string; designation: string; description: string; unite: string;
+  quantite_milliemes: number; prix_ht_centimes: number; taux_tva_milliemes: number;
+}
+interface DevisBase {
+  id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
+  objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
+  total_ttc_centimes: number; version: number; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
 }
 
-export function lireDocument(id: string): DocumentAvecDevis | undefined {
-  return documents.find((d) => d.id === id);
+const echelle = (v: number, dec: number) => {
+  const s = String(Math.trunc(v)).padStart(dec + 1, "0");
+  const e = s.slice(0, -dec), d = s.slice(-dec).replace(/0+$/, "");
+  return d ? `${e},${d}` : e;
+};
+const prixTexte = (c: number) => `${Math.trunc(c / 100)},${String(c % 100).padStart(2, "0")}`;
+
+function depuisBase(d: DevisBase): DocumentAvecDevis {
+  const lignes = [...(d.lignes ?? d.devis_lignes ?? [])].sort((a, b) => a.position - b.position);
+  const devis: DevisBrouillon = {
+    clientId: d.client_id,
+    client: d.client_copie,
+    objet: d.objet,
+    date: d.date_devis,
+    validite: d.date_validite ?? "",
+    remarques: d.remarques,
+    notes: d.notes,
+    lignes: lignes.map((l) => ({
+      cle: l.id, articleId: l.article_id, type: l.type, reference: l.reference,
+      designation: l.designation, description: l.description, unite: l.unite as DevisBrouillon["lignes"][number]["unite"],
+      quantite: echelle(l.quantite_milliemes, 3), prix: prixTexte(l.prix_ht_centimes),
+      taux: l.taux_tva_milliemes as TauxTVA,
+    })),
+  };
+  const [a, m, j] = d.date_devis.split("-");
+  return {
+    id: d.id, date: `${j}/${m}/${a}`, numero: d.reference, client: d.client_copie.nom, clientId: d.client_id,
+    type: "devis", montantTTC: d.total_ttc_centimes / 100, statut: "Brouillon", devis, version: d.version,
+  };
 }
 
-let compteurBrouillon = 0;
-/** Crée ou met à jour un brouillon de devis. Renvoie l'identifiant stable. */
-export function enregistrerBrouillon(
-  devis: DevisBrouillon,
-  montantTTC: number,
-  id?: string,
-): string {
-  const [a, m, j] = devis.date.split("-");
-  const date = `${j}/${m}/${a}`;
-  if (id) {
-    documents = documents.map((d) =>
-      d.id === id
-        ? { ...d, date, client: devis.client.nom, clientId: devis.clientId, montantTTC, devis }
-        : d,
-    );
-  } else {
-    compteurBrouillon += 1;
-    id = `devis-brouillon-${compteurBrouillon}`;
-    documents = [
-      ...documents,
-      {
-        id,
-        date,
-        numero: `BROUILLON-${String(compteurBrouillon).padStart(3, "0")}`,
-        client: devis.client.nom,
-        clientId: devis.clientId,
-        type: "devis",
-        montantTTC,
-        statut: "Brouillon",
-        devis,
-      },
-    ];
+const PAGE = 500;
+export async function chargerDocuments(): Promise<void> {
+  publier({ statut: "chargement" });
+  const tous: DocumentAvecDevis[] = [];
+  for (let debut = 0; ; debut += PAGE) {
+    const { data, error } = await supabase.from("devis").select("*, devis_lignes(*)")
+      .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
+    if (error) { publier({ statut: "erreur" }); return; }
+    tous.push(...(data as unknown as DevisBase[]).map(depuisBase));
+    if (data.length < PAGE) break;
   }
-  notifierDocs();
-  return id;
+  publier({ statut: "pret", brouillons: tous });
+}
+
+export class ConflitDevis extends Error { constructor() { super("Une version plus récente du brouillon existe."); } }
+export class ErreurDevis extends Error {}
+
+/**
+ * Enregistre un brouillon complet en une seule opération côté base (création si version = null).
+ * Les montants sont recalculés par le serveur ; la valeur renvoyée est celle réellement enregistrée.
+ */
+export async function enregistrerBrouillon(id: string, v: DevisBrouillon, version: number | null): Promise<DocumentAvecDevis> {
+  const lignes = v.lignes.map((l) => {
+    const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix);
+    if (typeof q === "string" || typeof p === "string" || l.taux === null) throw new ErreurDevis("Ligne invalide");
+    return {
+      id: l.cle, type: l.type, article_id: l.articleId ?? "", reference: l.reference, designation: l.designation.trim(),
+      description: l.description, unite: l.unite, quantite_milliemes: q.toString(), prix_ht_centimes: p.toString(),
+      taux_tva_milliemes: l.taux,
+    };
+  });
+  const charge = {
+    client_id: v.clientId, client_copie: v.client, objet: v.objet.trim(), date_devis: v.date,
+    date_validite: v.validite, remarques: v.remarques, notes: v.notes, lignes,
+  };
+  const { data, error } = await supabase.rpc("enregistrer_brouillon", {
+    p_id: id, p_version: version as number, p: charge as unknown as Json,
+  });
+  if (error) {
+    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw new ErreurDevis(error.message);
+  }
+  const doc = depuisBase(data as unknown as DevisBase);
+  const autres = etat.brouillons.filter((d) => d.id !== doc.id);
+  publier({ brouillons: [doc, ...autres] });
+  return doc;
 }
 
 export function reinitialiserDocuments() {
-  documents = DOCUMENTS_DEMO;
-  compteurBrouillon = 0;
-  notifierDocs();
+  etat = { ...VIDE };
+  abonnes.forEach((f) => f());
 }
