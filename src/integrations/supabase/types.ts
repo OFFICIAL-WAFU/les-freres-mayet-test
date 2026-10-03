@@ -137,6 +137,164 @@ export type Database = {
         }
         Relationships: []
       }
+      compteurs_devis: {
+        Row: {
+          dernier: number
+          owner_id: string
+        }
+        Insert: {
+          dernier?: number
+          owner_id?: string
+        }
+        Update: {
+          dernier?: number
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      devis: {
+        Row: {
+          client_copie: Json
+          client_id: string
+          created_at: string
+          date_devis: string
+          date_validite: string | null
+          id: string
+          notes: string
+          objet: string
+          owner_id: string
+          reference: string
+          remarques: string
+          statut: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          updated_at: string
+          ventilation_tva: Json
+          version: number
+        }
+        Insert: {
+          client_copie: Json
+          client_id: string
+          created_at?: string
+          date_devis: string
+          date_validite?: string | null
+          id: string
+          notes?: string
+          objet: string
+          owner_id?: string
+          reference: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          updated_at?: string
+          ventilation_tva?: Json
+          version?: number
+        }
+        Update: {
+          client_copie?: Json
+          client_id?: string
+          created_at?: string
+          date_devis?: string
+          date_validite?: string | null
+          id?: string
+          notes?: string
+          objet?: string
+          owner_id?: string
+          reference?: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          updated_at?: string
+          ventilation_tva?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis_lignes: {
+        Row: {
+          article_id: string | null
+          description: string
+          designation: string
+          devis_id: string
+          ht_centimes: number
+          id: string
+          owner_id: string
+          position: number
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference: string
+          taux_tva_milliemes: number
+          ttc_centimes: number
+          tva_centimes: number
+          type: string
+          unite: string
+        }
+        Insert: {
+          article_id?: string | null
+          description?: string
+          designation: string
+          devis_id: string
+          ht_centimes: number
+          id: string
+          owner_id?: string
+          position: number
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference?: string
+          taux_tva_milliemes: number
+          ttc_centimes: number
+          tva_centimes: number
+          type: string
+          unite: string
+        }
+        Update: {
+          article_id?: string | null
+          description?: string
+          designation?: string
+          devis_id?: string
+          ht_centimes?: number
+          id?: string
+          owner_id?: string
+          position?: number
+          prix_ht_centimes?: number
+          quantite_milliemes?: number
+          reference?: string
+          taux_tva_milliemes?: number
+          ttc_centimes?: number
+          tva_centimes?: number
+          type?: string
+          unite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_lignes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_lignes_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entreprises: {
         Row: {
           activite: string
@@ -211,7 +369,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      enregistrer_brouillon: {
+        Args: { p: Json; p_id: string; p_version: number }
+        Returns: Json
+      }
+      lire_devis: { Args: { p_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
