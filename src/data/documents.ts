@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { depuisLigneEntreprise, type Entreprise } from "@/data/entreprise";
 import type { Json } from "@/integrations/supabase/types";
 import {
   analyserPrixCentimes,
@@ -52,7 +53,7 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 ];
 
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
-  devis: ["Brouillon", "En attente de signature", "Signé"],
+  devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
   facture: ["En attente de paiement", "Payée"],
   acompte: ["En attente de paiement", "Payé"],
   avoir: ["Émis"],
@@ -202,6 +203,11 @@ export interface DocumentAvecDevis extends DemoDocument {
   /** Version enregistrée du brouillon. */
   version?: number;
   fictif?: boolean;
+  /** Référence provisoire conservée pour la traçabilité (BROUILLON-NNN). */
+  referenceProvisoire?: string;
+  /** Devis finalisé : horodatage ISO et copie figée de l'entreprise. */
+  finaliseLe?: string;
+  entrepriseFigee?: Entreprise;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -242,7 +248,8 @@ interface LigneBase {
 interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
   objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
-  total_ttc_centimes: number; version: number; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
+  total_ttc_centimes: number; version: number; statut: "brouillon" | "finalise";
+  reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
 }
 
 const echelle = (v: number, dec: number) => {
@@ -271,8 +278,12 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
   };
   const [a, m, j] = d.date_devis.split("-");
   return {
-    id: d.id, date: `${j}/${m}/${a}`, numero: d.reference, client: d.client_copie.nom, clientId: d.client_id,
-    type: "devis", montantTTC: d.total_ttc_centimes / 100, statut: "Brouillon", devis, version: d.version,
+    id: d.id, date: `${j}/${m}/${a}`, numero: d.reference_definitive ?? d.reference, client: d.client_copie.nom, clientId: d.client_id,
+    type: "devis", montantTTC: d.total_ttc_centimes / 100, statut: d.statut === "finalise" ? "Finalisé" : "Brouillon",
+    devis, version: d.version, referenceProvisoire: d.reference,
+    ...(d.statut === "finalise" && d.finalise_le && d.entreprise_copie
+      ? { finaliseLe: d.finalise_le, entrepriseFigee: depuisLigneEntreprise(d.entreprise_copie as never) }
+      : {}),
   };
 }
 
@@ -322,6 +333,55 @@ export async function enregistrerBrouillon(id: string, v: DevisBrouillon, versio
   const autres = etat.brouillons.filter((d) => d.id !== doc.id);
   publier({ brouillons: [doc, ...autres] });
   return doc;
+}
+
+export class DevisIncomplet extends Error {
+  constructor(public manques: string[]) { super("Informations manquantes"); }
+}
+export class EtatIncertain extends Error {}
+export class FinalisationRefusee extends Error {}
+
+const conserver = (doc: DocumentAvecDevis) =>
+  publier({ brouillons: [doc, ...etat.brouillons.filter((d) => d.id !== doc.id)] });
+
+/** Relit un devis enregistré (état réel côté base). */
+export async function relireDevis(id: string): Promise<DocumentAvecDevis | null> {
+  const { data, error } = await supabase.rpc("lire_devis", { p_id: id });
+  if (error) throw error;
+  if (!data) return null;
+  const doc = depuisBase(data as unknown as DevisBase);
+  conserver(doc);
+  return doc;
+}
+
+/**
+ * Finalise un brouillon (opération unique côté base). Une nouvelle tentative renvoie
+ * le même devis finalisé. En cas de réponse incertaine, l'état réel est relu avant de conclure.
+ */
+export async function finaliserDevis(id: string, version: number): Promise<DocumentAvecDevis> {
+  let res;
+  try {
+    res = await supabase.rpc("finaliser_devis", { p_id: id, p_version: version });
+  } catch {
+    res = null;
+  }
+  if (res && !res.error) {
+    const doc = depuisBase(res.data as unknown as DevisBase);
+    conserver(doc);
+    return doc;
+  }
+  const err = res?.error;
+  if (err?.message.startsWith("incomplet:")) throw new DevisIncomplet(err.message.slice(10).split(","));
+  if (err && (err.code === "40001" || err.message.includes("conflit_version"))) throw new ConflitDevis();
+  if (err && err.code && err.code !== "PGRST000" && !/fetch|network/i.test(err.message)) throw new FinalisationRefusee(err.message);
+  // Réponse perdue ou réseau indisponible : on vérifie l'état enregistré.
+  try {
+    const doc = await relireDevis(id);
+    if (doc?.statut === "Finalisé") return doc;
+  } catch {
+    throw new EtatIncertain();
+  }
+  throw new EtatIncertain();
 }
 
 export function reinitialiserDocuments() {

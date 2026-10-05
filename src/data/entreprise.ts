@@ -103,6 +103,9 @@ const abonnes = new Set<() => void>();
 const publier = (e: EtatEntreprise) => { etat = e; abonnes.forEach((f) => f()); };
 
 /** Capital : numeric exact en base, transmis en texte pour éviter tout arrondi. */
+export function depuisLigneEntreprise(l: Ligne): Entreprise {
+  return depuisLigne(l);
+}
 function depuisLigne(l: Ligne): Entreprise {
   return {
     raisonSociale: l.raison_sociale, nomCommercial: l.nom_commercial, activite: l.activite,
