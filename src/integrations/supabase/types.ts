@@ -152,6 +152,27 @@ export type Database = {
         }
         Relationships: []
       }
+      compteurs_references: {
+        Row: {
+          annee: number
+          dernier: number
+          owner_id: string
+          type_document: string
+        }
+        Insert: {
+          annee: number
+          dernier?: number
+          owner_id?: string
+          type_document: string
+        }
+        Update: {
+          annee?: number
+          dernier?: number
+          owner_id?: string
+          type_document?: string
+        }
+        Relationships: []
+      }
       devis: {
         Row: {
           client_copie: Json
@@ -159,11 +180,15 @@ export type Database = {
           created_at: string
           date_devis: string
           date_validite: string | null
+          entreprise_copie: Json | null
+          finalise_le: string | null
+          finalise_par: string | null
           id: string
           notes: string
           objet: string
           owner_id: string
           reference: string
+          reference_definitive: string | null
           remarques: string
           statut: string
           total_ht_centimes: number
@@ -179,11 +204,15 @@ export type Database = {
           created_at?: string
           date_devis: string
           date_validite?: string | null
+          entreprise_copie?: Json | null
+          finalise_le?: string | null
+          finalise_par?: string | null
           id: string
           notes?: string
           objet: string
           owner_id?: string
           reference: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes?: number
@@ -199,11 +228,15 @@ export type Database = {
           created_at?: string
           date_devis?: string
           date_validite?: string | null
+          entreprise_copie?: Json | null
+          finalise_le?: string | null
+          finalise_par?: string | null
           id?: string
           notes?: string
           objet?: string
           owner_id?: string
           reference?: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes?: number
@@ -371,6 +404,10 @@ export type Database = {
     Functions: {
       enregistrer_brouillon: {
         Args: { p: Json; p_id: string; p_version: number }
+        Returns: Json
+      }
+      finaliser_devis: {
+        Args: { p_id: string; p_version: number }
         Returns: Json
       }
       lire_devis: { Args: { p_id: string }; Returns: Json }
