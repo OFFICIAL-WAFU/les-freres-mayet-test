@@ -22,7 +22,7 @@ const euros = (c: bigint) => `${c / 100n},${String(c % 100n).padStart(2, "0")}`;
 /** Suivi des règlements d'une facture finalisée (ordinaire ou d'acompte). */
 export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
   const reglements = doc.reglements ?? [];
-  const s = suivre(doc.aRegler ?? 0n, reglements);
+  const s = suivre(doc.aRegler ?? 0n, reglements, doc.credite ?? 0n);
   const [form, setForm] = useState(false);
   const [montant, setMontant] = useState("");
   const [date, setDate] = useState(auj());
@@ -74,9 +74,12 @@ export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
       <p className="mt-1 font-medium">État du paiement : {s.etat}</p>
       <dl className="mt-2 grid gap-2 sm:grid-cols-3">
         <div><dt className="text-muted-foreground">Montant facturé{doc.deduction ? " (solde)" : ""}</dt><dd className="font-medium">{formaterCentimes(s.aRegler)}</dd></div>
+        {s.credite > 0n && <div><dt className="text-muted-foreground">Montant crédité par avoir</dt><dd className="font-medium">{formaterCentimes(s.credite)}</dd></div>}
         <div><dt className="text-muted-foreground">Montant réglé</dt><dd className="font-medium">{formaterCentimes(s.regle)}</dd></div>
         <div><dt className="text-muted-foreground">Reste à régler</dt><dd className="font-semibold">{formaterCentimes(s.reste)}</dd></div>
+        {s.credite > 0n && <div><dt className="text-muted-foreground">Crédit en faveur du client</dt><dd className="font-semibold">{formaterCentimes(s.creditClient)}</dd></div>}
       </dl>
+      {s.creditClient > 0n && <p className="mt-2 rounded-xl border border-border bg-secondary/50 p-2 font-medium">Crédit client à traiter : {formaterCentimes(s.creditClient)}. Aucun remboursement ni réaffectation n'a été réalisé.</p>}
       {doc.type === "acompte" && <p className="mt-2 text-xs text-muted-foreground">Les règlements de l'acompte sont affectés uniquement à cette facture d'acompte.</p>}
       {erreur && <p role="alert" className="mt-2 rounded-xl border border-destructive/40 bg-card p-2">{erreur}</p>}
 

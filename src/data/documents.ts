@@ -222,6 +222,8 @@ export interface DocumentAvecDevis extends DemoDocument {
   /** Avoir : facture d'origine et motif. */
   factureSource?: { id: string; reference: string };
   motif?: string;
+  /** Facture : montant TTC crédité par avoirs finalisés (centimes). */
+  credite?: bigint;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -337,12 +339,13 @@ interface AvoirBase {
   id: string; reference: string; facture_source_id: string; facture_source_reference: string; client_id: string;
   client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; date_avoir: string;
   motif: string; remarques: string; version: number;
+  statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
 }
 function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
   const base = depuisBase({
     id: a.id, reference: a.reference, client_id: a.client_id, client_copie: a.client_copie, objet: a.objet,
     date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes,
-    version: a.version, statut: "brouillon", reference_definitive: null, finalise_le: null, entreprise_copie: null, lignes: a.lignes,
+    version: a.version, statut: a.statut ?? "brouillon", reference_definitive: a.reference_definitive ?? null, finalise_le: a.finalise_le ?? null, entreprise_copie: a.entreprise_copie ?? null, lignes: a.lignes,
   });
   return { ...base, type: "avoir", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif };
 }
@@ -355,6 +358,10 @@ export class AvoirRefuse extends Error {}
 const MSG_AVOIR: Record<string, string> = {
   avoir_acompte_a_venir: MSG_AVOIR_ACOMPTE,
   motif_requis: "Le motif est obligatoire.",
+  avoir_finalise: "Cet avoir est finalisé : il ne peut plus être modifié.",
+  avoir_deja_finalise: "Un avoir est déjà finalisé pour cette facture.",
+  montants_incoherents: "Les montants de l'avoir ne correspondent plus à la facture d'origine.",
+  fiche_entreprise: "Enregistrez la fiche Entreprise avant de finaliser.",
   avoir_facture_non_finalisee: "Un avoir ne peut être préparé que sur une facture finalisée.",
 };
 const erreurAvoir = (m: string) => new AvoirRefuse(Object.entries(MSG_AVOIR).find(([k]) => m.includes(k))?.[1] ?? "L'opération n'a pas abouti. Vous pouvez réessayer sans risque de doublon.");
@@ -365,6 +372,18 @@ export async function preparerAvoir(factureId: string, motif: string): Promise<D
   if (error) throw erreurAvoir(error.message);
   const doc = depuisAvoir(data as unknown as AvoirBase);
   conserver(doc);
+  return doc;
+}
+/** Finalise l'avoir (idempotent : une nouvelle tentative renvoie le même numéro). */
+export async function finaliserAvoir(id: string, version: number): Promise<DocumentAvecDevis> {
+  const { data, error } = await supabase.rpc("finaliser_avoir", { p_id: id, p_version: version });
+  if (error) {
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw erreurAvoir(error.message);
+  }
+  const doc = depuisAvoir(data as unknown as AvoirBase);
+  conserver(doc);
+  await chargerDocuments();
   return doc;
 }
 export async function enregistrerAvoir(id: string, version: number, v: { date: string; motif: string; remarques: string }): Promise<DocumentAvecDevis> {
@@ -486,6 +505,11 @@ export async function chargerDocuments(): Promise<void> {
     tous.push(...(data as unknown as DevisBase[]).map(depuisBase));
     if (data.length < PAGE) break;
   }
+  // Seuls les avoirs finalisés réduisent le solde de leur facture source.
+  const credits = new Map<string, bigint>();
+  for (const d of tous) if (d.type === "avoir" && d.statut === "Finalisé" && d.factureSource)
+    credits.set(d.factureSource.id, (credits.get(d.factureSource.id) ?? 0n) + BigInt(Math.round(d.montantTTC! * 100)));
+  for (const d of tous) if (d.type === "facture" || d.type === "acompte") d.credite = credits.get(d.id) ?? 0n;
   publier({ statut: "pret", brouillons: tous });
 }
 

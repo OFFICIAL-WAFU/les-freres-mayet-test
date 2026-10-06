@@ -10,9 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
-import { preparerAvoir, type DocumentAvecDevis } from "@/data/documents";
+import { toast } from "sonner";
+import { AlertTriangle, Download } from "lucide-react";
+import { versPublic } from "@/components/DevisApercu";
+import { ConflitDevis, finaliserAvoir, preparerAvoir, type DocumentAvecDevis } from "@/data/documents";
+import { telechargerDevisPdf } from "@/lib/devisPdf";
 
 const fr = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—");
+const frDH = (iso: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
 
 /** Totaux d'un avoir : montants positifs à créditer. */
 export function TotauxAvoir({ doc }: { doc: DocumentAvecDevis }) {
@@ -33,25 +38,36 @@ export function TotauxAvoir({ doc }: { doc: DocumentAvecDevis }) {
   );
 }
 
-/** Consultation d'un avoir brouillon. */
+/** Consultation d'un avoir (brouillon ou finalisé). */
 export function AvoirDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNavigate?: () => void }) {
   const d = doc.devis!;
+  const finalise = doc.statut === "Finalisé";
+  const [dlg, setDlg] = useState(false);
   return (
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <StatutBadge statut="Brouillon" />
-        <span className="text-muted-foreground">Avoir total · référence provisoire {doc.numero} — non émis · sur la facture {doc.factureSource?.reference}</span>
+        <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} />
+        <span className="text-muted-foreground">
+          {finalise
+            ? <>Avoir total {doc.numero} · finalisé le {doc.finaliseLe ? frDH(doc.finaliseLe) : "—"} · sur la facture {doc.factureSource?.reference}</>
+            : <>Avoir total · référence provisoire {doc.numero} — non émis · sur la facture {doc.factureSource?.reference}</>}
+        </span>
       </div>
       <p className="rounded-xl border border-border bg-secondary/50 p-3">
-        Brouillon uniquement : aucun remboursement n'est effectué et le reste à régler de la facture n'est pas modifié.
+        {finalise
+          ? "Avoir finalisé : il réduit le solde de la facture d'origine. Aucun remboursement bancaire n'a été effectué. Il ne peut plus être modifié ni supprimé."
+          : "Brouillon uniquement : aucun remboursement n'est effectué et le reste à régler de la facture n'est pas modifié."}
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button asChild variant="action"><Link to="/avoirs/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>Modifier l'avoir brouillon</Link></Button>
-        <Button asChild variant="outline"><Link to="/avoirs/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de l'avoir</Link></Button>
+        {!finalise && <Button variant="action" onClick={() => setDlg(true)}>Finaliser l'avoir</Button>}
+        {!finalise && <Button asChild variant="outline"><Link to="/avoirs/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>Modifier l'avoir brouillon</Link></Button>}
+        {!finalise && <Button asChild variant="outline"><Link to="/avoirs/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de l'avoir</Link></Button>}
+        {finalise && <AvoirPdfBouton doc={doc} />}
         {doc.factureSource && (
           <Button asChild variant="ghost"><Link to="/factures/$id" params={{ id: doc.factureSource.id }} onClick={onNavigate}>Voir la facture {doc.factureSource.reference}</Link></Button>
         )}
       </div>
+      {dlg && <FinaliserAvoirDialogue doc={doc} onFermer={() => setDlg(false)} />}
       <section>
         <h3 className="font-semibold">Informations de l'avoir</h3>
         <dl className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -136,5 +152,74 @@ export function AvoirDialogue({ facture, onFermer, onNavigate }: { facture: Docu
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/** Confirmation de finalisation : facture source, motif, montant ; aucun remboursement. */
+function FinaliserAvoirDialogue({ doc, onFermer }: { doc: DocumentAvecDevis; onFermer: () => void }) {
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const ttc = recapituler(doc.devis!.lignes).ttc;
+  async function finaliser() {
+    if (enCours) return;
+    setEnCours(true); setErreur(null);
+    try {
+      const a = await finaliserAvoir(doc.id, doc.version ?? 0);
+      onFermer();
+      toast.success(`Avoir finalisé : ${a.numero}`);
+    } catch (e) {
+      setErreur(e instanceof ConflitDevis ? "L'avoir a été modifié entre-temps. Fermez et rouvrez-le avant de finaliser." : (e as Error).message);
+    } finally { setEnCours(false); }
+  }
+  return (
+    <AlertDialog open>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Finaliser l'avoir ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Un numéro définitif sera attribué et l'avoir ne pourra plus être modifié. Aucun remboursement bancaire ne sera effectué.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <dl className="grid gap-2 text-sm">
+          <div><dt className="text-muted-foreground">Facture d'origine</dt><dd className="font-medium">{doc.factureSource?.reference}</dd></div>
+          <div><dt className="text-muted-foreground">Motif</dt><dd className="font-medium whitespace-pre-wrap break-words">{doc.motif}</dd></div>
+          <div><dt className="text-muted-foreground">Total de l'avoir TTC</dt><dd className="font-semibold">{formaterCentimes(ttc)}</dd></div>
+        </dl>
+        {erreur && <p role="alert" className="text-sm text-destructive">{erreur}</p>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={enCours} onClick={onFermer}>Annuler</AlertDialogCancel>
+          <Button variant="action" disabled={enCours} onClick={() => void finaliser()}>
+            {enCours && <Loader2 className="animate-spin" />}{enCours ? "Finalisation…" : "Finaliser l'avoir"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/** PDF d'un avoir finalisé : uniquement les données figées. Un échec ne relance jamais la finalisation. */
+function AvoirPdfBouton({ doc }: { doc: DocumentAvecDevis }) {
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState(false);
+  const ent = doc.entrepriseFigee;
+  async function telecharger() {
+    if (!doc.devis || !ent || enCours) return;
+    setEnCours(true); setEchec(false);
+    try {
+      await telechargerDevisPdf(structuredClone(versPublic(doc.devis)), doc.numero, { ...ent }, true,
+        { sourceRef: doc.factureSource?.reference ?? "", finalisee: true, avoir: { motif: doc.motif ?? "" } });
+    } catch { setEchec(true); } finally { setEnCours(false); }
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <Button variant="outline" onClick={() => void telecharger()} disabled={enCours || !ent} aria-busy={enCours}>
+        {enCours ? <Loader2 className="animate-spin" /> : <Download />}{enCours ? "Génération du PDF…" : "Télécharger le PDF"}
+      </Button>
+      {echec && (
+        <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
+          <AlertTriangle className="size-4" />Le PDF n'a pas pu être généré. L'avoir est intact ; vous pouvez réessayer.
+        </p>
+      )}
+    </div>
   );
 }
