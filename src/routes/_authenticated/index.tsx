@@ -262,7 +262,7 @@ function DocumentsPage() {
       )}
 
       {/* Panneau de consultation */}
-      <DocumentSheet document={documentOuvert} onClose={() => setDocumentOuvert(null)} />
+      <DocumentSheet document={documentOuvert ? (documents.find((x) => x.id === documentOuvert.id) ?? documentOuvert) : null} onClose={() => setDocumentOuvert(null)} />
 
 
       {/* Fenêtre de création */}
