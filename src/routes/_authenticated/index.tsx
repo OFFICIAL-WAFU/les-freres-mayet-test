@@ -1,3 +1,5 @@
+import { suivre } from "@/data/reglements";
+import { formaterCentimes } from "@/data/devis";
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
@@ -205,6 +207,7 @@ function DocumentsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABELS[d.type]}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="block text-xs text-muted-foreground">solde, acompte déduit</span>}
+                      <SuiviLigne d={d} />
                     </td>
                     <td className="px-4 py-3">
                       <StatutBadge statut={d.statut} />
@@ -242,7 +245,7 @@ function DocumentsPage() {
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Montant TTC</dt>
-                    <dd>{formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="ml-1 text-xs text-muted-foreground">(solde, acompte déduit)</span>}</dd>
+                    <dd>{formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="ml-1 text-xs text-muted-foreground">(solde, acompte déduit)</span>}<SuiviLigne d={d} /></dd>
                   </div>
                 </dl>
                 <Button
@@ -295,5 +298,15 @@ function DocumentsPage() {
         </DialogContent>
       </Dialog>
     </AppLayout>
+  );
+}
+
+function SuiviLigne({ d }: { d: DocumentAvecDevis }) {
+  if (d.aRegler === undefined) return null;
+  const s = suivre(d.aRegler, d.reglements ?? []);
+  return (
+    <span className="block text-xs text-muted-foreground">
+      {s.etat} · réglé {formaterCentimes(s.regle)} · reste {formaterCentimes(s.reste)}
+    </span>
   );
 }

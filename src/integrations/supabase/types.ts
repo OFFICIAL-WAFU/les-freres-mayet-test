@@ -602,6 +602,59 @@ export type Database = {
           },
         ]
       }
+      reglements: {
+        Row: {
+          annule_le: string | null
+          annule_par: string | null
+          commentaire: string
+          created_at: string
+          cree_par: string
+          date_reglement: string
+          facture_id: string
+          id: string
+          mode: string
+          montant_centimes: number
+          motif_annulation: string | null
+          owner_id: string
+        }
+        Insert: {
+          annule_le?: string | null
+          annule_par?: string | null
+          commentaire?: string
+          created_at?: string
+          cree_par: string
+          date_reglement: string
+          facture_id: string
+          id: string
+          mode: string
+          montant_centimes: number
+          motif_annulation?: string | null
+          owner_id: string
+        }
+        Update: {
+          annule_le?: string | null
+          annule_par?: string | null
+          commentaire?: string
+          created_at?: string
+          cree_par?: string
+          date_reglement?: string
+          facture_id?: string
+          id?: string
+          mode?: string
+          montant_centimes?: number
+          motif_annulation?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reglements_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -620,6 +673,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      annuler_reglement: {
+        Args: { p_id: string; p_motif: string }
+        Returns: Json
+      }
       deduction_live: {
         Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
         Returns: Json
@@ -635,6 +692,21 @@ export type Database = {
       enregistrer_facture: {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
+      }
+      enregistrer_reglement: {
+        Args: {
+          p_commentaire: string
+          p_date: string
+          p_facture_id: string
+          p_id: string
+          p_mode: string
+          p_montant: number
+        }
+        Returns: Json
+      }
+      facture_a_regler: {
+        Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
+        Returns: number
       }
       facture_recalculer: { Args: { p_id: string }; Returns: undefined }
       finaliser_devis: {

@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { lireReglement, type Reglement, type ReglementBase } from "@/data/reglements";
 import { explicationRefus, lireDeduction, type Deduction } from "@/data/deduction";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -215,6 +216,9 @@ export interface DocumentAvecDevis extends DemoDocument {
   pourcentage?: number;
   /** Facture ordinaire : acompte du même devis à déduire (figé à la finalisation). */
   deduction?: Deduction;
+  /** Facture finalisée : règlements enregistrés et montant à régler (centimes). */
+  reglements?: Reglement[];
+  aRegler?: bigint;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -301,7 +305,7 @@ interface FactureBase {
   version: number; devis_source_id: string; devis_source_reference: string;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
-  deduction?: unknown; deduction_calc?: unknown;
+  deduction?: unknown; deduction_calc?: unknown; reglements?: ReglementBase[];
 }
 const acompte_ou = (f: FactureBase) => f.nature === "acompte";
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
@@ -316,6 +320,10 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
   return {
     ...base, ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
     ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
+    ...(f.statut === "finalise" ? {
+      reglements: (f.reglements ?? []).map(lireReglement).sort((a, b) => a.creeLe.localeCompare(b.creeLe)),
+      aRegler: BigInt(f.total_ttc_centimes) - (!acompte && f.deduction ? BigInt((f.deduction as { ttc: number }).ttc) : 0n),
+    } : {}),
   };
 }
 
@@ -409,7 +417,7 @@ export async function chargerDocuments(): Promise<void> {
   publier({ statut: "chargement" });
   const tous: DocumentAvecDevis[] = [];
   for (let debut = 0; ; debut += PAGE) {
-    const { data, error } = await supabase.from("factures").select("*, deduction_calc:deduction_live, factures_lignes(*)")
+    const { data, error } = await supabase.from("factures").select("*, deduction_calc:deduction_live, factures_lignes(*), reglements(*)")
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
     tous.push(...(data as unknown as FactureBase[]).map(depuisFacture));
