@@ -18,12 +18,18 @@ export const lireReglement = (r: ReglementBase): Reglement => ({
   creeLe: r.created_at, annuleLe: r.annule_le, motifAnnulation: r.motif_annulation,
 });
 
-export interface SuiviReglement { aRegler: bigint; regle: bigint; reste: bigint; etat: "Aucun règlement nécessaire" | "Non réglée" | "Partiellement réglée" | "Réglée" }
-export function suivre(aRegler: bigint, reglements: Reglement[]): SuiviReglement {
+export type EtatPaiement = "Aucun règlement nécessaire" | "Non réglée" | "Partiellement réglée" | "Réglée" | "Soldée par avoir";
+export interface SuiviReglement { aRegler: bigint; credite: bigint; regle: bigint; reste: bigint; creditClient: bigint; etat: EtatPaiement }
+/** solde net = facturé − avoirs finalisés − règlements actifs ; reste = max(net, 0) ; crédit client = max(−net, 0). */
+export function suivre(aRegler: bigint, reglements: Reglement[], credite = 0n): SuiviReglement {
   const regle = reglements.filter((r) => !r.annuleLe).reduce((s, r) => s + r.montant, 0n);
-  const reste = aRegler - regle;
-  const etat = aRegler <= 0n ? "Aucun règlement nécessaire" : regle === 0n ? "Non réglée" : reste > 0n ? "Partiellement réglée" : "Réglée";
-  return { aRegler, regle, reste, etat };
+  const net = aRegler - credite - regle;
+  const reste = net > 0n ? net : 0n;
+  const creditClient = net < 0n ? -net : 0n;
+  const etat: EtatPaiement = aRegler <= 0n ? "Aucun règlement nécessaire"
+    : credite > 0n && reste === 0n ? "Soldée par avoir"
+    : regle === 0n ? "Non réglée" : reste > 0n ? "Partiellement réglée" : "Réglée";
+  return { aRegler, credite, regle, reste, creditClient, etat };
 }
 
 /** Montant en euros (« 12,34 ») → centimes ; null si invalide, nul ou plus de deux décimales. */
@@ -36,6 +42,7 @@ export function analyserMontant(saisie: string): bigint | null {
 }
 
 const MSG: Record<string, string> = {
+  facture_creditee: "Cette facture est soldée par avoir : aucun règlement ne peut être enregistré.",
   reglement_depasse: "Ce montant dépasse le reste à régler. Les trop-perçus ne sont pas encore gérés.",
   facture_non_finalisee: "Aucun règlement ne peut être enregistré sur un brouillon.",
   motif_requis: "Le motif d'annulation est obligatoire.",

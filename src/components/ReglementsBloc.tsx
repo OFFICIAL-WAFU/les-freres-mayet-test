@@ -22,7 +22,7 @@ const euros = (c: bigint) => `${c / 100n},${String(c % 100n).padStart(2, "0")}`;
 /** Suivi des règlements d'une facture finalisée (ordinaire ou d'acompte). */
 export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
   const reglements = doc.reglements ?? [];
-  const s = suivre(doc.aRegler ?? 0n, reglements);
+  const s = suivre(doc.aRegler ?? 0n, reglements, doc.credite ?? 0n);
   const [form, setForm] = useState(false);
   const [montant, setMontant] = useState("");
   const [date, setDate] = useState(auj());
