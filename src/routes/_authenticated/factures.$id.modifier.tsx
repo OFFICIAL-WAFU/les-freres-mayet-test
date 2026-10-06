@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { DevisForm } from "@/components/DevisForm";
@@ -24,7 +26,12 @@ function Page() {
   const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
   return (
     <AppLayout titre="Modifier la facture brouillon">
-      {doc?.devis ? (
+      {doc?.statut === "Finalisé" ? (
+        <div className="flex flex-col gap-3 text-sm">
+          <p>Cette facture est finalisée ({doc.numero}) : son contenu ne peut plus être modifié.</p>
+          <Button asChild variant="outline" className="self-start"><Link to="/factures/$id" params={{ id }}>Ouvrir la facture</Link></Button>
+        </div>
+      ) : doc?.devis ? (
         <DevisForm
           key={`${doc.id}-${doc.version}`}
           initial={doc.devis}
