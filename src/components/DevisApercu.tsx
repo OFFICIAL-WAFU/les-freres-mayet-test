@@ -24,11 +24,11 @@ export function versPublic(d: DevisBrouillon): DevisPublic {
   return reste;
 }
 
-export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction } }) {
+export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture, avoir }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction }; avoir?: { sourceRef: string; motif: string } }) {
   if (facture) finalise = !!facture.finalisee;
   const factB = !!facture && !finalise;
   const acp = facture?.acompte !== undefined;
-  const nomDoc = facture ? (facture.acompte !== undefined ? "Facture d'acompte" : "Facture") : "Devis";
+  const nomDoc = avoir ? "Avoir" : facture ? (facture.acompte !== undefined ? "Facture d'acompte" : "Facture") : "Devis";
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
   const coordonnees = [ent.adresse, ent.complement, villeLigne, ent.pays].filter(Boolean);
   const contacts = [ent.telephone && `Tél. ${ent.telephone}`, ent.email, ent.site.replace(/^https?:\/\//, "").replace(/\/$/, "")].filter(Boolean) as string[];
@@ -57,9 +57,9 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
           </div>
         </div>
         <div className="sm:text-right">
-          <p className="text-xl font-semibold tracking-wide">{factB ? (acp ? "FACTURE D'ACOMPTE — BROUILLON — NON ÉMISE" : "FACTURE — BROUILLON — NON ÉMISE") : facture ? "FACTURE" : finalise ? "DEVIS" : "DEVIS — BROUILLON"}</p>
+          <p className="text-xl font-semibold tracking-wide">{avoir ? "AVOIR — BROUILLON — NON ÉMIS" : factB ? (acp ? "FACTURE D'ACOMPTE — BROUILLON — NON ÉMISE" : "FACTURE — BROUILLON — NON ÉMISE") : facture ? "FACTURE" : finalise ? "DEVIS" : "DEVIS — BROUILLON"}</p>
           <p className="text-sm text-doc-muted">{finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`}</p>
-          {!finalise && !facture && (
+          {!finalise && !facture && !avoir && (
           <p className="mt-1 inline-block rounded border border-doc-gold px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-doc-gold-ink">
             Brouillon — non émis
           </p>
@@ -76,6 +76,8 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             <div className="flex gap-2"><dt className="text-doc-muted">Date :</dt><dd>{fr(d.date)}</dd></div>
             {d.validite && <div className="flex gap-2"><dt className="text-doc-muted">{facture ? "Échéance :" : "Valable jusqu'au :"}</dt><dd>{fr(d.validite)}</dd></div>}
             {facture && <div className="flex gap-2"><dt className="text-doc-muted">Devis d'origine :</dt><dd>{facture.sourceRef}</dd></div>}
+            {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Facture d'origine :</dt><dd>{avoir.sourceRef}</dd></div>}
+            {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Motif :</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{avoir.motif}</dd></div>}
             {acp && <div className="flex gap-2"><dt className="text-doc-muted">Acompte :</dt><dd>{String(facture!.acompte).replace(".", ",")} % du devis</dd></div>}
           </dl>
         </div>
@@ -159,7 +161,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             </div>
           ))}
           <dt>Total TVA</dt><dd className="text-right font-medium">{formaterCentimes(recap.tva)}</dd>
-          <dt className="mt-2 border-t-2 border-doc-gold pt-2 text-base font-semibold">{facture?.deduction ? "Total des prestations TTC" : "Total TTC"}</dt>
+          <dt className="mt-2 border-t-2 border-doc-gold pt-2 text-base font-semibold">{avoir ? "Total de l'avoir TTC" : facture?.deduction ? "Total des prestations TTC" : "Total TTC"}</dt>
           <dd className="mt-2 border-t-2 border-doc-gold pt-2 text-right text-base font-semibold" data-testid="apercu-ttc">
             {recap.complet ? formaterCentimes(recap.ttc) : "Calcul incomplet"}
           </dd>
@@ -175,7 +177,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
       )}
 
       <p className="mt-10 border-t border-doc-line pt-3 text-center text-xs text-doc-faint">
-        {factB ? (acp ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : finalise ? `${nomDoc} ${numero}` : "Brouillon — non émis · Document de démonstration"}
+        {avoir ? "Avoir brouillon — non émis · montants à créditer" : factB ? (acp ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : finalise ? `${nomDoc} ${numero}` : "Brouillon — non émis · Document de démonstration"}
       </p>
       {legal.length > 0 && (
         <footer className="mt-2 text-center text-[11px] leading-snug text-doc-faint" data-testid="apercu-pied">
