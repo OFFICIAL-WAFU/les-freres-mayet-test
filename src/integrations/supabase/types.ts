@@ -77,14 +77,18 @@ export type Database = {
           client_id: string
           created_at: string
           date_avoir: string
+          entreprise_copie: Json | null
           facture_source_id: string
           facture_source_reference: string
+          finalise_le: string | null
+          finalise_par: string | null
           id: string
           lignes: Json
           motif: string
           objet: string
           owner_id: string
           reference: string
+          reference_definitive: string | null
           remarques: string
           statut: string
           total_ht_centimes: number
@@ -99,14 +103,18 @@ export type Database = {
           client_id: string
           created_at?: string
           date_avoir: string
+          entreprise_copie?: Json | null
           facture_source_id: string
           facture_source_reference: string
+          finalise_le?: string | null
+          finalise_par?: string | null
           id?: string
           lignes: Json
           motif: string
           objet: string
           owner_id: string
           reference: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes: number
@@ -121,14 +129,18 @@ export type Database = {
           client_id?: string
           created_at?: string
           date_avoir?: string
+          entreprise_copie?: Json | null
           facture_source_id?: string
           facture_source_reference?: string
+          finalise_le?: string | null
+          finalise_par?: string | null
           id?: string
           lignes?: Json
           motif?: string
           objet?: string
           owner_id?: string
           reference?: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes?: number
@@ -792,7 +804,12 @@ export type Database = {
         Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
         Returns: number
       }
+      facture_credite: { Args: { p_facture_id: string }; Returns: number }
       facture_recalculer: { Args: { p_id: string }; Returns: undefined }
+      finaliser_avoir: {
+        Args: { p_id: string; p_version: number }
+        Returns: Json
+      }
       finaliser_devis: {
         Args: { p_id: string; p_version: number }
         Returns: Json
