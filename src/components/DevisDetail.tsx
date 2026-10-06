@@ -25,8 +25,8 @@ const MANQUES: Record<string, string> = {
   client: "Le client du devis est introuvable.",
   nom_client: "Le nom ou la raison sociale du client est absent.",
   adresse_client: "L'adresse postale du client est absente des coordonnées copiées dans le brouillon. Complétez la fiche client puis choisissez à nouveau le client dans le brouillon.",
-  objet: "L'objet du devis est absent.",
-  lignes: "Le devis ne contient aucune ligne.",
+  objet: "L'objet du document est absent.",
+  lignes: "Le document ne contient aucune ligne.",
 };
 const frDateHeure = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
