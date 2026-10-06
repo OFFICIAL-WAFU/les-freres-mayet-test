@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/factures/$id/modifier")({
 function Page() {
   const { id } = Route.useParams();
   const etat = useEtatDocuments();
-  const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
+  const doc = etat.brouillons.find((d) => d.id === id && (d.type === "facture" || d.type === "acompte"));
   return (
     <AppLayout titre="Modifier la facture brouillon">
       {doc?.statut === "Finalisé" ? (
