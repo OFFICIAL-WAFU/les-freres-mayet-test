@@ -11,13 +11,14 @@ import { Label } from "@/components/ui/label";
 import { formaterCentimes, labelTaux, type TauxTVA } from "@/data/devis";
 import { AcompteRefuse, analyserPourcentage, calculerAcompte, preparerAcompte, type PartAcompte } from "@/data/documents";
 
-export const MESSAGES_ACOMPTE: Record<string, string> = {
+const MSGS = {
   pourcentage_invalide: "Indiquez un pourcentage supérieur à 0 et inférieur à 100, avec deux décimales au plus.",
   acompte_nul: "Avec ce pourcentage, l'acompte serait nul après arrondi.",
   facture_deja_finalisee: "La facture de ce devis est déjà finalisée : un acompte ne peut plus être préparé.",
   devis_non_finalise: "Le devis doit être finalisé.",
   erreur: "L'acompte n'a pas pu être préparé. Le devis est inchangé ; vous pouvez réessayer sans risque de doublon.",
 };
+export const messageAcompte = (code: string): string => (MSGS as Record<string, string>)[code] ?? MSGS.erreur;
 
 /** Tableau des parts d'acompte par taux de TVA, tel que calculé par le serveur. */
 export function TableauAcompte({ parts }: { parts: PartAcompte[] }) {
@@ -27,9 +28,9 @@ export function TableauAcompte({ parts }: { parts: PartAcompte[] }) {
       <thead><tr className="text-left text-muted-foreground"><th className="font-normal">TVA</th><th className="text-right font-normal">Base devis</th><th className="text-right font-normal">HT</th><th className="text-right font-normal">TVA</th><th className="text-right font-normal">TTC</th></tr></thead>
       <tbody>
         {parts.map((p) => (
-          <tr key={p.taux}><td>{labelTaux(p.taux as TauxTVA)}</td><td className="text-right">{formaterCentimes(p.base_devis)}</td><td className="text-right">{formaterCentimes(p.ht)}</td><td className="text-right">{formaterCentimes(p.tva)}</td><td className="text-right">{formaterCentimes(p.ttc)}</td></tr>
+          <tr key={p.taux}><td>{labelTaux(p.taux as TauxTVA)}</td><td className="text-right">{formaterCentimes(BigInt(p.base_devis))}</td><td className="text-right">{formaterCentimes(BigInt(p.ht))}</td><td className="text-right">{formaterCentimes(BigInt(p.tva))}</td><td className="text-right">{formaterCentimes(BigInt(p.ttc))}</td></tr>
         ))}
-        <tr className="border-t border-border font-semibold"><td colSpan={2}>Total acompte</td><td className="text-right">{formaterCentimes(t.ht)}</td><td className="text-right">{formaterCentimes(t.tva)}</td><td className="text-right">{formaterCentimes(t.ttc)}</td></tr>
+        <tr className="border-t border-border font-semibold"><td colSpan={2}>Total acompte</td><td className="text-right">{formaterCentimes(BigInt(t.ht))}</td><td className="text-right">{formaterCentimes(BigInt(t.tva))}</td><td className="text-right">{formaterCentimes(BigInt(t.ttc))}</td></tr>
       </tbody>
     </table>
   );
@@ -43,14 +44,14 @@ export function useCalculAcompte(devisId: string, saisie: string) {
   const pct = analyserPourcentage(saisie);
   useEffect(() => {
     setParts(null);
-    if (!pct) { setErreur(saisie.trim() ? MESSAGES_ACOMPTE.pourcentage_invalide! : null); return; }
+    if (!pct) { setErreur(saisie.trim() ? MSGS.pourcentage_invalide : null); return; }
     setErreur(null);
     let actif = true;
     setCalcul(true);
     const t = setTimeout(() => {
       calculerAcompte(devisId, pct)
-        .then((r) => { if (!actif) return; if (r.reduce((a, p) => a + p.ttc, 0) <= 0) setErreur(MESSAGES_ACOMPTE.acompte_nul!); else setParts(r); })
-        .catch((e) => { if (actif) setErreur(MESSAGES_ACOMPTE[e instanceof AcompteRefuse ? e.code : "erreur"] ?? MESSAGES_ACOMPTE.erreur!); })
+        .then((r) => { if (!actif) return; if (r.reduce((a, p) => a + p.ttc, 0) <= 0) setErreur(MSGS.acompte_nul); else setParts(r); })
+        .catch((e) => { if (actif) setErreur(messageAcompte(e instanceof AcompteRefuse ? e.code : "erreur")); })
         .finally(() => { if (actif) setCalcul(false); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };
@@ -72,7 +73,7 @@ export function AcompteDialogue({ devisId, devisRef, onFermer, onCree }: { devis
       const doc = await preparerAcompte(devisId, pct);
       onCree(doc.id);
     } catch (e) {
-      setEchec(MESSAGES_ACOMPTE[e instanceof AcompteRefuse ? e.code : "erreur"] ?? MESSAGES_ACOMPTE.erreur!);
+      setEchec(messageAcompte(e instanceof AcompteRefuse ? e.code : "erreur"));
     } finally {
       setEnCours(false);
     }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { MESSAGES_ACOMPTE, TableauAcompte, useCalculAcompte } from "@/components/AcompteDialogue";
+import { messageAcompte, TableauAcompte, useCalculAcompte } from "@/components/AcompteDialogue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,7 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
       navigate({ to: "/factures/$id", params: { id: doc.id } });
     } catch (e) {
       if (e instanceof ConflitDevis) setEchec("conflit");
-      else setEchec(MESSAGES_ACOMPTE[e instanceof AcompteRefuse ? e.code : "erreur"] ?? "L'enregistrement a échoué ; vos saisies sont conservées.");
+      else setEchec(messageAcompte(e instanceof AcompteRefuse ? e.code : "erreur"));
     } finally {
       setEnCours(false);
     }
