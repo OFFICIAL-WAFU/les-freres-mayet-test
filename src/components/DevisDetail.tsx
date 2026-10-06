@@ -80,6 +80,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     try {
       const f = estFacture ? await finaliserFacture(doc.id, doc.version) : await finaliserDevis(doc.id, doc.version);
       setConfirmer(false);
+      if (estAcompte) void chargerDocuments();
       toast.success(`${estAcompte ? "Acompte finalisé" : estFacture ? "Facture finalisée" : "Devis finalisé"} : ${f.numero}`);
     } catch (e) {
       setConfirmer(false);
