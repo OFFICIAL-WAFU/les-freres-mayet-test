@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
+import { AcompteForm } from "@/components/AcompteForm";
 import { DevisForm } from "@/components/DevisForm";
 import { useEtatDocuments } from "@/data/documents";
 import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
@@ -30,6 +31,8 @@ function Page() {
           <p>Cette facture est finalisée ({doc.numero}) : son contenu ne peut plus être modifié.</p>
           <Button asChild variant="outline" className="self-start"><Link to="/factures/$id" params={{ id }}>Ouvrir la facture</Link></Button>
         </div>
+      ) : doc?.devis && doc.type === "acompte" ? (
+        <AcompteForm key={`${doc.id}-${doc.version}`} doc={doc} />
       ) : doc?.devis ? (
         <DevisForm
           key={`${doc.id}-${doc.version}`}

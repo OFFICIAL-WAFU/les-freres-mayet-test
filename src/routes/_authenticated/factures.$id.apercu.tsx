@@ -67,7 +67,7 @@ function Page() {
                 devis={versPublic(doc.devis)}
                 numero={doc.numero}
                 entreprise={entreprise}
-                facture={{ sourceRef: doc.devisSource?.reference ?? "", finalisee }}
+                facture={{ sourceRef: doc.devisSource?.reference ?? "", finalisee, ...(doc.pourcentage !== undefined ? { acompte: doc.pourcentage } : {}) }}
               />
             </div>
           )}
