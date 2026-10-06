@@ -417,11 +417,13 @@ export type Database = {
       }
       factures: {
         Row: {
+          acompte_deduit_id: string | null
           client_copie: Json
           client_id: string
           created_at: string
           date_echeance: string | null
           date_facture: string
+          deduction: Json | null
           devis_source_id: string
           devis_source_reference: string
           entreprise_copie: Json | null
@@ -445,11 +447,13 @@ export type Database = {
           version: number
         }
         Insert: {
+          acompte_deduit_id?: string | null
           client_copie: Json
           client_id: string
           created_at?: string
           date_echeance?: string | null
           date_facture: string
+          deduction?: Json | null
           devis_source_id: string
           devis_source_reference: string
           entreprise_copie?: Json | null
@@ -473,11 +477,13 @@ export type Database = {
           version?: number
         }
         Update: {
+          acompte_deduit_id?: string | null
           client_copie?: Json
           client_id?: string
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
+          deduction?: Json | null
           devis_source_id?: string
           devis_source_reference?: string
           entreprise_copie?: Json | null
@@ -501,6 +507,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "factures_acompte_deduit_id_fkey"
+            columns: ["acompte_deduit_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "factures_client_id_fkey"
             columns: ["client_id"]
@@ -606,6 +619,10 @@ export type Database = {
           p_pourcentage: number
         }
         Returns: undefined
+      }
+      deduction_live: {
+        Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
+        Returns: Json
       }
       enregistrer_acompte: {
         Args: { p: Json; p_id: string; p_version: number }
