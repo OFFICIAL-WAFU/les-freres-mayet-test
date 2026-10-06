@@ -27,7 +27,11 @@ export const Route = createFileRoute("/_authenticated/devis/$id/apercu")({
 function Page() {
   const { id } = Route.useParams();
   const etatEnt = useEtatEntreprise();
-  const entreprise = etatEnt.statut === "pret" ? etatEnt.fiche : null;
+  const etatDocs0 = useEtatDocuments();
+  const doc0 = etatDocs0.brouillons.find((d) => d.id === id);
+  const finalise = doc0?.statut === "Finalisé";
+  // Devis finalisé : uniquement la copie figée de l'entreprise.
+  const entreprise = finalise ? doc0?.entrepriseFigee ?? null : etatEnt.statut === "pret" ? etatEnt.fiche : null;
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState(false);
   const etatDocs = useEtatDocuments();
@@ -40,7 +44,7 @@ function Page() {
     setEnCours(true);
     setEchec(false);
     try {
-      await telechargerDevisPdf(instantane, doc.numero, ent);
+      await telechargerDevisPdf(instantane, doc.numero, ent, finalise);
     } catch {
       setEchec(true);
     } finally {
@@ -53,7 +57,7 @@ function Page() {
       {doc?.devis ? (
         <div className="min-w-0">
           <Button asChild variant="outline" size="sm">
-            <Link to="/devis/$id" params={{ id }}><ArrowLeft /> Retour au brouillon</Link>
+            <Link to="/devis/$id" params={{ id }}><ArrowLeft /> {finalise ? "Retour au devis" : "Retour au brouillon"}</Link>
           </Button>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -62,27 +66,27 @@ function Page() {
           </div>
           <Button variant="action" onClick={telecharger} disabled={enCours || !entreprise} aria-busy={enCours} className="shrink-0">
             {enCours ? <Loader2 className="animate-spin" /> : <Download />}
-            {enCours ? "Génération du PDF…" : "Télécharger le PDF de brouillon"}
+            {enCours ? "Génération du PDF…" : finalise ? "Télécharger le PDF" : "Télécharger le PDF de brouillon"}
           </Button>
           </div>
           {echec && (
             <div role="alert" className="mt-4 flex flex-col gap-2 rounded-xl border border-destructive/40 bg-card p-3 text-sm sm:flex-row sm:items-center">
               <AlertTriangle className="size-4 shrink-0 text-destructive" />
-              <p className="flex-1">Le PDF n'a pas pu être généré. Votre brouillon est intact ; vous pouvez réessayer.</p>
+              <p className="flex-1">{finalise ? "Le PDF n'a pas pu être généré. Le devis reste finalisé avec la même référence ; vous pouvez réessayer le téléchargement." : "Le PDF n'a pas pu être généré. Votre brouillon est intact ; vous pouvez réessayer."}</p>
               <Button size="sm" variant="outline" onClick={telecharger} disabled={enCours}>Réessayer</Button>
             </div>
           )}
-          {(etatEnt.statut === "inactif" || etatEnt.statut === "chargement") && (
+          {!finalise && (etatEnt.statut === "inactif" || etatEnt.statut === "chargement") && (
             <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Chargement des informations de l'entreprise…</p>
           )}
-          {etatEnt.statut === "erreur" && (
+          {!finalise && etatEnt.statut === "erreur" && (
             <div role="alert" className="mt-4 flex flex-col gap-2 rounded-xl border border-destructive/40 bg-card p-3 text-sm sm:flex-row sm:items-center">
               <AlertTriangle className="size-4 shrink-0 text-destructive" />
               <p className="flex-1">Les informations de l'entreprise n'ont pas pu être chargées. Le PDF est indisponible tant qu'elles ne le sont pas.</p>
               <Button size="sm" variant="outline" onClick={() => void chargerEntreprise()}>Réessayer</Button>
             </div>
           )}
-          {etatEnt.statut === "absente" && (
+          {!finalise && etatEnt.statut === "absente" && (
             <div className="mt-4 flex flex-col gap-2 rounded-xl border border-border bg-card p-3 text-sm sm:flex-row sm:items-center">
               <Info className="size-4 shrink-0 text-muted-foreground" />
               <p className="flex-1">Enregistrez d'abord les informations de votre entreprise pour afficher l'aperçu et télécharger le PDF. Votre brouillon reste intact.</p>
@@ -96,7 +100,7 @@ function Page() {
           </p>
           )}
           {entreprise && <div className="-mx-4 mt-4 bg-neutral-soft px-2 py-4 sm:mx-0 sm:rounded-2xl sm:p-8">
-            <DevisApercu devis={versPublic(doc.devis)} numero={doc.numero} entreprise={entreprise} />
+            <DevisApercu devis={versPublic(doc.devis)} numero={doc.numero} entreprise={entreprise} finalise={finalise} />
           </div>}
         </div>
       ) : (

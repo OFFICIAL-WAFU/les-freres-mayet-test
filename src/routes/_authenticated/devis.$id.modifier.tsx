@@ -24,7 +24,12 @@ function Page() {
   const doc = etat.brouillons.find((d) => d.id === id);
   return (
     <AppLayout titre="Modifier le brouillon">
-      {doc?.devis ? (
+      {doc?.statut === "Finalisé" ? (
+        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+          <p className="text-sm font-medium">Document finalisé — contenu verrouillé. Il ne peut plus être modifié.</p>
+          <Button asChild variant="outline" className="mt-4"><Link to="/devis/$id" params={{ id }}>Consulter le devis</Link></Button>
+        </div>
+      ) : doc?.devis ? (
         <DevisForm key={`${doc.id}-${doc.version}`} initial={doc.devis} documentId={doc.id} numero={doc.numero} version={doc.version} />
       ) : (
         <EtatBrouillon statut={etat.statut} />

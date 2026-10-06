@@ -29,7 +29,7 @@ function Page() {
         <div className="max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>
           <h1 className="text-2xl font-semibold lg:text-3xl">Devis — {doc.devis.objet}</h1>
-          <p className="mt-2 text-xs text-muted-foreground">Les brouillons enregistrés sont conservés dans votre espace privé.</p>
+          <p className="mt-2 text-xs text-muted-foreground">{doc.statut === "Finalisé" ? "Aucun envoi ni signature n'a été effectué depuis l'application." : "Les brouillons enregistrés sont conservés dans votre espace privé."}</p>
           <div className="mt-6 rounded-2xl border border-border bg-card p-4 lg:p-6">
             <DevisDetail doc={doc} />
           </div>

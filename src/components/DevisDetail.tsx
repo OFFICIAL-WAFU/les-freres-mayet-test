@@ -1,11 +1,34 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { Loader2, Lock } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Recap } from "@/components/DevisForm";
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
-import type { DocumentAvecDevis } from "@/data/documents";
+import {
+  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, finaliserDevis, relireDevis,
+  type DocumentAvecDevis,
+} from "@/data/documents";
+
+const MANQUES: Record<string, string> = {
+  fiche_entreprise: "La fiche entreprise n'est pas encore enregistrée (rubrique Entreprise).",
+  raison_sociale_entreprise: "La raison sociale de l'entreprise est absente.",
+  adresse_entreprise: "L'adresse postale de l'entreprise (adresse, code postal et ville) est incomplète.",
+  client: "Le client du devis est introuvable.",
+  nom_client: "Le nom ou la raison sociale du client est absent.",
+  adresse_client: "L'adresse postale du client est absente des coordonnées copiées dans le brouillon. Complétez la fiche client puis choisissez à nouveau le client dans le brouillon.",
+  objet: "L'objet du devis est absent.",
+  lignes: "Le devis ne contient aucune ligne.",
+};
+const frDateHeure = (iso: string) =>
+  new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
 
 const fr = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—");
 
@@ -13,24 +36,111 @@ const fr = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—");
 export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNavigate?: () => void }) {
   const d = doc.devis!;
   const recap = recapituler(d.lignes);
+  const finalise = doc.statut === "Finalisé";
+  const [confirmer, setConfirmer] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" }>(null);
+
+  async function finaliser() {
+    if (enCours || doc.version === undefined) return;
+    setEnCours(true);
+    setEchec(null);
+    try {
+      const f = await finaliserDevis(doc.id, doc.version);
+      setConfirmer(false);
+      toast.success(`Devis finalisé : ${f.numero}`);
+    } catch (e) {
+      setConfirmer(false);
+      if (e instanceof DevisIncomplet) setEchec({ type: "manques", liste: e.manques });
+      else if (e instanceof ConflitDevis) setEchec({ type: "conflit" });
+      else if (e instanceof EtatIncertain) setEchec({ type: "incertain" });
+      else setEchec({ type: "refus" });
+    } finally {
+      setEnCours(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <StatutBadge statut="Brouillon" />
-        <span className="text-muted-foreground">Référence provisoire {doc.numero} — brouillon non émis</span>
+        <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} />
+        {finalise ? (
+          <span className="text-muted-foreground">Référence {doc.numero} · finalisé le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · réf. provisoire {doc.referenceProvisoire}</span>
+        ) : (
+          <span className="text-muted-foreground">Référence provisoire {doc.numero} — brouillon non émis</span>
+        )}
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      {finalise && (
+        <p className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 p-3 font-medium">
+          <Lock className="size-4" /> Document finalisé — contenu verrouillé
+        </p>
+      )}
+      {echec && (
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-card p-3">
+          {echec.type === "manques" ? (
+            <>
+              <p className="font-medium">Finalisation refusée : des informations requises par cette version de l'application manquent.</p>
+              <ul className="mt-1 list-disc pl-5">{echec.liste.map((m) => <li key={m}>{MANQUES[m] ?? m}</li>)}</ul>
+              <p className="mt-1 text-xs text-muted-foreground">Ces contrôles ne constituent pas une vérification juridique complète.</p>
+            </>
+          ) : echec.type === "conflit" ? (
+            <>
+              <p>Ce brouillon a été modifié depuis son ouverture. Rechargez la dernière version avant de finaliser.</p>
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => void chargerDocuments()}>Recharger la dernière version</Button>
+            </>
+          ) : echec.type === "incertain" ? (
+            <>
+              <p>Impossible de vérifier pour l'instant si la finalisation a abouti. Aucun nouveau numéro ne sera attribué en vérifiant à nouveau.</p>
+              <Button size="sm" variant="outline" className="mt-2" onClick={async () => {
+                try { const r = await relireDevis(doc.id); setEchec(r?.statut === "Finalisé" ? null : { type: "refus" }); } catch { /* toujours incertain */ }
+              }}>Vérifier à nouveau</Button>
+            </>
+          ) : (
+            <p>La finalisation n'a pas été effectuée. Le brouillon est inchangé ; vous pouvez réessayer.</p>
+          )}
+        </div>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {!finalise && (
         <Button asChild variant="action">
           <Link to="/devis/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>
             Modifier le brouillon
           </Link>
         </Button>
+        )}
+        {!finalise && (
+          <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser le devis</Button>
+        )}
         <Button asChild variant="outline">
           <Link to="/devis/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>
             Aperçu du devis
           </Link>
         </Button>
       </div>
+
+      {confirmer && (
+        <AlertDialog open>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Finaliser le devis ?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="flex flex-col gap-2 text-sm">
+                  <p><span className="text-muted-foreground">Client :</span> {d.client.nom}</p>
+                  <p><span className="text-muted-foreground">Objet :</span> {d.objet}</p>
+                  <p><span className="text-muted-foreground">Total TTC :</span> {formaterCentimes(recap.ttc)}</p>
+                  <p className="mt-2 text-foreground">La finalisation attribue un numéro définitif et fige le contenu du devis. Aucun message ne sera envoyé au client.</p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={enCours} onClick={() => setConfirmer(false)}>Revenir au brouillon</AlertDialogCancel>
+              <Button variant="action" disabled={enCours} aria-busy={enCours} onClick={() => void finaliser()}>
+                {enCours && <Loader2 className="animate-spin" />}{enCours ? "Finalisation…" : "Confirmer la finalisation"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <section>
         <h3 className="font-semibold">Informations du devis</h3>
@@ -42,7 +152,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </section>
 
       <section>
-        <h3 className="font-semibold">Client (coordonnées enregistrées avec le brouillon)</h3>
+        <h3 className="font-semibold">{finalise ? "Client (coordonnées figées à la finalisation)" : "Client (coordonnées enregistrées avec le brouillon)"}</h3>
         <div className="mt-2">
           <p className="font-medium">{d.client.nom}</p>
           {d.client.contact && <p>Contact : {d.client.contact}</p>}
