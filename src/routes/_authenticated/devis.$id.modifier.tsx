@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/devis/$id/modifier")({
 function Page() {
   const { id } = Route.useParams();
   const etat = useEtatDocuments();
-  const doc = etat.brouillons.find((d) => d.id === id);
+  const doc = etat.brouillons.find((d) => d.id === id && d.type === "devis");
   return (
     <AppLayout titre="Modifier le brouillon">
       {doc?.statut === "Finalisé" ? (

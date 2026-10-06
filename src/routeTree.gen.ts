@@ -23,6 +23,9 @@ import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authent
 import { Route as AuthenticatedDevisIdIndexRouteImport } from './routes/_authenticated/devis.$id.index'
 import { Route as AuthenticatedDevisIdApercuRouteImport } from './routes/_authenticated/devis.$id.apercu'
 import { Route as AuthenticatedDevisIdModifierRouteImport } from './routes/_authenticated/devis.$id.modifier'
+import { Route as AuthenticatedFacturesIdIndexRouteImport } from './routes/_authenticated/factures.$id.index'
+import { Route as AuthenticatedFacturesIdApercuRouteImport } from './routes/_authenticated/factures.$id.apercu'
+import { Route as AuthenticatedFacturesIdModifierRouteImport } from './routes/_authenticated/factures.$id.modifier'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -97,6 +100,24 @@ const AuthenticatedDevisIdModifierRoute =
     path: '/devis/$id/modifier',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFacturesIdIndexRoute =
+  AuthenticatedFacturesIdIndexRouteImport.update({
+    id: '/factures/$id/',
+    path: '/factures/$id/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFacturesIdApercuRoute =
+  AuthenticatedFacturesIdApercuRouteImport.update({
+    id: '/factures/$id/apercu',
+    path: '/factures/$id/apercu',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFacturesIdModifierRoute =
+  AuthenticatedFacturesIdModifierRouteImport.update({
+    id: '/factures/$id/modifier',
+    path: '/factures/$id/modifier',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -111,7 +132,10 @@ export interface FileRoutesByFullPath {
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
+  '/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
   '/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
+  '/factures/$id/': typeof AuthenticatedFacturesIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/connexion': typeof ConnexionRoute
@@ -126,7 +150,10 @@ export interface FileRoutesByTo {
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
+  '/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
   '/devis/$id': typeof AuthenticatedDevisIdIndexRoute
+  '/factures/$id': typeof AuthenticatedFacturesIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,7 +170,10 @@ export interface FileRoutesById {
   '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/_authenticated/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/_authenticated/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
+  '/_authenticated/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
+  '/_authenticated/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
   '/_authenticated/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
+  '/_authenticated/factures/$id/': typeof AuthenticatedFacturesIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +190,10 @@ export interface FileRouteTypes {
     | '/devis/nouveau'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
+    | '/factures/$id/apercu'
+    | '/factures/$id/modifier'
     | '/devis/$id/'
+    | '/factures/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connexion'
@@ -175,7 +208,10 @@ export interface FileRouteTypes {
     | '/devis/nouveau'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
+    | '/factures/$id/apercu'
+    | '/factures/$id/modifier'
     | '/devis/$id'
+    | '/factures/$id'
   id:
     | '__root__'
     | '/_authenticated'
@@ -191,7 +227,10 @@ export interface FileRouteTypes {
     | '/_authenticated/devis/nouveau'
     | '/_authenticated/devis/$id/apercu'
     | '/_authenticated/devis/$id/modifier'
+    | '/_authenticated/factures/$id/apercu'
+    | '/_authenticated/factures/$id/modifier'
     | '/_authenticated/devis/$id/'
+    | '/_authenticated/factures/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -301,6 +340,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDevisIdModifierRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/factures/$id/': {
+      id: '/_authenticated/factures/$id/'
+      path: '/factures/$id'
+      fullPath: '/factures/$id/'
+      preLoaderRoute: typeof AuthenticatedFacturesIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/factures/$id/apercu': {
+      id: '/_authenticated/factures/$id/apercu'
+      path: '/factures/$id/apercu'
+      fullPath: '/factures/$id/apercu'
+      preLoaderRoute: typeof AuthenticatedFacturesIdApercuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/factures/$id/modifier': {
+      id: '/_authenticated/factures/$id/modifier'
+      path: '/factures/$id/modifier'
+      fullPath: '/factures/$id/modifier'
+      preLoaderRoute: typeof AuthenticatedFacturesIdModifierRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -314,7 +374,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDevisNouveauRoute: typeof AuthenticatedDevisNouveauRoute
   AuthenticatedDevisIdApercuRoute: typeof AuthenticatedDevisIdApercuRoute
   AuthenticatedDevisIdModifierRoute: typeof AuthenticatedDevisIdModifierRoute
+  AuthenticatedFacturesIdApercuRoute: typeof AuthenticatedFacturesIdApercuRoute
+  AuthenticatedFacturesIdModifierRoute: typeof AuthenticatedFacturesIdModifierRoute
   AuthenticatedDevisIdIndexRoute: typeof AuthenticatedDevisIdIndexRoute
+  AuthenticatedFacturesIdIndexRoute: typeof AuthenticatedFacturesIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -327,7 +390,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDevisNouveauRoute: AuthenticatedDevisNouveauRoute,
   AuthenticatedDevisIdApercuRoute: AuthenticatedDevisIdApercuRoute,
   AuthenticatedDevisIdModifierRoute: AuthenticatedDevisIdModifierRoute,
+  AuthenticatedFacturesIdApercuRoute: AuthenticatedFacturesIdApercuRoute,
+  AuthenticatedFacturesIdModifierRoute: AuthenticatedFacturesIdModifierRoute,
   AuthenticatedDevisIdIndexRoute: AuthenticatedDevisIdIndexRoute,
+  AuthenticatedFacturesIdIndexRoute: AuthenticatedFacturesIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
