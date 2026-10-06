@@ -152,6 +152,21 @@ export type Database = {
         }
         Relationships: []
       }
+      compteurs_factures_brouillon: {
+        Row: {
+          dernier: number
+          owner_id: string
+        }
+        Insert: {
+          dernier?: number
+          owner_id?: string
+        }
+        Update: {
+          dernier?: number
+          owner_id?: string
+        }
+        Relationships: []
+      }
       compteurs_references: {
         Row: {
           annee: number
@@ -397,6 +412,162 @@ export type Database = {
         }
         Relationships: []
       }
+      factures: {
+        Row: {
+          client_copie: Json
+          client_id: string
+          created_at: string
+          date_echeance: string | null
+          date_facture: string
+          devis_source_id: string
+          devis_source_reference: string
+          id: string
+          notes: string
+          objet: string
+          owner_id: string
+          reference: string
+          remarques: string
+          statut: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          updated_at: string
+          ventilation_tva: Json
+          version: number
+        }
+        Insert: {
+          client_copie: Json
+          client_id: string
+          created_at?: string
+          date_echeance?: string | null
+          date_facture: string
+          devis_source_id: string
+          devis_source_reference: string
+          id?: string
+          notes?: string
+          objet: string
+          owner_id?: string
+          reference: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          updated_at?: string
+          ventilation_tva?: Json
+          version?: number
+        }
+        Update: {
+          client_copie?: Json
+          client_id?: string
+          created_at?: string
+          date_echeance?: string | null
+          date_facture?: string
+          devis_source_id?: string
+          devis_source_reference?: string
+          id?: string
+          notes?: string
+          objet?: string
+          owner_id?: string
+          reference?: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          updated_at?: string
+          ventilation_tva?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_devis_source_id_fkey"
+            columns: ["devis_source_id"]
+            isOneToOne: true
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factures_lignes: {
+        Row: {
+          article_id: string | null
+          description: string
+          designation: string
+          facture_id: string
+          ht_centimes: number
+          id: string
+          owner_id: string
+          position: number
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference: string
+          taux_tva_milliemes: number
+          ttc_centimes: number
+          tva_centimes: number
+          type: string
+          unite: string
+        }
+        Insert: {
+          article_id?: string | null
+          description?: string
+          designation: string
+          facture_id: string
+          ht_centimes: number
+          id: string
+          owner_id?: string
+          position: number
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference?: string
+          taux_tva_milliemes: number
+          ttc_centimes: number
+          tva_centimes: number
+          type: string
+          unite: string
+        }
+        Update: {
+          article_id?: string | null
+          description?: string
+          designation?: string
+          facture_id?: string
+          ht_centimes?: number
+          id?: string
+          owner_id?: string
+          position?: number
+          prix_ht_centimes?: number
+          quantite_milliemes?: number
+          reference?: string
+          taux_tva_milliemes?: number
+          ttc_centimes?: number
+          tva_centimes?: number
+          type?: string
+          unite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_lignes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_lignes_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -406,11 +577,18 @@ export type Database = {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
       }
+      enregistrer_facture: {
+        Args: { p: Json; p_id: string; p_version: number }
+        Returns: Json
+      }
+      facture_recalculer: { Args: { p_id: string }; Returns: undefined }
       finaliser_devis: {
         Args: { p_id: string; p_version: number }
         Returns: Json
       }
       lire_devis: { Args: { p_id: string }; Returns: Json }
+      lire_facture: { Args: { p_id: string }; Returns: Json }
+      preparer_facture: { Args: { p_devis_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
