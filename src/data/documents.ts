@@ -375,7 +375,7 @@ export async function enregistrerAcompte(
     p: { pourcentage: v.pourcentage, date_facture: v.date, date_echeance: v.echeance, remarques: v.remarques, notes: v.notes },
   });
   if (error) {
-    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
     throw new AcompteRefuse(codeAcompte(error.message));
   }
   const doc = depuisFacture(data as FactureBase);
@@ -390,7 +390,7 @@ export async function enregistrerFacture(id: string, v: DevisBrouillon, version:
     p: { objet: v.objet.trim(), date_facture: v.date, date_echeance: v.validite, remarques: v.remarques, notes: v.notes, lignes } as unknown as Json,
   });
   if (error) {
-    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
     throw new ErreurDevis(error.message);
   }
   const doc = depuisFacture(data as unknown as FactureBase);
@@ -448,7 +448,7 @@ export async function enregistrerBrouillon(id: string, v: DevisBrouillon, versio
     p_id: id, p_version: version as number, p: charge as unknown as Json,
   });
   if (error) {
-    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
     throw new ErreurDevis(error.message);
   }
   const doc = depuisBase(data as unknown as DevisBase);
@@ -495,7 +495,7 @@ export async function finaliserDevis(id: string, version: number): Promise<Docum
   }
   const err = res?.error;
   if (err?.message.startsWith("incomplet:")) throw new DevisIncomplet(err.message.slice(10).split(","));
-  if (err && (err.code === "40001" || err.message.includes("conflit_version"))) throw new ConflitDevis();
+  if (err && (err.code === "PT409" || err.message.includes("conflit_version"))) throw new ConflitDevis();
   if (err && err.code && err.code !== "PGRST000" && !/fetch|network/i.test(err.message)) throw new FinalisationRefusee(err.message);
   // Réponse perdue ou réseau indisponible : on vérifie l'état enregistré.
   try {
@@ -533,7 +533,7 @@ export async function finaliserFacture(id: string, version: number): Promise<Doc
   }
   const err = res?.error as { code?: string; message: string } | undefined;
   if (err?.message.startsWith("incomplet:")) throw new DevisIncomplet(err.message.slice(10).split(","));
-  if (err && (err.code === "40001" || err.message.includes("conflit_version"))) throw new ConflitDevis();
+  if (err && (err.code === "PT409" || err.message.includes("conflit_version"))) throw new ConflitDevis();
   if (err?.message.includes("acompte_deduction_requise")) throw new DeductionAcompteRequise();
   if (err && err.code && err.code !== "PGRST000" && !/fetch|network/i.test(err.message)) throw new FinalisationRefusee(err.message);
   try {
