@@ -28,32 +28,33 @@ function Page() {
   const etatEnt = useEtatEntreprise();
   const etat = useEtatDocuments();
   const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
-  const entreprise = etatEnt.statut === "pret" ? etatEnt.fiche : null;
+  const finalisee = doc?.statut === "Finalisé";
+  const entreprise = finalisee ? doc?.entrepriseFigee ?? null : etatEnt.statut === "pret" ? etatEnt.fiche : null;
 
   return (
     <AppLayout titre="Aperçu de la facture">
       {doc?.devis ? (
         <div className="min-w-0">
           <Button asChild variant="outline" size="sm">
-            <Link to="/factures/$id" params={{ id }}><ArrowLeft /> Retour à la facture brouillon</Link>
+            <Link to="/factures/$id" params={{ id }}><ArrowLeft /> Retour à la facture</Link>
           </Button>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold lg:text-3xl">Aperçu de la facture</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Données enregistrées — brouillon non émis.</p>
+              <p className="mt-1 text-sm text-muted-foreground">{finalisee ? `Facture finalisée ${doc.numero} — données figées.` : "Données enregistrées — brouillon non émis."}</p>
             </div>
             <FacturePdfBouton doc={doc} />
           </div>
-          {(etatEnt.statut === "inactif" || etatEnt.statut === "chargement") && (
+          {!finalisee && (etatEnt.statut === "inactif" || etatEnt.statut === "chargement") && (
             <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Chargement des informations de l'entreprise…</p>
           )}
-          {etatEnt.statut === "erreur" && (
+          {!finalisee && etatEnt.statut === "erreur" && (
             <div role="alert" className="mt-4 flex flex-col gap-2 rounded-xl border border-destructive/40 bg-card p-3 text-sm sm:flex-row sm:items-center">
               <p className="flex-1">Les informations de l'entreprise n'ont pas pu être chargées.</p>
               <Button size="sm" variant="outline" onClick={() => void chargerEntreprise()}>Réessayer</Button>
             </div>
           )}
-          {etatEnt.statut === "absente" && (
+          {!finalisee && etatEnt.statut === "absente" && (
             <div className="mt-4 flex flex-col gap-2 rounded-xl border border-border bg-card p-3 text-sm sm:flex-row sm:items-center">
               <Info className="size-4 shrink-0 text-muted-foreground" />
               <p className="flex-1">Enregistrez d'abord les informations de votre entreprise pour afficher l'aperçu.</p>
@@ -66,7 +67,7 @@ function Page() {
                 devis={versPublic(doc.devis)}
                 numero={doc.numero}
                 entreprise={entreprise}
-                facture={{ sourceRef: doc.devisSource?.reference ?? "" }}
+                facture={{ sourceRef: doc.devisSource?.reference ?? "", finalisee }}
               />
             </div>
           )}

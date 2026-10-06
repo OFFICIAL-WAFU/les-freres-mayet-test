@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
-  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, preparerFacture, relireDevis,
+  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
   useEtatDocuments, type DocumentAvecDevis,
 } from "@/data/documents";
 
@@ -25,8 +25,8 @@ const MANQUES: Record<string, string> = {
   client: "Le client du devis est introuvable.",
   nom_client: "Le nom ou la raison sociale du client est absent.",
   adresse_client: "L'adresse postale du client est absente des coordonnées copiées dans le brouillon. Complétez la fiche client puis choisissez à nouveau le client dans le brouillon.",
-  objet: "L'objet du devis est absent.",
-  lignes: "Le devis ne contient aucune ligne.",
+  objet: "L'objet du document est absent.",
+  lignes: "Le document ne contient aucune ligne.",
 };
 const frDateHeure = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
@@ -70,9 +70,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     setEnCours(true);
     setEchec(null);
     try {
-      const f = await finaliserDevis(doc.id, doc.version);
+      const f = estFacture ? await finaliserFacture(doc.id, doc.version) : await finaliserDevis(doc.id, doc.version);
       setConfirmer(false);
-      toast.success(`Devis finalisé : ${f.numero}`);
+      toast.success(`${estFacture ? "Facture finalisée" : "Devis finalisé"} : ${f.numero}`);
     } catch (e) {
       setConfirmer(false);
       if (e instanceof DevisIncomplet) setEchec({ type: "manques", liste: e.manques });
@@ -87,8 +87,10 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   return (
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} />
-        {estFacture ? (
+        <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} libelle={estFacture && finalise ? "Finalisée" : undefined} />
+        {estFacture && finalise ? (
+          <span className="text-muted-foreground">Facture · Finalisée · référence {doc.numero} · finalisée le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · issue du devis {doc.devisSource?.reference}</span>
+        ) : estFacture ? (
           <span className="text-muted-foreground">Facture · référence provisoire {doc.numero} — non émise · issue du devis {doc.devisSource?.reference}</span>
         ) : finalise ? (
           <span className="text-muted-foreground">Référence {doc.numero} · finalisé le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · réf. provisoire {doc.referenceProvisoire}</span>
@@ -118,7 +120,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
             <>
               <p>Impossible de vérifier pour l'instant si la finalisation a abouti. Aucun nouveau numéro ne sera attribué en vérifiant à nouveau.</p>
               <Button size="sm" variant="outline" className="mt-2" onClick={async () => {
-                try { const r = await relireDevis(doc.id); setEchec(r?.statut === "Finalisé" ? null : { type: "refus" }); } catch { /* toujours incertain */ }
+                try { const r = estFacture ? await relireFacture(doc.id) : await relireDevis(doc.id); setEchec(r?.statut === "Finalisé" ? null : { type: "refus" }); } catch { /* toujours incertain */ }
               }}>Vérifier à nouveau</Button>
             </>
           ) : (
@@ -129,9 +131,14 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       {prepEchec && <p role="alert" className="rounded-xl border border-destructive/40 bg-card p-3">{prepEchec}</p>}
       {estFacture ? (
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {!finalise && (
         <Button asChild variant="action">
           <Link to="/factures/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>Modifier la facture brouillon</Link>
         </Button>
+        )}
+        {!finalise && (
+          <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser la facture</Button>
+        )}
         <Button asChild variant="outline">
           <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de la facture</Link>
         </Button>
@@ -146,7 +153,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {finalise && (factureLiee ? (
           <Button asChild variant="action">
-            <Link to="/factures/$id" params={{ id: factureLiee.id }} onClick={onNavigate}>Ouvrir la facture brouillon</Link>
+            <Link to="/factures/$id" params={{ id: factureLiee.id }} onClick={onNavigate}>{factureLiee.statut === "Finalisé" ? "Ouvrir la facture" : "Ouvrir la facture brouillon"}</Link>
           </Button>
         ) : (
           <Button variant="action" onClick={() => setConfFacture(true)}>Préparer une facture</Button>
@@ -192,13 +199,15 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <AlertDialog open>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Finaliser le devis ?</AlertDialogTitle>
+              <AlertDialogTitle>{estFacture ? "Finaliser la facture ?" : "Finaliser le devis ?"}</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="flex flex-col gap-2 text-sm">
                   <p><span className="text-muted-foreground">Client :</span> {d.client.nom}</p>
                   <p><span className="text-muted-foreground">Objet :</span> {d.objet}</p>
                   <p><span className="text-muted-foreground">Total TTC :</span> {formaterCentimes(recap.ttc)}</p>
-                  <p className="mt-2 text-foreground">La finalisation attribue un numéro définitif et fige le contenu du devis. Aucun message ne sera envoyé au client.</p>
+                  <p className="mt-2 text-foreground">{estFacture
+                    ? "Un numéro définitif sera attribué. Le contenu de cette facture ne pourra plus être modifié. Aucun email ne sera envoyé."
+                    : "La finalisation attribue un numéro définitif et fige le contenu du devis. Aucun message ne sera envoyé au client."}</p>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>

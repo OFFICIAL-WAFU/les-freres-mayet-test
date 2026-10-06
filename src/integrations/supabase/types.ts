@@ -421,11 +421,15 @@ export type Database = {
           date_facture: string
           devis_source_id: string
           devis_source_reference: string
+          entreprise_copie: Json | null
+          finalise_le: string | null
+          finalise_par: string | null
           id: string
           notes: string
           objet: string
           owner_id: string
           reference: string
+          reference_definitive: string | null
           remarques: string
           statut: string
           total_ht_centimes: number
@@ -443,11 +447,15 @@ export type Database = {
           date_facture: string
           devis_source_id: string
           devis_source_reference: string
+          entreprise_copie?: Json | null
+          finalise_le?: string | null
+          finalise_par?: string | null
           id?: string
           notes?: string
           objet: string
           owner_id?: string
           reference: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes?: number
@@ -465,11 +473,15 @@ export type Database = {
           date_facture?: string
           devis_source_id?: string
           devis_source_reference?: string
+          entreprise_copie?: Json | null
+          finalise_le?: string | null
+          finalise_par?: string | null
           id?: string
           notes?: string
           objet?: string
           owner_id?: string
           reference?: string
+          reference_definitive?: string | null
           remarques?: string
           statut?: string
           total_ht_centimes?: number
@@ -583,6 +595,10 @@ export type Database = {
       }
       facture_recalculer: { Args: { p_id: string }; Returns: undefined }
       finaliser_devis: {
+        Args: { p_id: string; p_version: number }
+        Returns: Json
+      }
+      finaliser_facture: {
         Args: { p_id: string; p_version: number }
         Returns: Json
       }

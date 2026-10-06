@@ -293,14 +293,15 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
 interface FactureBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
   date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
-  version: number; devis_source_id: string; devis_source_reference: string; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
+  version: number; devis_source_id: string; devis_source_reference: string;
+  statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
 }
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
   const base = depuisBase({
     id: f.id, reference: f.reference, client_id: f.client_id, client_copie: f.client_copie, objet: f.objet,
     date_devis: f.date_facture, date_validite: f.date_echeance, remarques: f.remarques, notes: f.notes,
-    total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: "brouillon", reference_definitive: null,
-    finalise_le: null, entreprise_copie: null, lignes: f.lignes ?? f.factures_lignes ?? [],
+    total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: f.statut ?? "brouillon",
+    reference_definitive: f.reference_definitive ?? null, finalise_le: f.finalise_le ?? null, entreprise_copie: f.entreprise_copie ?? null, lignes: f.lignes ?? f.factures_lignes ?? [],
   });
   return { ...base, type: "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference } };
 }
@@ -439,6 +440,43 @@ export async function finaliserDevis(id: string, version: number): Promise<Docum
   // Réponse perdue ou réseau indisponible : on vérifie l'état enregistré.
   try {
     const doc = await relireDevis(id);
+    if (doc?.statut === "Finalisé") return doc;
+  } catch {
+    throw new EtatIncertain();
+  }
+  throw new EtatIncertain();
+}
+
+/** Relit une facture enregistrée (état réel côté base). */
+export async function relireFacture(id: string): Promise<DocumentAvecDevis | null> {
+  const { data, error } = await supabase.rpc("lire_facture", { p_id: id });
+  if (error) throw error;
+  if (!data) return null;
+  const doc = depuisFacture(data as unknown as FactureBase);
+  conserver(doc);
+  return doc;
+}
+
+/** Finalise une facture brouillon (numéro FAC-LFM attribué par le serveur, idempotent). */
+export async function finaliserFacture(id: string, version: number): Promise<DocumentAvecDevis> {
+  let res;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    res = await (supabase.rpc as any)("finaliser_facture", { p_id: id, p_version: version });
+  } catch {
+    res = null;
+  }
+  if (res && !res.error) {
+    const doc = depuisFacture(res.data as unknown as FactureBase);
+    conserver(doc);
+    return doc;
+  }
+  const err = res?.error as { code?: string; message: string } | undefined;
+  if (err?.message.startsWith("incomplet:")) throw new DevisIncomplet(err.message.slice(10).split(","));
+  if (err && (err.code === "40001" || err.message.includes("conflit_version"))) throw new ConflitDevis();
+  if (err && err.code && err.code !== "PGRST000" && !/fetch|network/i.test(err.message)) throw new FinalisationRefusee(err.message);
+  try {
+    const doc = await relireFacture(id);
     if (doc?.statut === "Finalisé") return doc;
   } catch {
     throw new EtatIncertain();

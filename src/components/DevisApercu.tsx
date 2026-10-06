@@ -23,7 +23,9 @@ export function versPublic(d: DevisBrouillon): DevisPublic {
   return reste;
 }
 
-export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string } }) {
+export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string; finalisee?: boolean } }) {
+  if (facture) finalise = !!facture.finalisee;
+  const factB = !!facture && !finalise;
   const nomDoc = facture ? "Facture" : "Devis";
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
   const coordonnees = [ent.adresse, ent.complement, villeLigne, ent.pays].filter(Boolean);
@@ -53,7 +55,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
           </div>
         </div>
         <div className="sm:text-right">
-          <p className="text-xl font-semibold tracking-wide">{facture ? "FACTURE — BROUILLON — NON ÉMISE" : finalise ? "DEVIS" : "DEVIS — BROUILLON"}</p>
+          <p className="text-xl font-semibold tracking-wide">{factB ? "FACTURE — BROUILLON — NON ÉMISE" : facture ? "FACTURE" : finalise ? "DEVIS" : "DEVIS — BROUILLON"}</p>
           <p className="text-sm text-doc-muted">{finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`}</p>
           {!finalise && !facture && (
           <p className="mt-1 inline-block rounded border border-doc-gold px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-doc-gold-ink">
@@ -169,7 +171,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
       )}
 
       <p className="mt-10 border-t border-doc-line pt-3 text-center text-xs text-doc-faint">
-        {facture ? "Facture brouillon — non émise" : finalise ? `Devis ${numero}` : "Brouillon — non émis · Document de démonstration"}
+        {factB ? "Facture brouillon — non émise" : finalise ? `${nomDoc} ${numero}` : "Brouillon — non émis · Document de démonstration"}
       </p>
       {legal.length > 0 && (
         <footer className="mt-2 text-center text-[11px] leading-snug text-doc-faint" data-testid="apercu-pied">

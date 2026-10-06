@@ -8,7 +8,7 @@ const CLASSES: Record<string, string> = {
   info: "bg-info-soft text-primary border-primary/20",
 };
 
-export function StatutBadge({ statut }: { statut: DocumentStatut }) {
+export function StatutBadge({ statut, libelle }: { statut: DocumentStatut; libelle?: string | undefined }) {
   return (
     <span
       className={cn(
@@ -16,7 +16,7 @@ export function StatutBadge({ statut }: { statut: DocumentStatut }) {
         CLASSES[tonDuStatut(statut)],
       )}
     >
-      {statut}
+      {libelle ?? statut}
     </span>
   );
 }
