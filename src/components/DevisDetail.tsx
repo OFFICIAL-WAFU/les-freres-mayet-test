@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Recap } from "@/components/DevisForm";
+import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
@@ -134,6 +135,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <Button asChild variant="outline">
           <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de la facture</Link>
         </Button>
+        <FacturePdfBouton doc={doc} />
         {doc.devisSource && (
           <Button asChild variant="ghost">
             <Link to="/devis/$id" params={{ id: doc.devisSource.id }} onClick={onNavigate}>Voir le devis {doc.devisSource.reference}</Link>

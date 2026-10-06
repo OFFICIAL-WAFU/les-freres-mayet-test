@@ -4,6 +4,7 @@ import { ArrowLeft, Info, Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { DevisApercu, versPublic } from "@/components/DevisApercu";
 import { Button } from "@/components/ui/button";
+import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { useEtatDocuments } from "@/data/documents";
 import { chargerEntreprise, useEtatEntreprise } from "@/data/entreprise";
 import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
@@ -36,8 +37,13 @@ function Page() {
           <Button asChild variant="outline" size="sm">
             <Link to="/factures/$id" params={{ id }}><ArrowLeft /> Retour à la facture brouillon</Link>
           </Button>
-          <h1 className="mt-4 text-2xl font-semibold lg:text-3xl">Aperçu de la facture</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Brouillon enregistré — non émis. Le PDF et l'émission viendront dans une prochaine étape.</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold lg:text-3xl">Aperçu de la facture</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Données enregistrées — brouillon non émis.</p>
+            </div>
+            <FacturePdfBouton doc={doc} />
+          </div>
           {(etatEnt.statut === "inactif" || etatEnt.statut === "chargement") && (
             <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Chargement des informations de l'entreprise…</p>
           )}
