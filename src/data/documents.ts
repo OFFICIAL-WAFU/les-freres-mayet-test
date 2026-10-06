@@ -339,7 +339,7 @@ interface AvoirBase {
   id: string; reference: string; facture_source_id: string; facture_source_reference: string; client_id: string;
   client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; date_avoir: string;
   motif: string; remarques: string; version: number;
-  statut?: string; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: unknown;
+  statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
 }
 function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
   const base = depuisBase({
