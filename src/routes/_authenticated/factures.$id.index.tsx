@@ -1,0 +1,42 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppLayout } from "@/components/AppLayout";
+import { DevisDetail } from "@/components/DevisDetail";
+import { Button } from "@/components/ui/button";
+import { useEtatDocuments } from "@/data/documents";
+import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
+
+export const Route = createFileRoute("/_authenticated/factures/$id/")({
+  head: () => ({
+    meta: [
+      { title: "Facture brouillon — Les Frères Mayet" },
+      { name: "description", content: "Consulter une facture brouillon préparée depuis un devis." },
+      { property: "og:title", content: "Facture brouillon — Les Frères Mayet" },
+      { property: "og:description", content: "Consulter une facture brouillon préparée depuis un devis." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: Page,
+});
+
+function Page() {
+  const { id } = Route.useParams();
+  const etat = useEtatDocuments();
+  const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
+  return (
+    <AppLayout titre="Facture brouillon">
+      {doc?.devis ? (
+        <div className="max-w-3xl">
+          <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>
+          <h1 className="text-2xl font-semibold lg:text-3xl">Facture brouillon — {doc.devis.objet}</h1>
+          <p className="mt-2 text-xs text-muted-foreground">Aucune facture n'a été émise ni envoyée depuis l'application.</p>
+          <div className="mt-6 rounded-2xl border border-border bg-card p-4 lg:p-6">
+            <DevisDetail doc={doc} />
+          </div>
+        </div>
+      ) : (
+        <EtatBrouillon statut={etat.statut} />
+      )}
+    </AppLayout>
+  );
+}
