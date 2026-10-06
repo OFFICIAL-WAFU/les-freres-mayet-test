@@ -20,6 +20,9 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEntrepriseRouteImport } from './routes/_authenticated/entreprise'
 import { Route as AuthenticatedReglagesRouteImport } from './routes/_authenticated/reglages'
 import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authenticated/devis.nouveau'
+import { Route as AuthenticatedAvoirsIdIndexRouteImport } from './routes/_authenticated/avoirs.$id.index'
+import { Route as AuthenticatedAvoirsIdApercuRouteImport } from './routes/_authenticated/avoirs.$id.apercu'
+import { Route as AuthenticatedAvoirsIdModifierRouteImport } from './routes/_authenticated/avoirs.$id.modifier'
 import { Route as AuthenticatedDevisIdIndexRouteImport } from './routes/_authenticated/devis.$id.index'
 import { Route as AuthenticatedDevisIdApercuRouteImport } from './routes/_authenticated/devis.$id.apercu'
 import { Route as AuthenticatedDevisIdModifierRouteImport } from './routes/_authenticated/devis.$id.modifier'
@@ -82,6 +85,24 @@ const AuthenticatedDevisNouveauRoute =
     path: '/devis/nouveau',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAvoirsIdIndexRoute =
+  AuthenticatedAvoirsIdIndexRouteImport.update({
+    id: '/avoirs/$id/',
+    path: '/avoirs/$id/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAvoirsIdApercuRoute =
+  AuthenticatedAvoirsIdApercuRouteImport.update({
+    id: '/avoirs/$id/apercu',
+    path: '/avoirs/$id/apercu',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAvoirsIdModifierRoute =
+  AuthenticatedAvoirsIdModifierRouteImport.update({
+    id: '/avoirs/$id/modifier',
+    path: '/avoirs/$id/modifier',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDevisIdIndexRoute =
   AuthenticatedDevisIdIndexRouteImport.update({
     id: '/devis/$id/',
@@ -130,10 +151,13 @@ export interface FileRoutesByFullPath {
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/reglages': typeof AuthenticatedReglagesRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
+  '/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
   '/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
   '/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
+  '/avoirs/$id/': typeof AuthenticatedAvoirsIdIndexRoute
   '/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
   '/factures/$id/': typeof AuthenticatedFacturesIdIndexRoute
 }
@@ -148,10 +172,13 @@ export interface FileRoutesByTo {
   '/reglages': typeof AuthenticatedReglagesRoute
   '/': typeof AuthenticatedIndexRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
+  '/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
   '/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
   '/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
+  '/avoirs/$id': typeof AuthenticatedAvoirsIdIndexRoute
   '/devis/$id': typeof AuthenticatedDevisIdIndexRoute
   '/factures/$id': typeof AuthenticatedFacturesIdIndexRoute
 }
@@ -168,10 +195,13 @@ export interface FileRoutesById {
   '/_authenticated/reglages': typeof AuthenticatedReglagesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/_authenticated/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
+  '/_authenticated/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/_authenticated/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
   '/_authenticated/devis/$id/modifier': typeof AuthenticatedDevisIdModifierRoute
   '/_authenticated/factures/$id/apercu': typeof AuthenticatedFacturesIdApercuRoute
   '/_authenticated/factures/$id/modifier': typeof AuthenticatedFacturesIdModifierRoute
+  '/_authenticated/avoirs/$id/': typeof AuthenticatedAvoirsIdIndexRoute
   '/_authenticated/devis/$id/': typeof AuthenticatedDevisIdIndexRoute
   '/_authenticated/factures/$id/': typeof AuthenticatedFacturesIdIndexRoute
 }
@@ -188,10 +218,13 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/reglages'
     | '/devis/nouveau'
+    | '/avoirs/$id/apercu'
+    | '/avoirs/$id/modifier'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/factures/$id/apercu'
     | '/factures/$id/modifier'
+    | '/avoirs/$id/'
     | '/devis/$id/'
     | '/factures/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -206,10 +239,13 @@ export interface FileRouteTypes {
     | '/reglages'
     | '/'
     | '/devis/nouveau'
+    | '/avoirs/$id/apercu'
+    | '/avoirs/$id/modifier'
     | '/devis/$id/apercu'
     | '/devis/$id/modifier'
     | '/factures/$id/apercu'
     | '/factures/$id/modifier'
+    | '/avoirs/$id'
     | '/devis/$id'
     | '/factures/$id'
   id:
@@ -225,10 +261,13 @@ export interface FileRouteTypes {
     | '/_authenticated/reglages'
     | '/_authenticated/'
     | '/_authenticated/devis/nouveau'
+    | '/_authenticated/avoirs/$id/apercu'
+    | '/_authenticated/avoirs/$id/modifier'
     | '/_authenticated/devis/$id/apercu'
     | '/_authenticated/devis/$id/modifier'
     | '/_authenticated/factures/$id/apercu'
     | '/_authenticated/factures/$id/modifier'
+    | '/_authenticated/avoirs/$id/'
     | '/_authenticated/devis/$id/'
     | '/_authenticated/factures/$id/'
   fileRoutesById: FileRoutesById
@@ -319,6 +358,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDevisNouveauRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/avoirs/$id/': {
+      id: '/_authenticated/avoirs/$id/'
+      path: '/avoirs/$id'
+      fullPath: '/avoirs/$id/'
+      preLoaderRoute: typeof AuthenticatedAvoirsIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/avoirs/$id/apercu': {
+      id: '/_authenticated/avoirs/$id/apercu'
+      path: '/avoirs/$id/apercu'
+      fullPath: '/avoirs/$id/apercu'
+      preLoaderRoute: typeof AuthenticatedAvoirsIdApercuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/avoirs/$id/modifier': {
+      id: '/_authenticated/avoirs/$id/modifier'
+      path: '/avoirs/$id/modifier'
+      fullPath: '/avoirs/$id/modifier'
+      preLoaderRoute: typeof AuthenticatedAvoirsIdModifierRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/devis/$id/': {
       id: '/_authenticated/devis/$id/'
       path: '/devis/$id'
@@ -372,10 +432,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReglagesRoute: typeof AuthenticatedReglagesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDevisNouveauRoute: typeof AuthenticatedDevisNouveauRoute
+  AuthenticatedAvoirsIdApercuRoute: typeof AuthenticatedAvoirsIdApercuRoute
+  AuthenticatedAvoirsIdModifierRoute: typeof AuthenticatedAvoirsIdModifierRoute
   AuthenticatedDevisIdApercuRoute: typeof AuthenticatedDevisIdApercuRoute
   AuthenticatedDevisIdModifierRoute: typeof AuthenticatedDevisIdModifierRoute
   AuthenticatedFacturesIdApercuRoute: typeof AuthenticatedFacturesIdApercuRoute
   AuthenticatedFacturesIdModifierRoute: typeof AuthenticatedFacturesIdModifierRoute
+  AuthenticatedAvoirsIdIndexRoute: typeof AuthenticatedAvoirsIdIndexRoute
   AuthenticatedDevisIdIndexRoute: typeof AuthenticatedDevisIdIndexRoute
   AuthenticatedFacturesIdIndexRoute: typeof AuthenticatedFacturesIdIndexRoute
 }
@@ -388,10 +451,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReglagesRoute: AuthenticatedReglagesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDevisNouveauRoute: AuthenticatedDevisNouveauRoute,
+  AuthenticatedAvoirsIdApercuRoute: AuthenticatedAvoirsIdApercuRoute,
+  AuthenticatedAvoirsIdModifierRoute: AuthenticatedAvoirsIdModifierRoute,
   AuthenticatedDevisIdApercuRoute: AuthenticatedDevisIdApercuRoute,
   AuthenticatedDevisIdModifierRoute: AuthenticatedDevisIdModifierRoute,
   AuthenticatedFacturesIdApercuRoute: AuthenticatedFacturesIdApercuRoute,
   AuthenticatedFacturesIdModifierRoute: AuthenticatedFacturesIdModifierRoute,
+  AuthenticatedAvoirsIdIndexRoute: AuthenticatedAvoirsIdIndexRoute,
   AuthenticatedDevisIdIndexRoute: AuthenticatedDevisIdIndexRoute,
   AuthenticatedFacturesIdIndexRoute: AuthenticatedFacturesIdIndexRoute,
 }

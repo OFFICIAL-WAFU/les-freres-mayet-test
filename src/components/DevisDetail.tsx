@@ -9,6 +9,7 @@ import {
 
 import { Recap } from "@/components/DevisForm";
 import { DeductionBloc } from "@/components/DeductionBloc";
+import { AvoirDialogue } from "@/components/AvoirDetail";
 import { ReglementsBloc } from "@/components/ReglementsBloc";
 import { MSG_REGLEMENT, solde } from "@/data/deduction";
 import { AcompteDialogue } from "@/components/AcompteDialogue";
@@ -19,7 +20,7 @@ import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
   ConflitDevis, DeductionAcompteRequise, FinalisationRefusee, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
-  useEtatDocuments, type DocumentAvecDevis,
+  useEtatDocuments, type DocumentAvecDevis, avoirDeFacture, avoirEligible, MSG_AVOIR_ACOMPTE,
 } from "@/data/documents";
 
 const MANQUES: Record<string, string> = {
@@ -51,6 +52,8 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   const acompteLie = finalise && !estFacture ? acompteDuDevis(etatDocs.brouillons, doc.id) : undefined;
   const acompteBloquant = doc.type === "facture" && doc.deduction?.statut === "brouillon" ? doc.deduction : undefined;
   const [dlgAcompte, setDlgAcompte] = useState(false);
+  const [dlgAvoir, setDlgAvoir] = useState(false);
+  const avoirLie = finalise && doc.type === "facture" ? avoirDeFacture(etatDocs.brouillons, doc.id) : undefined;
   const [confFacture, setConfFacture] = useState(false);
   const [prepEnCours, setPrepEnCours] = useState(false);
   const [prepEchec, setPrepEchec] = useState<string | null>(null);
@@ -169,6 +172,15 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>{estAcompte ? "Aperçu de l'acompte" : "Aperçu de la facture"}</Link>
         </Button>
         <FacturePdfBouton doc={doc} />
+        {finalise && avoirLie && (
+          <Button asChild variant="outline"><Link to="/avoirs/$id" params={{ id: avoirLie.id }} onClick={onNavigate}>Ouvrir l'avoir</Link></Button>
+        )}
+        {finalise && !avoirLie && avoirEligible(doc) && (
+          <Button variant="outline" onClick={() => setDlgAvoir(true)}>Préparer un avoir total</Button>
+        )}
+        {finalise && !avoirLie && !avoirEligible(doc) && (
+          <p className="text-sm text-muted-foreground sm:basis-full">{MSG_AVOIR_ACOMPTE}</p>
+        )}
         {doc.devisSource && (
           <Button asChild variant="ghost">
             <Link to="/devis/$id" params={{ id: doc.devisSource.id }} onClick={onNavigate}>Voir le devis {doc.devisSource.reference}</Link>
@@ -209,6 +221,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </div>
       )}
 
+      {dlgAvoir && <AvoirDialogue facture={doc} onFermer={() => setDlgAvoir(false)} onNavigate={onNavigate} />}
       {dlgAcompte && (
         <AcompteDialogue devisId={doc.id} devisRef={doc.numero}
           onFermer={() => setDlgAcompte(false)}

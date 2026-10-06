@@ -1,6 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
-import { Button } from "@/components/ui/button";
 import { useEtatDocuments } from "@/data/documents";
 import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
 import { AvoirForm } from "@/components/AvoirForm";
@@ -26,7 +25,6 @@ function Page() {
   return (
     <AppLayout titre="Modifier l'avoir brouillon">
       {doc?.devis ? <AvoirForm key={`${doc.id}-${doc.version}`} doc={doc} /> : <EtatBrouillon statut={etat.statut} />}
-      {false && <Link to="/" />}{false && <Button />}
     </AppLayout>
   );
 }

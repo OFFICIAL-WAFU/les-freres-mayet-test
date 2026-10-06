@@ -7,6 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { AvoirDetail } from "@/components/AvoirDetail";
 import { DevisDetail } from "@/components/DevisDetail";
 import { TYPE_LABELS, formaterMontant, useDocuments, type DocumentAvecDevis } from "@/data/documents";
 
@@ -28,13 +29,13 @@ export function DocumentSheet({
           <SheetTitle>{doc?.numero}</SheetTitle>
           <SheetDescription>
             {doc?.devis
-              ? `${doc.type === "acompte" ? "Facture d'acompte" : doc.type === "facture" ? "Facture" : "Devis"} — ${doc.devis.objet}`
+              ? `${doc.type === "avoir" ? "Avoir" : doc.type === "acompte" ? "Facture d'acompte" : doc.type === "facture" ? "Facture" : "Devis"} — ${doc.devis.objet}`
               : "Document de démonstration — contenu détaillé à construire."}
           </SheetDescription>
         </SheetHeader>
         {doc?.devis && (
           <div className="mt-6">
-            <DevisDetail doc={doc} />
+            {doc.type === "avoir" ? <AvoirDetail doc={doc} onNavigate={onClose} /> : <DevisDetail doc={doc} />}
           </div>
         )}
         {doc && !doc.devis && (
