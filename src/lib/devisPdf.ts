@@ -48,7 +48,7 @@ export function nomFichierDevis(numero: string) {
   return `Devis_${propre || "brouillon"}.pdf`;
 }
 
-export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise): TDocumentDefinitions {
+export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise, finalise = false): TDocumentDefinitions {
   const recap = recapituler(d.lignes);
   const c = d.client;
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
@@ -134,9 +134,9 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
           width: "auto",
           alignment: "right",
           stack: [
-            { text: "DEVIS — BROUILLON", fontSize: 15, bold: true },
-            { text: `Réf. provisoire ${numero}`, color: GRIS, fontSize: 9 },
-            { text: "BROUILLON — NON ÉMIS", color: OR_TEXTE, fontSize: 8, bold: true, margin: [0, 4, 0, 0] },
+            { text: finalise ? "DEVIS" : "DEVIS — BROUILLON", fontSize: 15, bold: true },
+            { text: finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`, color: GRIS, fontSize: 9 },
+            ...(finalise ? [] : [{ text: "BROUILLON — NON ÉMIS", color: OR_TEXTE, fontSize: 8, bold: true, margin: [0, 4, 0, 0] as [number, number, number, number] }]),
           ],
         },
       ],
@@ -227,7 +227,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
     pageSize: "A4",
     pageOrientation: "portrait",
     pageMargins: [40, 48, 40, 52],
-    info: { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
+    info: finalise ? { title: `Devis ${numero}`, subject: "Devis", creator: "Les Frères Mayet" } : { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
     defaultStyle: { font: "Roboto", fontSize: 9.5, color: ENCRE, lineHeight: 1.2 },
     styles: {
       section: { fontSize: 7.5, bold: true, color: OR_TEXTE, margin: [0, 0, 0, 4] },
@@ -235,11 +235,11 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
     },
     header: (page) =>
       page > 1
-        ? { text: `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
+        ? { text: finalise ? `Devis ${numero} (suite)` : `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
         : { text: "" },
     footer: (page, total) => ({
       columns: [
-        { text: "Brouillon — non émis · Document de démonstration", fontSize: 7.5, color: PALE },
+        { text: finalise ? `Devis ${numero}` : "Brouillon — non émis · Document de démonstration", fontSize: 7.5, color: PALE },
         { text: `Page ${page} / ${total}`, fontSize: 7.5, color: PALE, alignment: "right" },
       ],
       margin: [40, 20, 40, 0],
@@ -249,13 +249,13 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise)
 }
 
 /** Génère le PDF et déclenche le téléchargement. Rejette en cas d'échec. */
-export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: Entreprise): Promise<void> {
+export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: Entreprise, finalise = false): Promise<void> {
   const [{ default: pdfMake }, fonts] = await Promise.all([
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts"),
   ]);
   const vfs = (fonts as unknown as { default?: Record<string, string> }).default ?? (fonts as unknown as Record<string, string>);
-  const doc = pdfMake.createPdf(definitionDevis(d, numero, ent), undefined, undefined, (vfs as { pdfMake?: { vfs: Record<string, string> } }).pdfMake?.vfs ?? vfs);
+  const doc = pdfMake.createPdf(definitionDevis(d, numero, ent, finalise), undefined, undefined, (vfs as { pdfMake?: { vfs: Record<string, string> } }).pdfMake?.vfs ?? vfs);
   const blob: Blob = await new Promise((resolve, reject) => {
     try {
       doc.getBlob((b: Blob) => resolve(b));

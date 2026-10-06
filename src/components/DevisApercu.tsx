@@ -23,7 +23,7 @@ export function versPublic(d: DevisBrouillon): DevisPublic {
   return reste;
 }
 
-export function DevisApercu({ devis: d, numero, entreprise: ent }: { devis: DevisPublic; numero: string; entreprise: Entreprise }) {
+export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean }) {
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
   const coordonnees = [ent.adresse, ent.complement, villeLigne, ent.pays].filter(Boolean);
   const contacts = [ent.telephone && `Tél. ${ent.telephone}`, ent.email, ent.site.replace(/^https?:\/\//, "").replace(/\/$/, "")].filter(Boolean) as string[];
@@ -52,11 +52,13 @@ export function DevisApercu({ devis: d, numero, entreprise: ent }: { devis: Devi
           </div>
         </div>
         <div className="sm:text-right">
-          <p className="text-xl font-semibold tracking-wide">DEVIS — BROUILLON</p>
-          <p className="text-sm text-doc-muted">Réf. provisoire {numero}</p>
+          <p className="text-xl font-semibold tracking-wide">{finalise ? "DEVIS" : "DEVIS — BROUILLON"}</p>
+          <p className="text-sm text-doc-muted">{finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`}</p>
+          {!finalise && (
           <p className="mt-1 inline-block rounded border border-doc-gold px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-doc-gold-ink">
             Brouillon — non émis
           </p>
+          )}
         </div>
       </header>
 
@@ -165,7 +167,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent }: { devis: Devi
       )}
 
       <p className="mt-10 border-t border-doc-line pt-3 text-center text-xs text-doc-faint">
-        Brouillon — non émis · Document de démonstration
+        {finalise ? `Devis ${numero}` : "Brouillon — non émis · Document de démonstration"}
       </p>
       {legal.length > 0 && (
         <footer className="mt-2 text-center text-[11px] leading-snug text-doc-faint" data-testid="apercu-pied">
