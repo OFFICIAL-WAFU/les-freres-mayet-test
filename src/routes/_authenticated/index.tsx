@@ -306,7 +306,7 @@ function SuiviLigne({ d }: { d: DocumentAvecDevis }) {
   const s = suivre(d.aRegler, d.reglements ?? [], d.credite ?? 0n);
   return (
     <span className="block text-xs text-muted-foreground">
-      {s.etat} · réglé {formaterCentimes(s.regle)} · reste {formaterCentimes(s.reste)}
+      {s.etat}{s.credite > 0n ? ` · crédité ${formaterCentimes(s.credite)}` : ""} · réglé {formaterCentimes(s.regle)} · reste {formaterCentimes(s.reste)}{s.creditClient > 0n ? ` · crédit client à traiter ${formaterCentimes(s.creditClient)}` : ""}
     </span>
   );
 }
