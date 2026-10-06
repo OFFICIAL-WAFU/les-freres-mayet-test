@@ -49,16 +49,17 @@ export function nomFichierDevis(numero: string) {
   return `Devis_${propre || "brouillon"}.pdf`;
 }
 
-export type OptionFacture = { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction };
+export type OptionFacture = { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction; avoir?: { motif: string } };
 
 export function nomFichierFacture(numero: string) {
-  return nomFichierDevis(numero).replace(/^Devis_/, numero.includes("-ACP-") ? "Acompte_" : "Facture_");
+  return nomFichierDevis(numero).replace(/^Devis_/, numero.startsWith("AV-") ? "Avoir_" : numero.includes("-ACP-") ? "Acompte_" : "Facture_");
 }
 
 export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise, finalise = false, facture?: OptionFacture): TDocumentDefinitions {
   if (facture) finalise = !!facture.finalisee;
   const factB = !!facture && !finalise;
   const acp = facture?.acompte !== undefined;
+  const av = facture?.avoir;
   const titreB = acp ? "FACTURE D'ACOMPTE — BROUILLON — NON ÉMISE" : "FACTURE — BROUILLON — NON ÉMISE";
   const mention = factB ? (facture?.acompte !== undefined ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : "Brouillon — non émis · Document de démonstration";
   const recap = recapituler(d.lignes);
@@ -113,7 +114,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     ] as Content[]),
     [{ text: "Total TVA" }, { text: t(formaterCentimes(recap.tva)), alignment: "right", bold: true }],
     [
-      { text: ded ? "Total des prestations TTC" : "Total TTC", bold: true, fontSize: ded ? 10 : 12, margin: [0, 4, 0, 0] },
+      { text: av ? "Total de l'avoir TTC" : ded ? "Total des prestations TTC" : "Total TTC", bold: true, fontSize: ded ? 10 : 12, margin: [0, 4, 0, 0] },
       { text: recap.complet ? t(formaterCentimes(recap.ttc)) : "Calcul incomplet", alignment: "right", bold: true, fontSize: (ded ? 10 : 12), margin: [0, 4, 0, 0] },
     ],
     ...lignesDeduction(recap, ded),
@@ -148,7 +149,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
           width: "auto",
           alignment: "right",
           stack: [
-            { text: factB ? titreB : facture ? (acp ? "FACTURE D'ACOMPTE" : "FACTURE") : finalise ? "DEVIS" : "DEVIS — BROUILLON", fontSize: factB ? 12 : 15, bold: true },
+            { text: factB ? titreB : av ? "AVOIR" : facture ? (acp ? "FACTURE D'ACOMPTE" : "FACTURE") : finalise ? "DEVIS" : "DEVIS — BROUILLON", fontSize: factB ? 12 : 15, bold: true },
             { text: finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`, color: GRIS, fontSize: 9 },
             ...(finalise || facture ? [] : [{ text: "BROUILLON — NON ÉMIS", color: OR_TEXTE, fontSize: 8, bold: true, margin: [0, 4, 0, 0] as [number, number, number, number] }]),
           ],
@@ -161,11 +162,11 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
         {
           width: "*",
           stack: [
-            titreSection(acp ? "Facture d'acompte" : facture ? "Facture" : "Devis"),
+            titreSection(av ? "Avoir" : acp ? "Facture d'acompte" : facture ? "Facture" : "Devis"),
             { text: [{ text: "Objet : ", color: GRIS }, d.objet] },
             { text: [{ text: "Date : ", color: GRIS }, fr(d.date)] },
             ...(d.validite ? [{ text: [{ text: facture ? "Échéance : " : "Valable jusqu'au : ", color: GRIS }, fr(d.validite)] }] : []),
-            ...(facture ? [{ text: [{ text: "Devis d'origine : ", color: GRIS }, facture.sourceRef] }] : []),
+            ...(av ? [{ text: [{ text: "Facture d'origine : ", color: GRIS }, facture!.sourceRef] }, { text: [{ text: "Motif : ", color: GRIS }, av.motif] }] : facture ? [{ text: [{ text: "Devis d'origine : ", color: GRIS }, facture.sourceRef] }] : []),
             ...(acp ? [{ text: [{ text: "Acompte : ", color: GRIS }, `${String(facture!.acompte).replace(".", ",")} % du devis`] }] : []),
           ],
         },
@@ -243,7 +244,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     pageSize: "A4",
     pageOrientation: "portrait",
     pageMargins: [40, 48, 40, 52],
-    info: acp && finalise ? { title: `Facture d'acompte ${numero}`, subject: "Facture d'acompte", creator: "Les Frères Mayet" } : acp ? { title: `Facture d'acompte ${numero} — brouillon non émis`, subject: "Facture d'acompte brouillon — non émise", creator: "Les Frères Mayet" } : facture && finalise ? { title: `Facture ${numero}`, subject: "Facture", creator: "Les Frères Mayet" } : facture ? { title: `Facture ${numero} — brouillon non émis`, subject: "Facture brouillon — non émise", creator: "Les Frères Mayet" } : finalise ? { title: `Devis ${numero}`, subject: "Devis", creator: "Les Frères Mayet" } : { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
+    info: av ? { title: `Avoir ${numero}`, subject: "Avoir", creator: "Les Frères Mayet" } : acp && finalise ? { title: `Facture d'acompte ${numero}`, subject: "Facture d'acompte", creator: "Les Frères Mayet" } : acp ? { title: `Facture d'acompte ${numero} — brouillon non émis`, subject: "Facture d'acompte brouillon — non émise", creator: "Les Frères Mayet" } : facture && finalise ? { title: `Facture ${numero}`, subject: "Facture", creator: "Les Frères Mayet" } : facture ? { title: `Facture ${numero} — brouillon non émis`, subject: "Facture brouillon — non émise", creator: "Les Frères Mayet" } : finalise ? { title: `Devis ${numero}`, subject: "Devis", creator: "Les Frères Mayet" } : { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
     defaultStyle: { font: "Roboto", fontSize: 9.5, color: ENCRE, lineHeight: 1.2 },
     styles: {
       section: { fontSize: 7.5, bold: true, color: OR_TEXTE, margin: [0, 0, 0, 4] },
@@ -251,11 +252,11 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     },
     header: (page) =>
       page > 1
-        ? { text: factB ? `${titreB} · ${numero} (suite)` : facture ? `${acp ? "Facture d'acompte" : "Facture"} ${numero} (suite)` : finalise ? `Devis ${numero} (suite)` : `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
+        ? { text: factB ? `${titreB} · ${numero} (suite)` : av ? `Avoir ${numero} (suite)` : facture ? `${acp ? "Facture d'acompte" : "Facture"} ${numero} (suite)` : finalise ? `Devis ${numero} (suite)` : `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
         : { text: "" },
     footer: (page, total) => ({
       columns: [
-        { text: finalise ? `${facture ? "Facture" : "Devis"} ${numero}` : facture ? `${mention} · ${numero}` : mention, fontSize: 7.5, color: PALE },
+        { text: finalise ? `${av ? "Avoir" : facture ? "Facture" : "Devis"} ${numero}` : facture ? `${mention} · ${numero}` : mention, fontSize: 7.5, color: PALE },
         { text: `Page ${page} / ${total}`, fontSize: 7.5, color: PALE, alignment: "right" },
       ],
       margin: [40, 20, 40, 0],
