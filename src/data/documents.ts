@@ -505,6 +505,11 @@ export async function chargerDocuments(): Promise<void> {
     tous.push(...(data as unknown as DevisBase[]).map(depuisBase));
     if (data.length < PAGE) break;
   }
+  // Seuls les avoirs finalisés réduisent le solde de leur facture source.
+  const credits = new Map<string, bigint>();
+  for (const d of tous) if (d.type === "avoir" && d.statut === "Finalisé" && d.factureSource)
+    credits.set(d.factureSource.id, (credits.get(d.factureSource.id) ?? 0n) + BigInt(Math.round(d.montantTTC! * 100)));
+  for (const d of tous) if (d.type === "facture" || d.type === "acompte") d.credite = credits.get(d.id) ?? 0n;
   publier({ statut: "pret", brouillons: tous });
 }
 
