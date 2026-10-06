@@ -27,7 +27,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
   if (facture) finalise = !!facture.finalisee;
   const factB = !!facture && !finalise;
   const acp = facture?.acompte !== undefined;
-  const nomDoc = facture ? "Facture" : "Devis";
+  const nomDoc = facture ? (facture.acompte !== undefined ? "Facture d'acompte" : "Facture") : "Devis";
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");
   const coordonnees = [ent.adresse, ent.complement, villeLigne, ent.pays].filter(Boolean);
   const contacts = [ent.telephone && `Tél. ${ent.telephone}`, ent.email, ent.site.replace(/^https?:\/\//, "").replace(/\/$/, "")].filter(Boolean) as string[];
