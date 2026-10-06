@@ -31,7 +31,7 @@ export function DeductionBloc({ recap, deduction: d }: { recap: Recapitulatif; d
             <div className={row}><dt>Solde TVA</dt><dd className="font-medium">{formaterCentimes(s.tva)}</dd></div>
             <div className={`${row} border-t border-border pt-2 text-base`}><dt className="font-semibold">Solde TTC de cette facture</dt><dd className="font-semibold">{formaterCentimes(s.ttc)}</dd></div>
           </dl>
-          {d.depasse && <p role="alert" className="mt-2 text-destructive">La déduction dépasse les prestations pour au moins un taux. Corrigez les lignes : la finalisation sera refusée.</p>}
+          {(d.depasse || s.parTaux.some((p) => p.ht < 0n || p.tva < 0n)) && <p role="alert" className="mt-2 text-destructive">La déduction dépasse les prestations pour au moins un taux. Corrigez les lignes : la finalisation sera refusée.</p>}
         </div>
       )}
       <p className="text-xs text-muted-foreground">{MSG_REGLEMENT}</p>
