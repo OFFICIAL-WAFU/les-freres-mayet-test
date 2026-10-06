@@ -9,6 +9,7 @@ import {
 
 import { Recap } from "@/components/DevisForm";
 import { DeductionBloc } from "@/components/DeductionBloc";
+import { ReglementsBloc } from "@/components/ReglementsBloc";
 import { MSG_REGLEMENT, solde } from "@/data/deduction";
 import { AcompteDialogue } from "@/components/AcompteDialogue";
 import { FacturePdfBouton } from "@/components/FacturePdfBouton";
@@ -308,6 +309,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <Recap recap={recap} vide={d.lignes.length === 0} />
         {doc.type === "facture" && doc.deduction && <DeductionBloc recap={recap} deduction={doc.deduction} />}
       </section>
+      {estFacture && finalise && <ReglementsBloc doc={doc} />}
 
       <section>
         <h3 className="font-semibold">Remarques destinées au client</h3>
