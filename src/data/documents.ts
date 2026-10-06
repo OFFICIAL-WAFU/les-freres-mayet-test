@@ -58,7 +58,7 @@ export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
   devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
   facture: ["Brouillon", "Finalisé", "En attente de paiement", "Payée"],
   acompte: ["Brouillon", "En attente de paiement", "Payé"],
-  avoir: ["Émis"],
+  avoir: ["Brouillon", "Émis"],
   rapport: ["Finalisé"],
 };
 
@@ -219,6 +219,9 @@ export interface DocumentAvecDevis extends DemoDocument {
   /** Facture finalisée : règlements enregistrés et montant à régler (centimes). */
   reglements?: Reglement[];
   aRegler?: bigint;
+  /** Avoir : facture d'origine et motif. */
+  factureSource?: { id: string; reference: string };
+  motif?: string;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -329,6 +332,52 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
 
 export class DevisNonFinalise extends Error {}
 
+// --- Avoirs brouillons (étape 21) -------------------------------------------
+interface AvoirBase {
+  id: string; reference: string; facture_source_id: string; facture_source_reference: string; client_id: string;
+  client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; date_avoir: string;
+  motif: string; remarques: string; version: number;
+}
+function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
+  const base = depuisBase({
+    id: a.id, reference: a.reference, client_id: a.client_id, client_copie: a.client_copie, objet: a.objet,
+    date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes,
+    version: a.version, statut: "brouillon", reference_definitive: null, finalise_le: null, entreprise_copie: null, lignes: a.lignes,
+  });
+  return { ...base, type: "avoir", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif };
+}
+export const avoirDeFacture = (liste: DocumentAvecDevis[], factureId: string) =>
+  liste.find((d) => d.type === "avoir" && d.factureSource?.id === factureId);
+/** Avoir possible : facture ordinaire finalisée, sans déduction d'acompte. */
+export const avoirEligible = (d: DocumentAvecDevis) => d.type === "facture" && d.statut === "Finalisé" && !d.deduction;
+export const MSG_AVOIR_ACOMPTE = "Avoir avec acompte : fonctionnalité à venir.";
+export class AvoirRefuse extends Error {}
+const MSG_AVOIR: Record<string, string> = {
+  avoir_acompte_a_venir: MSG_AVOIR_ACOMPTE,
+  motif_requis: "Le motif est obligatoire.",
+  avoir_facture_non_finalisee: "Un avoir ne peut être préparé que sur une facture finalisée.",
+};
+const erreurAvoir = (m: string) => new AvoirRefuse(Object.entries(MSG_AVOIR).find(([k]) => m.includes(k))?.[1] ?? "L'opération n'a pas abouti. Vous pouvez réessayer sans risque de doublon.");
+
+/** Prépare (ou retrouve) l'avoir total brouillon d'une facture. Idempotent côté serveur. */
+export async function preparerAvoir(factureId: string, motif: string): Promise<DocumentAvecDevis> {
+  const { data, error } = await supabase.rpc("preparer_avoir", { p_facture_id: factureId, p_motif: motif });
+  if (error) throw erreurAvoir(error.message);
+  const doc = depuisAvoir(data as unknown as AvoirBase);
+  conserver(doc);
+  return doc;
+}
+export async function enregistrerAvoir(id: string, version: number, v: { date: string; motif: string; remarques: string }): Promise<DocumentAvecDevis> {
+  const { data, error } = await supabase.rpc("enregistrer_avoir", { p_id: id, p_version: version, p: { date_avoir: v.date, motif: v.motif, remarques: v.remarques } });
+  if (error) {
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw erreurAvoir(error.message);
+  }
+  const doc = depuisAvoir(data as unknown as AvoirBase);
+  conserver(doc);
+  return doc;
+}
+
 /** Prépare (ou retrouve) la facture brouillon d'un devis finalisé. Idempotent côté serveur. */
 export async function preparerFacture(devisId: string): Promise<DocumentAvecDevis> {
   const { data, error } = await supabase.rpc("preparer_facture", { p_devis_id: devisId });
@@ -421,6 +470,13 @@ export async function chargerDocuments(): Promise<void> {
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
     tous.push(...(data as unknown as FactureBase[]).map(depuisFacture));
+    if (data.length < PAGE) break;
+  }
+  for (let debut = 0; ; debut += PAGE) {
+    const { data, error } = await supabase.from("avoirs").select("*")
+      .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
+    if (error) { publier({ statut: "erreur" }); return; }
+    tous.push(...(data as unknown as AvoirBase[]).map(depuisAvoir));
     if (data.length < PAGE) break;
   }
   for (let debut = 0; ; debut += PAGE) {
