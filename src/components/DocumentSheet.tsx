@@ -8,16 +8,19 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { DevisDetail } from "@/components/DevisDetail";
-import { TYPE_LABELS, formaterMontant, type DocumentAvecDevis } from "@/data/documents";
+import { TYPE_LABELS, formaterMontant, useDocuments, type DocumentAvecDevis } from "@/data/documents";
 
 /** Panneau de consultation d'un document (étape 1), partagé entre Documents et Clients. */
 export function DocumentSheet({
-  document: doc,
+  document: docInitial,
   onClose,
 }: {
   document: DocumentAvecDevis | null;
   onClose: () => void;
 }) {
+  // Version à jour (ex. après un règlement) : la liste partagée est rechargée, la fiche suit.
+  const liste = useDocuments();
+  const doc = docInitial ? (liste.find((x) => x.id === docInitial.id) ?? docInitial) : null;
   return (
     <Sheet open={doc !== null} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
