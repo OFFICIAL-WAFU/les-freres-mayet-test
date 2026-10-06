@@ -1,3 +1,5 @@
+import { DeductionBloc } from "@/components/DeductionBloc";
+import type { Deduction } from "@/data/deduction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { Plus, Search, X } from "lucide-react";
@@ -108,7 +110,7 @@ export function DevisForm({
   facture,
 }: {
   /** Mode facture brouillon : client figé, échéance au lieu de validité. */
-  facture?: { sourceRef: string };
+  facture?: { sourceRef: string; deduction?: Deduction };
   initial?: DevisBrouillon;
   documentId?: string;
   numero?: string;
@@ -496,6 +498,7 @@ export function DevisForm({
           <div className="rounded-2xl border border-border bg-card p-4">
             <h2 className="text-lg font-semibold">Récapitulatif</h2>
             <Recap recap={recap} vide={v.lignes.length === 0} />
+            {facture?.deduction && <DeductionBloc recap={recap} deduction={facture.deduction} />}
           </div>
           <div className="flex flex-col gap-2">
             {tentative && Object.keys(erreurs).length > 0 && (

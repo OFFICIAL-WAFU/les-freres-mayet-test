@@ -22,7 +22,7 @@ export function FacturePdfBouton({ doc }: { doc: DocumentAvecDevis }) {
     setEnCours(true);
     setEchec(false);
     try {
-      await telechargerDevisPdf(instantane, doc.numero, { ...entreprise }, false, { sourceRef: doc.devisSource?.reference ?? "", finalisee, ...(doc.pourcentage !== undefined ? { acompte: doc.pourcentage } : {}) });
+      await telechargerDevisPdf(instantane, doc.numero, { ...entreprise }, false, { sourceRef: doc.devisSource?.reference ?? "", finalisee, ...(doc.pourcentage !== undefined ? { acompte: doc.pourcentage } : {}), ...(doc.deduction ? { deduction: doc.deduction } : {}) });
     } catch {
       setEchec(true);
     } finally {
