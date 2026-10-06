@@ -101,7 +101,7 @@ export function AvoirDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
 }
 
 /** Dialogue de préparation d'un avoir total brouillon depuis une facture finalisée. */
-export function AvoirDialogue({ facture, onFermer, onNavigate }: { facture: DocumentAvecDevis; onFermer: () => void; onNavigate?: () => void }) {
+export function AvoirDialogue({ facture, onFermer, onNavigate }: { facture: DocumentAvecDevis; onFermer: () => void; onNavigate?: (() => void) | undefined }) {
   const navigate = useNavigate();
   const [motif, setMotif] = useState("");
   const [enCours, setEnCours] = useState(false);
