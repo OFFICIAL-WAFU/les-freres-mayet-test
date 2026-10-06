@@ -145,7 +145,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
           width: "auto",
           alignment: "right",
           stack: [
-            { text: factB ? titreB : facture ? "FACTURE" : finalise ? "DEVIS" : "DEVIS — BROUILLON", fontSize: factB ? 12 : 15, bold: true },
+            { text: factB ? titreB : facture ? (acp ? "FACTURE D'ACOMPTE" : "FACTURE") : finalise ? "DEVIS" : "DEVIS — BROUILLON", fontSize: factB ? 12 : 15, bold: true },
             { text: finalise ? `Réf. ${numero}` : `Réf. provisoire ${numero}`, color: GRIS, fontSize: 9 },
             ...(finalise || facture ? [] : [{ text: "BROUILLON — NON ÉMIS", color: OR_TEXTE, fontSize: 8, bold: true, margin: [0, 4, 0, 0] as [number, number, number, number] }]),
           ],
@@ -240,7 +240,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     pageSize: "A4",
     pageOrientation: "portrait",
     pageMargins: [40, 48, 40, 52],
-    info: acp ? { title: `Facture d'acompte ${numero} — brouillon non émis`, subject: "Facture d'acompte brouillon — non émise", creator: "Les Frères Mayet" } : facture && finalise ? { title: `Facture ${numero}`, subject: "Facture", creator: "Les Frères Mayet" } : facture ? { title: `Facture ${numero} — brouillon non émis`, subject: "Facture brouillon — non émise", creator: "Les Frères Mayet" } : finalise ? { title: `Devis ${numero}`, subject: "Devis", creator: "Les Frères Mayet" } : { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
+    info: acp && finalise ? { title: `Facture d'acompte ${numero}`, subject: "Facture d'acompte", creator: "Les Frères Mayet" } : acp ? { title: `Facture d'acompte ${numero} — brouillon non émis`, subject: "Facture d'acompte brouillon — non émise", creator: "Les Frères Mayet" } : facture && finalise ? { title: `Facture ${numero}`, subject: "Facture", creator: "Les Frères Mayet" } : facture ? { title: `Facture ${numero} — brouillon non émis`, subject: "Facture brouillon — non émise", creator: "Les Frères Mayet" } : finalise ? { title: `Devis ${numero}`, subject: "Devis", creator: "Les Frères Mayet" } : { title: `Devis ${numero} — brouillon`, subject: "Brouillon de devis — non émis", creator: "Les Frères Mayet (démonstration)" },
     defaultStyle: { font: "Roboto", fontSize: 9.5, color: ENCRE, lineHeight: 1.2 },
     styles: {
       section: { fontSize: 7.5, bold: true, color: OR_TEXTE, margin: [0, 0, 0, 4] },
@@ -248,7 +248,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     },
     header: (page) =>
       page > 1
-        ? { text: factB ? `${titreB} · ${numero} (suite)` : facture ? `Facture ${numero} (suite)` : finalise ? `Devis ${numero} (suite)` : `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
+        ? { text: factB ? `${titreB} · ${numero} (suite)` : facture ? `${acp ? "Facture d'acompte" : "Facture"} ${numero} (suite)` : finalise ? `Devis ${numero} (suite)` : `Devis ${numero} — brouillon (suite)`, fontSize: 7.5, color: PALE, alignment: "right", margin: [40, 22, 40, 0] }
         : { text: "" },
     footer: (page, total) => ({
       columns: [
@@ -280,7 +280,7 @@ export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: E
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = facture ? nomFichierFacture(numero) : nomFichierDevis(numero);
+  a.download = facture ? (facture.acompte !== undefined ? nomFichierDevis(numero).replace(/^Devis_/, "Acompte_") : nomFichierFacture(numero)) : nomFichierDevis(numero);
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -78,7 +78,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     try {
       const f = estFacture ? await finaliserFacture(doc.id, doc.version) : await finaliserDevis(doc.id, doc.version);
       setConfirmer(false);
-      toast.success(`${estFacture ? "Facture finalisée" : "Devis finalisé"} : ${f.numero}`);
+      toast.success(`${estAcompte ? "Acompte finalisé" : estFacture ? "Facture finalisée" : "Devis finalisé"} : ${f.numero}`);
     } catch (e) {
       setConfirmer(false);
       if (e instanceof DevisIncomplet) setEchec({ type: "manques", liste: e.manques });
@@ -95,7 +95,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} libelle={estFacture && finalise ? "Finalisée" : undefined} />
-        {estAcompte ? (
+        {estAcompte && finalise ? (
+          <span className="text-muted-foreground">Facture d'acompte · Finalisée · référence {doc.numero} · {String(doc.pourcentage ?? "").replace(".", ",")} % · finalisée le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · issue du devis {doc.devisSource?.reference}</span>
+          ) : estAcompte ? (
           <span className="text-muted-foreground">Facture d'acompte de {String(doc.pourcentage ?? "").replace(".", ",")} % · référence provisoire {doc.numero} — non émise · issue du devis {doc.devisSource?.reference}</span>
         ) : estFacture && finalise ? (
           <span className="text-muted-foreground">Facture · Finalisée · référence {doc.numero} · finalisée le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · issue du devis {doc.devisSource?.reference}</span>
@@ -146,6 +148,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <Button asChild variant="action">
           <Link to="/factures/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>{estAcompte ? "Modifier l'acompte brouillon" : "Modifier la facture brouillon"}</Link>
         </Button>
+        )}
+        {!finalise && estAcompte && (
+          <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser l'acompte</Button>
         )}
         {!finalise && !estAcompte && !acompteBloquant && (
           <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser la facture</Button>
@@ -225,14 +230,14 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <AlertDialog open>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{estFacture ? "Finaliser la facture ?" : "Finaliser le devis ?"}</AlertDialogTitle>
+              <AlertDialogTitle>{estAcompte ? "Finaliser l'acompte ?" : estFacture ? "Finaliser la facture ?" : "Finaliser le devis ?"}</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="flex flex-col gap-2 text-sm">
                   <p><span className="text-muted-foreground">Client :</span> {d.client.nom}</p>
-                  <p><span className="text-muted-foreground">Objet :</span> {d.objet}</p>
+                  <p><span className="text-muted-foreground">Objet :</span> {d.objet}</p>                  {estFacture && <p><span className="text-muted-foreground">Devis source :</span> {doc.devisSource?.reference}</p>}
                   <p><span className="text-muted-foreground">Total TTC :</span> {formaterCentimes(recap.ttc)}</p>
                   <p className="mt-2 text-foreground">{estFacture
-                    ? "Un numéro définitif sera attribué. Le contenu de cette facture ne pourra plus être modifié. Aucun email ne sera envoyé."
+                    ? estAcompte ? "Un numéro définitif sera attribué (série commune aux factures). Le contenu de cet acompte ne pourra plus être modifié. Aucun paiement n'est enregistré et aucun email ne sera envoyé." : "Un numéro définitif sera attribué. Le contenu de cette facture ne pourra plus être modifié. Aucun email ne sera envoyé."
                     : "La finalisation attribue un numéro définitif et fige le contenu du devis. Aucun message ne sera envoyé au client."}</p>
                 </div>
               </AlertDialogDescription>
