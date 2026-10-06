@@ -22,13 +22,13 @@ export const Route = createFileRoute("/_authenticated/factures/$id/")({
 function Page() {
   const { id } = Route.useParams();
   const etat = useEtatDocuments();
-  const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
+  const doc = etat.brouillons.find((d) => d.id === id && (d.type === "facture" || d.type === "acompte"));
   return (
     <AppLayout titre="Facture brouillon">
       {doc?.devis ? (
         <div className="max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>
-          <h1 className="text-2xl font-semibold lg:text-3xl">{doc.statut === "Finalisé" ? `Facture ${doc.numero}` : "Facture brouillon"} — {doc.devis.objet}</h1>
+          <h1 className="text-2xl font-semibold lg:text-3xl">{doc.type === "acompte" ? "Facture d'acompte brouillon" : doc.statut === "Finalisé" ? `Facture ${doc.numero}` : "Facture brouillon"} — {doc.devis.objet}</h1>
           <p className="mt-2 text-xs text-muted-foreground">Aucune facture n'a été envoyée depuis l'application.</p>
           <div className="mt-6 rounded-2xl border border-border bg-card p-4 lg:p-6">
             <DevisDetail doc={doc} />

@@ -25,7 +25,7 @@ export function DocumentSheet({
           <SheetTitle>{doc?.numero}</SheetTitle>
           <SheetDescription>
             {doc?.devis
-              ? `${doc.type === "facture" ? "Facture brouillon" : "Devis"} — ${doc.devis.objet}`
+              ? `${doc.type === "acompte" ? "Facture d'acompte" : doc.type === "facture" ? "Facture" : "Devis"} — ${doc.devis.objet}`
               : "Document de démonstration — contenu détaillé à construire."}
           </SheetDescription>
         </SheetHeader>

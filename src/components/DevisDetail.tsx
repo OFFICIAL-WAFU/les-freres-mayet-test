@@ -8,13 +8,14 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Recap } from "@/components/DevisForm";
+import { AcompteDialogue } from "@/components/AcompteDialogue";
 import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
-  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
+  ConflitDevis, DeductionAcompteRequise, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
   useEtatDocuments, type DocumentAvecDevis,
 } from "@/data/documents";
 
@@ -28,6 +29,7 @@ const MANQUES: Record<string, string> = {
   objet: "L'objet du document est absent.",
   lignes: "Le document ne contient aucune ligne.",
 };
+const MSG_ACOMPTE = "La déduction de l'acompte doit être disponible avant de finaliser cette facture.";
 const frDateHeure = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
 
@@ -38,10 +40,14 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   const d = doc.devis!;
   const recap = recapituler(d.lignes);
   const finalise = doc.statut === "Finalisé";
-  const estFacture = doc.type === "facture";
+  const estAcompte = doc.type === "acompte";
+  const estFacture = doc.type === "facture" || estAcompte;
   const navigate = useNavigate();
   const etatDocs = useEtatDocuments();
   const factureLiee = finalise && !estFacture ? factureDuDevis(etatDocs.brouillons, doc.id) : undefined;
+  const acompteLie = finalise && !estFacture ? acompteDuDevis(etatDocs.brouillons, doc.id) : undefined;
+  const acompteBloquant = doc.type === "facture" && doc.devisSource ? acompteDuDevis(etatDocs.brouillons, doc.devisSource.id) : undefined;
+  const [dlgAcompte, setDlgAcompte] = useState(false);
   const [confFacture, setConfFacture] = useState(false);
   const [prepEnCours, setPrepEnCours] = useState(false);
   const [prepEchec, setPrepEchec] = useState<string | null>(null);
@@ -63,7 +69,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   }
   const [confirmer, setConfirmer] = useState(false);
   const [enCours, setEnCours] = useState(false);
-  const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" }>(null);
+  const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" | "acompte" }>(null);
 
   async function finaliser() {
     if (enCours || doc.version === undefined) return;
@@ -77,6 +83,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       setConfirmer(false);
       if (e instanceof DevisIncomplet) setEchec({ type: "manques", liste: e.manques });
       else if (e instanceof ConflitDevis) setEchec({ type: "conflit" });
+      else if (e instanceof DeductionAcompteRequise) setEchec({ type: "acompte" });
       else if (e instanceof EtatIncertain) setEchec({ type: "incertain" });
       else setEchec({ type: "refus" });
     } finally {
@@ -88,7 +95,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} libelle={estFacture && finalise ? "Finalisée" : undefined} />
-        {estFacture && finalise ? (
+        {estAcompte ? (
+          <span className="text-muted-foreground">Facture d'acompte de {String(doc.pourcentage ?? "").replace(".", ",")} % · référence provisoire {doc.numero} — non émise · issue du devis {doc.devisSource?.reference}</span>
+        ) : estFacture && finalise ? (
           <span className="text-muted-foreground">Facture · Finalisée · référence {doc.numero} · finalisée le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · issue du devis {doc.devisSource?.reference}</span>
         ) : estFacture ? (
           <span className="text-muted-foreground">Facture · référence provisoire {doc.numero} — non émise · issue du devis {doc.devisSource?.reference}</span>
@@ -116,6 +125,8 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
               <p>Ce brouillon a été modifié depuis son ouverture. Rechargez la dernière version avant de finaliser.</p>
               <Button size="sm" variant="outline" className="mt-2" onClick={() => void chargerDocuments()}>Recharger la dernière version</Button>
             </>
+          ) : echec.type === "acompte" ? (
+            <p>{MSG_ACOMPTE}</p>
           ) : echec.type === "incertain" ? (
             <>
               <p>Impossible de vérifier pour l'instant si la finalisation a abouti. Aucun nouveau numéro ne sera attribué en vérifiant à nouveau.</p>
@@ -133,14 +144,17 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {!finalise && (
         <Button asChild variant="action">
-          <Link to="/factures/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>Modifier la facture brouillon</Link>
+          <Link to="/factures/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>{estAcompte ? "Modifier l'acompte brouillon" : "Modifier la facture brouillon"}</Link>
         </Button>
         )}
-        {!finalise && (
+        {!finalise && !estAcompte && !acompteBloquant && (
           <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser la facture</Button>
         )}
+        {!finalise && !estAcompte && acompteBloquant && (
+          <p className="text-sm text-muted-foreground sm:basis-full">{MSG_ACOMPTE}</p>
+        )}
         <Button asChild variant="outline">
-          <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de la facture</Link>
+          <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>{estAcompte ? "Aperçu de l'acompte" : "Aperçu de la facture"}</Link>
         </Button>
         <FacturePdfBouton doc={doc} />
         {doc.devisSource && (
@@ -157,6 +171,13 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           </Button>
         ) : (
           <Button variant="action" onClick={() => setConfFacture(true)}>Préparer une facture</Button>
+        ))}
+        {finalise && (acompteLie ? (
+          <Button asChild variant="outline">
+            <Link to="/factures/$id" params={{ id: acompteLie.id }} onClick={onNavigate}>Ouvrir l'acompte</Link>
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => setDlgAcompte(true)}>Préparer un acompte</Button>
         ))}
         {!finalise && (
         <Button asChild variant="action">
@@ -176,6 +197,11 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </div>
       )}
 
+      {dlgAcompte && (
+        <AcompteDialogue devisId={doc.id} devisRef={doc.numero}
+          onFermer={() => setDlgAcompte(false)}
+          onCree={(id) => { setDlgAcompte(false); onNavigate?.(); navigate({ to: "/factures/$id", params: { id } }); }} />
+      )}
       {confFacture && (
         <AlertDialog open>
           <AlertDialogContent>
@@ -222,10 +248,11 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       )}
 
       <section>
-        <h3 className="font-semibold">{estFacture ? "Informations de la facture" : "Informations du devis"}</h3>
+        <h3 className="font-semibold">{estAcompte ? "Informations de l'acompte" : estFacture ? "Informations de la facture" : "Informations du devis"}</h3>
         <dl className="mt-2 grid gap-2 sm:grid-cols-3">
           <div className="sm:col-span-3"><dt className="text-muted-foreground">Objet</dt><dd className="font-medium break-words">{d.objet}</dd></div>
           <div><dt className="text-muted-foreground">Date</dt><dd className="font-medium">{fr(d.date)}</dd></div>
+          {estAcompte && <div><dt className="text-muted-foreground">Pourcentage</dt><dd className="font-medium">{String(doc.pourcentage ?? "").replace(".", ",")} %</dd></div>}
           <div><dt className="text-muted-foreground">{estFacture ? "Échéance" : "Validité"}</dt><dd className="font-medium">{fr(d.validite)}</dd></div>
         </dl>
       </section>

@@ -155,14 +155,17 @@ export type Database = {
       compteurs_factures_brouillon: {
         Row: {
           dernier: number
+          dernier_acompte: number
           owner_id: string
         }
         Insert: {
           dernier?: number
+          dernier_acompte?: number
           owner_id?: string
         }
         Update: {
           dernier?: number
+          dernier_acompte?: number
           owner_id?: string
         }
         Relationships: []
@@ -425,9 +428,11 @@ export type Database = {
           finalise_le: string | null
           finalise_par: string | null
           id: string
+          nature: string
           notes: string
           objet: string
           owner_id: string
+          pourcentage: number | null
           reference: string
           reference_definitive: string | null
           remarques: string
@@ -451,9 +456,11 @@ export type Database = {
           finalise_le?: string | null
           finalise_par?: string | null
           id?: string
+          nature?: string
           notes?: string
           objet: string
           owner_id?: string
+          pourcentage?: number | null
           reference: string
           reference_definitive?: string | null
           remarques?: string
@@ -477,9 +484,11 @@ export type Database = {
           finalise_le?: string | null
           finalise_par?: string | null
           id?: string
+          nature?: string
           notes?: string
           objet?: string
           owner_id?: string
+          pourcentage?: number | null
           reference?: string
           reference_definitive?: string | null
           remarques?: string
@@ -502,7 +511,7 @@ export type Database = {
           {
             foreignKeyName: "factures_devis_source_id_fkey"
             columns: ["devis_source_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "devis"
             referencedColumns: ["id"]
           },
@@ -585,6 +594,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acompte_calcul: {
+        Args: { p_devis_id: string; p_pourcentage: number }
+        Returns: Json
+      }
+      acompte_ecrire_lignes: {
+        Args: {
+          p_calcul: Json
+          p_devis_ref: string
+          p_facture_id: string
+          p_pourcentage: number
+        }
+        Returns: undefined
+      }
+      enregistrer_acompte: {
+        Args: { p: Json; p_id: string; p_version: number }
+        Returns: Json
+      }
       enregistrer_brouillon: {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
@@ -604,6 +630,10 @@ export type Database = {
       }
       lire_devis: { Args: { p_id: string }; Returns: Json }
       lire_facture: { Args: { p_id: string }; Returns: Json }
+      preparer_acompte: {
+        Args: { p_devis_id: string; p_pourcentage: number }
+        Returns: Json
+      }
       preparer_facture: { Args: { p_devis_id: string }; Returns: Json }
     }
     Enums: {

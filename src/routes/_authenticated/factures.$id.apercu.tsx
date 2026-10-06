@@ -27,7 +27,7 @@ function Page() {
   const { id } = Route.useParams();
   const etatEnt = useEtatEntreprise();
   const etat = useEtatDocuments();
-  const doc = etat.brouillons.find((d) => d.id === id && d.type === "facture");
+  const doc = etat.brouillons.find((d) => d.id === id && (d.type === "facture" || d.type === "acompte"));
   const finalisee = doc?.statut === "Finalisé";
   const entreprise = finalisee ? doc?.entrepriseFigee ?? null : etatEnt.statut === "pret" ? etatEnt.fiche : null;
 
@@ -67,7 +67,7 @@ function Page() {
                 devis={versPublic(doc.devis)}
                 numero={doc.numero}
                 entreprise={entreprise}
-                facture={{ sourceRef: doc.devisSource?.reference ?? "", finalisee }}
+                facture={{ sourceRef: doc.devisSource?.reference ?? "", finalisee, ...(doc.pourcentage !== undefined ? { acompte: doc.pourcentage } : {}) }}
               />
             </div>
           )}
