@@ -31,7 +31,7 @@ export function analyserMontant(saisie: string): bigint | null {
   const s = saisie.trim().replace(/\s/g, "").replace(".", ",");
   const m = /^(\d+)(?:,(\d{1,2}))?$/.exec(s);
   if (!m) return null;
-  const c = BigInt(m[1]) * 100n + BigInt((m[2] ?? "").padEnd(2, "0") || "0");
+  const c = BigInt(m[1]!) * 100n + BigInt((m[2] ?? "").padEnd(2, "0") || "0");
   return c > 0n ? c : null;
 }
 
