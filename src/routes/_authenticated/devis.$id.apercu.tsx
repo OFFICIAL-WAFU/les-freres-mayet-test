@@ -28,14 +28,14 @@ function Page() {
   const { id } = Route.useParams();
   const etatEnt = useEtatEntreprise();
   const etatDocs0 = useEtatDocuments();
-  const doc0 = etatDocs0.brouillons.find((d) => d.id === id);
+  const doc0 = etatDocs0.brouillons.find((d) => d.id === id && d.type === "devis");
   const finalise = doc0?.statut === "Finalisé";
   // Devis finalisé : uniquement la copie figée de l'entreprise.
   const entreprise = finalise ? doc0?.entrepriseFigee ?? null : etatEnt.statut === "pret" ? etatEnt.fiche : null;
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState(false);
   const etatDocs = useEtatDocuments();
-  const doc = etatDocs.brouillons.find((d) => d.id === id);
+  const doc = etatDocs.brouillons.find((d) => d.id === id && d.type === "devis");
   const telecharger = async () => {
     if (!doc?.devis || !entreprise || enCours) return;
     // Instantané des données enregistrées au moment du clic.

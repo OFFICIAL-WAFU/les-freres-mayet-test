@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/devis/$id/")({
 function Page() {
   const { id } = Route.useParams();
   const etatDocs = useEtatDocuments();
-  const doc = etatDocs.brouillons.find((d) => d.id === id);
+  const doc = etatDocs.brouillons.find((d) => d.id === id && d.type === "devis");
   return (
     <AppLayout titre="Brouillon de devis">
       {doc?.devis ? (

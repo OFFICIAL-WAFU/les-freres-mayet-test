@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
-  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, finaliserDevis, relireDevis,
-  type DocumentAvecDevis,
+  ConflitDevis, DevisIncomplet, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, preparerFacture, relireDevis,
+  useEtatDocuments, type DocumentAvecDevis,
 } from "@/data/documents";
 
 const MANQUES: Record<string, string> = {
@@ -37,6 +37,29 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   const d = doc.devis!;
   const recap = recapituler(d.lignes);
   const finalise = doc.statut === "Finalisé";
+  const estFacture = doc.type === "facture";
+  const navigate = useNavigate();
+  const etatDocs = useEtatDocuments();
+  const factureLiee = finalise && !estFacture ? factureDuDevis(etatDocs.brouillons, doc.id) : undefined;
+  const [confFacture, setConfFacture] = useState(false);
+  const [prepEnCours, setPrepEnCours] = useState(false);
+  const [prepEchec, setPrepEchec] = useState<string | null>(null);
+
+  async function preparer() {
+    if (prepEnCours) return;
+    setPrepEnCours(true);
+    setPrepEchec(null);
+    try {
+      const f = await preparerFacture(doc.id);
+      setConfFacture(false);
+      onNavigate?.();
+      navigate({ to: "/factures/$id", params: { id: f.id } });
+    } catch {
+      setPrepEchec("La facture brouillon n'a pas pu être préparée. Le devis est inchangé ; vous pouvez réessayer sans risque de doublon.");
+    } finally {
+      setPrepEnCours(false);
+    }
+  }
   const [confirmer, setConfirmer] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" }>(null);
@@ -64,7 +87,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     <div className="flex flex-col gap-5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} />
-        {finalise ? (
+        {estFacture ? (
+          <span className="text-muted-foreground">Facture · référence provisoire {doc.numero} — non émise · issue du devis {doc.devisSource?.reference}</span>
+        ) : finalise ? (
           <span className="text-muted-foreground">Référence {doc.numero} · finalisé le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · réf. provisoire {doc.referenceProvisoire}</span>
         ) : (
           <span className="text-muted-foreground">Référence provisoire {doc.numero} — brouillon non émis</span>
@@ -100,7 +125,30 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           )}
         </div>
       )}
+      {prepEchec && <p role="alert" className="rounded-xl border border-destructive/40 bg-card p-3">{prepEchec}</p>}
+      {estFacture ? (
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button asChild variant="action">
+          <Link to="/factures/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>Modifier la facture brouillon</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>Aperçu de la facture</Link>
+        </Button>
+        {doc.devisSource && (
+          <Button asChild variant="ghost">
+            <Link to="/devis/$id" params={{ id: doc.devisSource.id }} onClick={onNavigate}>Voir le devis {doc.devisSource.reference}</Link>
+          </Button>
+        )}
+      </div>
+      ) : (
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {finalise && (factureLiee ? (
+          <Button asChild variant="action">
+            <Link to="/factures/$id" params={{ id: factureLiee.id }} onClick={onNavigate}>Ouvrir la facture brouillon</Link>
+          </Button>
+        ) : (
+          <Button variant="action" onClick={() => setConfFacture(true)}>Préparer une facture</Button>
+        ))}
         {!finalise && (
         <Button asChild variant="action">
           <Link to="/devis/$id/modifier" params={{ id: doc.id }} onClick={onNavigate}>
@@ -117,6 +165,26 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           </Link>
         </Button>
       </div>
+      )}
+
+      {confFacture && (
+        <AlertDialog open>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Préparer une facture</AlertDialogTitle>
+              <AlertDialogDescription>
+                Préparer une facture brouillon à partir de ce devis ? Aucun document ne sera émis ni envoyé.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={prepEnCours} onClick={() => setConfFacture(false)}>Annuler</AlertDialogCancel>
+              <Button variant="action" disabled={prepEnCours} aria-busy={prepEnCours} onClick={() => void preparer()}>
+                {prepEnCours && <Loader2 className="animate-spin" />}{prepEnCours ? "Préparation…" : "Préparer la facture brouillon"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {confirmer && (
         <AlertDialog open>
@@ -143,16 +211,16 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       )}
 
       <section>
-        <h3 className="font-semibold">Informations du devis</h3>
+        <h3 className="font-semibold">{estFacture ? "Informations de la facture" : "Informations du devis"}</h3>
         <dl className="mt-2 grid gap-2 sm:grid-cols-3">
           <div className="sm:col-span-3"><dt className="text-muted-foreground">Objet</dt><dd className="font-medium break-words">{d.objet}</dd></div>
           <div><dt className="text-muted-foreground">Date</dt><dd className="font-medium">{fr(d.date)}</dd></div>
-          <div><dt className="text-muted-foreground">Validité</dt><dd className="font-medium">{fr(d.validite)}</dd></div>
+          <div><dt className="text-muted-foreground">{estFacture ? "Échéance" : "Validité"}</dt><dd className="font-medium">{fr(d.validite)}</dd></div>
         </dl>
       </section>
 
       <section>
-        <h3 className="font-semibold">{finalise ? "Client (coordonnées figées à la finalisation)" : "Client (coordonnées enregistrées avec le brouillon)"}</h3>
+        <h3 className="font-semibold">{estFacture ? "Client (coordonnées reprises du devis)" : finalise ? "Client (coordonnées figées à la finalisation)" : "Client (coordonnées enregistrées avec le brouillon)"}</h3>
         <div className="mt-2">
           <p className="font-medium">{d.client.nom}</p>
           {d.client.contact && <p>Contact : {d.client.contact}</p>}

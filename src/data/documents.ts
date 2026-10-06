@@ -54,7 +54,7 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
   devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
-  facture: ["En attente de paiement", "Payée"],
+  facture: ["Brouillon", "En attente de paiement", "Payée"],
   acompte: ["En attente de paiement", "Payé"],
   avoir: ["Émis"],
   rapport: ["Finalisé"],
@@ -208,6 +208,8 @@ export interface DocumentAvecDevis extends DemoDocument {
   /** Devis finalisé : horodatage ISO et copie figée de l'entreprise. */
   finaliseLe?: string;
   entrepriseFigee?: Entreprise;
+  /** Facture brouillon : devis d'origine (le champ devis.validite porte alors l'échéance). */
+  devisSource?: { id: string; reference: string };
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -287,10 +289,66 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
   };
 }
 
+// --- Factures brouillons (étape 14) -----------------------------------------
+interface FactureBase {
+  id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
+  date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
+  version: number; devis_source_id: string; devis_source_reference: string; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
+}
+function depuisFacture(f: FactureBase): DocumentAvecDevis {
+  const base = depuisBase({
+    id: f.id, reference: f.reference, client_id: f.client_id, client_copie: f.client_copie, objet: f.objet,
+    date_devis: f.date_facture, date_validite: f.date_echeance, remarques: f.remarques, notes: f.notes,
+    total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: "brouillon", reference_definitive: null,
+    finalise_le: null, entreprise_copie: null, lignes: f.lignes ?? f.factures_lignes ?? [],
+  });
+  return { ...base, type: "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference } };
+}
+
+export class DevisNonFinalise extends Error {}
+
+/** Prépare (ou retrouve) la facture brouillon d'un devis finalisé. Idempotent côté serveur. */
+export async function preparerFacture(devisId: string): Promise<DocumentAvecDevis> {
+  const { data, error } = await supabase.rpc("preparer_facture", { p_devis_id: devisId });
+  if (error) {
+    if (error.message.includes("devis_non_finalise")) throw new DevisNonFinalise();
+    throw new ErreurDevis(error.message);
+  }
+  const doc = depuisFacture(data as unknown as FactureBase);
+  conserver(doc);
+  return doc;
+}
+
+/** Facture brouillon liée à un devis, si elle est déjà chargée. */
+export const factureDuDevis = (liste: DocumentAvecDevis[], devisId: string) =>
+  liste.find((d) => d.type === "facture" && d.devisSource?.id === devisId);
+
+export async function enregistrerFacture(id: string, v: DevisBrouillon, version: number): Promise<DocumentAvecDevis> {
+  const lignes = versLignes(v);
+  const { data, error } = await supabase.rpc("enregistrer_facture", {
+    p_id: id, p_version: version,
+    p: { objet: v.objet.trim(), date_facture: v.date, date_echeance: v.validite, remarques: v.remarques, notes: v.notes, lignes } as unknown as Json,
+  });
+  if (error) {
+    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw new ErreurDevis(error.message);
+  }
+  const doc = depuisFacture(data as unknown as FactureBase);
+  conserver(doc);
+  return doc;
+}
+
 const PAGE = 500;
 export async function chargerDocuments(): Promise<void> {
   publier({ statut: "chargement" });
   const tous: DocumentAvecDevis[] = [];
+  for (let debut = 0; ; debut += PAGE) {
+    const { data, error } = await supabase.from("factures").select("*, factures_lignes(*)")
+      .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
+    if (error) { publier({ statut: "erreur" }); return; }
+    tous.push(...(data as unknown as FactureBase[]).map(depuisFacture));
+    if (data.length < PAGE) break;
+  }
   for (let debut = 0; ; debut += PAGE) {
     const { data, error } = await supabase.from("devis").select("*, devis_lignes(*)")
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
@@ -308,8 +366,8 @@ export class ErreurDevis extends Error {}
  * Enregistre un brouillon complet en une seule opération côté base (création si version = null).
  * Les montants sont recalculés par le serveur ; la valeur renvoyée est celle réellement enregistrée.
  */
-export async function enregistrerBrouillon(id: string, v: DevisBrouillon, version: number | null): Promise<DocumentAvecDevis> {
-  const lignes = v.lignes.map((l) => {
+function versLignes(v: DevisBrouillon) {
+  return v.lignes.map((l) => {
     const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix);
     if (typeof q === "string" || typeof p === "string" || l.taux === null) throw new ErreurDevis("Ligne invalide");
     return {
@@ -318,6 +376,10 @@ export async function enregistrerBrouillon(id: string, v: DevisBrouillon, versio
       taux_tva_milliemes: l.taux,
     };
   });
+}
+
+export async function enregistrerBrouillon(id: string, v: DevisBrouillon, version: number | null): Promise<DocumentAvecDevis> {
+  const lignes = versLignes(v);
   const charge = {
     client_id: v.clientId, client_copie: v.client, objet: v.objet.trim(), date_devis: v.date,
     date_validite: v.validite, remarques: v.remarques, notes: v.notes, lignes,

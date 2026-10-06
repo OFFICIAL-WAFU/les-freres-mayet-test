@@ -48,7 +48,7 @@ import {
   type LigneSaisie,
   type TauxTVA,
 } from "@/data/devis";
-import { chargerDocuments, ConflitDevis, enregistrerBrouillon } from "@/data/documents";
+import { chargerDocuments, ConflitDevis, enregistrerBrouillon, enregistrerFacture } from "@/data/documents";
 
 function aujourdhui() {
   const d = new Date();
@@ -105,7 +105,10 @@ export function DevisForm({
   documentId,
   numero,
   version,
+  facture,
 }: {
+  /** Mode facture brouillon : client figé, échéance au lieu de validité. */
+  facture?: { sourceRef: string };
   initial?: DevisBrouillon;
   documentId?: string;
   numero?: string;
@@ -152,11 +155,13 @@ export function DevisForm({
   // --- Validation ---------------------------------------------------------
   const erreurs: Record<string, string> = {};
   if (!v.clientId) erreurs["d-client"] = "Sélectionnez un client.";
-  if (!v.objet.trim()) erreurs["d-objet"] = "Indiquez l'objet du devis.";
+  if (!v.objet.trim()) erreurs["d-objet"] = facture ? "Indiquez l'objet de la facture." : "Indiquez l'objet du devis.";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) erreurs["d-date"] = "Indiquez une date valide.";
   if (v.validite && !/^\d{4}-\d{2}-\d{2}$/.test(v.validite)) erreurs["d-validite"] = "Date invalide.";
   else if (v.validite && v.date && v.validite < v.date)
-    erreurs["d-validite"] = "La date de validité ne peut pas être antérieure à la date du devis.";
+    erreurs["d-validite"] = facture
+      ? "L'échéance ne peut pas être antérieure à la date de la facture."
+      : "La date de validité ne peut pas être antérieure à la date du devis.";
   const validations = v.lignes.map((l) => ({ l, ...validerLigne(l) }));
   for (const { l, erreurs: e } of validations)
     for (const k of ["designation", "unite", "quantite", "prix", "taux"] as const)
@@ -178,6 +183,13 @@ export function DevisForm({
     setEnCours(true);
     setEchec(null);
     try {
+      if (facture) {
+        const doc = await enregistrerFacture(idTentative.current, v, version!);
+        enregistre.current = true;
+        toast.success("Facture brouillon enregistrée");
+        navigate({ to: "/factures/$id", params: { id: doc.id } });
+        return;
+      }
       const doc = await enregistrerBrouillon(idTentative.current, v, version ?? null);
       enregistre.current = true;
       toast.success("Brouillon enregistré");
@@ -251,11 +263,12 @@ export function DevisForm({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold lg:text-3xl">
-              {documentId ? "Modifier le brouillon" : "Nouveau devis"}
+              {facture ? "Modifier la facture brouillon" : documentId ? "Modifier le brouillon" : "Nouveau devis"}
             </h1>
             <StatutBadge statut="Brouillon" />
           </div>
           {numero && <p className="mt-1 text-sm text-muted-foreground">Référence provisoire : {numero}</p>}
+          {facture && <p className="mt-1 text-sm text-muted-foreground">Issue du devis {facture.sourceRef} — facture non émise.</p>}
           <p className="mt-2 text-sm text-muted-foreground">Démonstration — aucun document ne sera envoyé.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Les brouillons enregistrés sont conservés dans votre espace privé.
@@ -287,6 +300,15 @@ export function DevisForm({
               <p className="text-sm">
                 Aucun client n'existe encore. Créez d'abord un client dans la rubrique Clients.
               </p>
+            ) : facture ? (
+              <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
+                <p className="font-semibold">{v.client.nom}</p>
+                {v.client.contact && <p>Contact : {v.client.contact}</p>}
+                {v.client.telephone && <p>{v.client.telephone}</p>}
+                {v.client.email && <p className="break-all">{v.client.email}</p>}
+                {v.client.adresse.map((l, i) => <p key={i}>{l}</p>)}
+                <p className="mt-2 text-xs text-muted-foreground">Coordonnées reprises du devis {facture.sourceRef}. Le client ne peut pas être changé.</p>
+              </div>
             ) : v.clientId && !choixClient ? (
               <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
                 <p className="font-semibold">{v.client.nom}</p>
@@ -345,20 +367,20 @@ export function DevisForm({
           </Section>
 
           {/* 2. Informations */}
-          <Section numero={2} titre="Informations du devis">
+          <Section numero={2} titre={facture ? "Informations de la facture" : "Informations du devis"}>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="d-objet">Objet du devis <span className="font-normal text-muted-foreground">(obligatoire)</span></Label>
+              <Label htmlFor="d-objet">{facture ? "Objet de la facture" : "Objet du devis"} <span className="font-normal text-muted-foreground">(obligatoire)</span></Label>
               <Input id="d-objet" value={v.objet} onChange={(e) => maj({ objet: e.target.value })} aria-invalid={!!err("d-objet")} />
               <Erreur id="d-objet" texte={err("d-objet")} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="d-date">Date du devis <span className="font-normal text-muted-foreground">(obligatoire)</span></Label>
+                <Label htmlFor="d-date">{facture ? "Date de la facture" : "Date du devis"} <span className="font-normal text-muted-foreground">(obligatoire)</span></Label>
                 <Input id="d-date" type="date" value={v.date} onChange={(e) => maj({ date: e.target.value })} aria-invalid={!!err("d-date")} />
                 <Erreur id="d-date" texte={err("d-date")} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="d-validite">Date de validité <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+                <Label htmlFor="d-validite">{facture ? "Échéance" : "Date de validité"} <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
                 <Input id="d-validite" type="date" value={v.validite} onChange={(e) => maj({ validite: e.target.value })} aria-invalid={!!erreurs["d-validite"]} />
                 <Erreur id="d-validite" texte={erreurs["d-validite"]} />
               </div>
@@ -366,7 +388,7 @@ export function DevisForm({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="d-remarques">Remarques destinées au client <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
               <Textarea id="d-remarques" rows={3} value={v.remarques} onChange={(e) => maj({ remarques: e.target.value })} />
-              <p className="text-xs text-muted-foreground">Visibles par le client sur le devis.</p>
+              <p className="text-xs text-muted-foreground">{facture ? "Visibles par le client sur la facture." : "Visibles par le client sur le devis."}</p>
             </div>
             <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-border bg-muted p-3">
               <Label htmlFor="d-notes">Notes internes <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
@@ -376,7 +398,7 @@ export function DevisForm({
           </Section>
 
           {/* 3. Lignes */}
-          <Section numero={3} titre="Lignes du devis">
+          <Section numero={3} titre={facture ? "Lignes de la facture" : "Lignes du devis"}>
             <p className="text-xs text-muted-foreground">
               Le taux de TVA est à choisir pour chaque ligne. Ce choix ne constitue pas une validation de l'éligibilité fiscale.
             </p>
@@ -503,7 +525,9 @@ export function DevisForm({
               type="button"
               variant="outline"
               onClick={() =>
-                documentId
+                facture && documentId
+                  ? navigate({ to: "/factures/$id", params: { id: documentId } })
+                  : documentId
                   ? navigate({ to: "/devis/$id", params: { id: documentId }})
                   : navigate({ to: "/" })
               }
