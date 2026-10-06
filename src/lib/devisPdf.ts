@@ -280,7 +280,7 @@ export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: E
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = facture ? nomFichierFacture(numero) : nomFichierDevis(numero);
+  a.download = facture ? (facture.acompte !== undefined ? nomFichierDevis(numero).replace(/^Devis_/, "Acompte_") : nomFichierFacture(numero)) : nomFichierDevis(numero);
   document.body.appendChild(a);
   a.click();
   a.remove();
