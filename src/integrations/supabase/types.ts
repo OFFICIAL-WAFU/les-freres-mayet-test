@@ -71,6 +71,83 @@ export type Database = {
         }
         Relationships: []
       }
+      avoirs: {
+        Row: {
+          client_copie: Json
+          client_id: string
+          created_at: string
+          date_avoir: string
+          facture_source_id: string
+          facture_source_reference: string
+          id: string
+          lignes: Json
+          motif: string
+          objet: string
+          owner_id: string
+          reference: string
+          remarques: string
+          statut: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          updated_at: string
+          ventilation_tva: Json
+          version: number
+        }
+        Insert: {
+          client_copie: Json
+          client_id: string
+          created_at?: string
+          date_avoir: string
+          facture_source_id: string
+          facture_source_reference: string
+          id?: string
+          lignes: Json
+          motif: string
+          objet: string
+          owner_id: string
+          reference: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          updated_at?: string
+          ventilation_tva: Json
+          version?: number
+        }
+        Update: {
+          client_copie?: Json
+          client_id?: string
+          created_at?: string
+          date_avoir?: string
+          facture_source_id?: string
+          facture_source_reference?: string
+          id?: string
+          lignes?: Json
+          motif?: string
+          objet?: string
+          owner_id?: string
+          reference?: string
+          remarques?: string
+          statut?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          updated_at?: string
+          ventilation_tva?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avoirs_facture_source_id_fkey"
+            columns: ["facture_source_id"]
+            isOneToOne: true
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string
@@ -156,16 +233,19 @@ export type Database = {
         Row: {
           dernier: number
           dernier_acompte: number
+          dernier_avoir: number
           owner_id: string
         }
         Insert: {
           dernier?: number
           dernier_acompte?: number
+          dernier_avoir?: number
           owner_id?: string
         }
         Update: {
           dernier?: number
           dernier_acompte?: number
+          dernier_avoir?: number
           owner_id?: string
         }
         Relationships: []
@@ -685,6 +765,10 @@ export type Database = {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
       }
+      enregistrer_avoir: {
+        Args: { p: Json; p_id: string; p_version: number }
+        Returns: Json
+      }
       enregistrer_brouillon: {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
@@ -721,6 +805,10 @@ export type Database = {
       lire_facture: { Args: { p_id: string }; Returns: Json }
       preparer_acompte: {
         Args: { p_devis_id: string; p_pourcentage: number }
+        Returns: Json
+      }
+      preparer_avoir: {
+        Args: { p_facture_id: string; p_motif: string }
         Returns: Json
       }
       preparer_facture: { Args: { p_devis_id: string }; Returns: Json }
