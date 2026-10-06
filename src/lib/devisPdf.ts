@@ -1,3 +1,4 @@
+import { solde, type Deduction } from "@/data/deduction";
 /**
  * Génération locale (dans le navigateur) du PDF de brouillon de devis.
  * Reçoit uniquement des données publiques : aucune note interne n'est transmise.
@@ -48,7 +49,7 @@ export function nomFichierDevis(numero: string) {
   return `Devis_${propre || "brouillon"}.pdf`;
 }
 
-export type OptionFacture = { sourceRef: string; finalisee?: boolean; acompte?: number };
+export type OptionFacture = { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction };
 
 export function nomFichierFacture(numero: string) {
   return nomFichierDevis(numero).replace(/^Devis_/, numero.includes("-ACP-") ? "Acompte_" : "Facture_");
@@ -103,6 +104,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     });
   });
 
+  const ded = facture?.deduction;
   const totaux: Content[][] = [
     [{ text: "Total HT" }, { text: t(formaterCentimes(recap.ht)), alignment: "right", bold: true }],
     ...recap.parTaux.map((x) => [
@@ -111,9 +113,10 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     ] as Content[]),
     [{ text: "Total TVA" }, { text: t(formaterCentimes(recap.tva)), alignment: "right", bold: true }],
     [
-      { text: "Total TTC", bold: true, fontSize: 12, margin: [0, 4, 0, 0] },
-      { text: recap.complet ? t(formaterCentimes(recap.ttc)) : "Calcul incomplet", alignment: "right", bold: true, fontSize: 12, margin: [0, 4, 0, 0] },
+      { text: ded ? "Total des prestations TTC" : "Total TTC", bold: true, fontSize: ded ? 10 : 12, margin: [0, 4, 0, 0] },
+      { text: recap.complet ? t(formaterCentimes(recap.ttc)) : "Calcul incomplet", alignment: "right", bold: true, fontSize: (ded ? 10 : 12), margin: [0, 4, 0, 0] },
     ],
+    ...lignesDeduction(recap, ded),
   ];
 
   const content: Content[] = [
@@ -285,4 +288,30 @@ export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: E
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function lignesDeduction(recap: ReturnType<typeof recapituler>, d: Deduction | undefined): Content[][] {
+  if (!d) return [];
+  if (d.statut !== "finalise") return [[{ text: t(`Acompte ${d.reference} encore en brouillon — non déduit`), color: GRIS, colSpan: 2 }, ""]];
+  const s = solde(recap, d);
+  const fin = (x: bigint) => t(formaterCentimes(x));
+  return [
+    [{ text: t(`Acompte déjà facturé à déduire — ${d.reference}`), bold: true, colSpan: 2, margin: [0, 8, 0, 0] }, ""],
+    ...d.parTaux.map((p) => [
+      { text: t(`Part à TVA ${labelTaux(p.taux)} : HT -${formaterCentimes(p.ht)} / TVA`), color: GRIS },
+      { text: "-" + fin(p.tva), alignment: "right", color: GRIS },
+    ] as Content[]),
+    [{ text: "Acompte déjà facturé TTC" }, { text: "-" + fin(d.ttc), alignment: "right", bold: true }],
+    [{ text: "Solde de cette facture", bold: true, colSpan: 2, margin: [0, 8, 0, 0] }, ""],
+    [{ text: "Solde HT" }, { text: fin(s.ht), alignment: "right", bold: true }],
+    ...s.parTaux.map((p) => [
+      { text: t(`TVA ${labelTaux(p.taux)} (base ${formaterCentimes(p.ht)})`), color: GRIS },
+      { text: fin(p.tva), alignment: "right", color: GRIS },
+    ] as Content[]),
+    [{ text: "Solde TVA" }, { text: fin(s.tva), alignment: "right", bold: true }],
+    [
+      { text: "Solde TTC de cette facture", bold: true, fontSize: 12, margin: [0, 4, 0, 0] },
+      { text: fin(s.ttc), alignment: "right", bold: true, fontSize: 12, margin: [0, 4, 0, 0] },
+    ],
+  ];
 }
