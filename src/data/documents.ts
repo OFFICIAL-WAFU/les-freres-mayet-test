@@ -302,7 +302,6 @@ interface FactureBase {
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
   deduction?: unknown; deduction_calc?: unknown;
-}| null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
 }
 const acompte_ou = (f: FactureBase) => f.nature === "acompte";
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
