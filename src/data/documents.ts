@@ -54,8 +54,8 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
   devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
-  facture: ["Brouillon", "En attente de paiement", "Payée"],
-  acompte: ["En attente de paiement", "Payé"],
+  facture: ["Brouillon", "Finalisé", "En attente de paiement", "Payée"],
+  acompte: ["Brouillon", "En attente de paiement", "Payé"],
   avoir: ["Émis"],
   rapport: ["Finalisé"],
 };
@@ -210,6 +210,8 @@ export interface DocumentAvecDevis extends DemoDocument {
   entrepriseFigee?: Entreprise;
   /** Facture brouillon : devis d'origine (le champ devis.validite porte alors l'échéance). */
   devisSource?: { id: string; reference: string };
+  /** Facture d'acompte : pourcentage appliqué au devis source. */
+  pourcentage?: number;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -294,6 +296,7 @@ interface FactureBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
   date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
   version: number; devis_source_id: string; devis_source_reference: string;
+  nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
 }
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
@@ -303,7 +306,11 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
     total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: f.statut ?? "brouillon",
     reference_definitive: f.reference_definitive ?? null, finalise_le: f.finalise_le ?? null, entreprise_copie: f.entreprise_copie ?? null, lignes: f.lignes ?? f.factures_lignes ?? [],
   });
-  return { ...base, type: "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference } };
+  const acompte = f.nature === "acompte";
+  return {
+    ...base, type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
+    ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
+  };
 }
 
 export class DevisNonFinalise extends Error {}
@@ -323,6 +330,58 @@ export async function preparerFacture(devisId: string): Promise<DocumentAvecDevi
 /** Facture brouillon liée à un devis, si elle est déjà chargée. */
 export const factureDuDevis = (liste: DocumentAvecDevis[], devisId: string) =>
   liste.find((d) => d.type === "facture" && d.devisSource?.id === devisId);
+
+/** Acompte lié à un devis, s'il est déjà chargé. */
+export const acompteDuDevis = (liste: DocumentAvecDevis[], devisId: string) =>
+  liste.find((d) => d.type === "acompte" && d.devisSource?.id === devisId);
+
+export interface PartAcompte { taux: number; base_devis: number; ht: number; tva: number; ttc: number }
+export class AcompteRefuse extends Error { constructor(public code: string) { super(code); } }
+const codeAcompte = (m: string) =>
+  ["pourcentage_invalide", "acompte_nul", "facture_deja_finalisee", "devis_non_finalise", "conflit_version"].find((c) => m.includes(c)) ?? "erreur";
+
+/** Pourcentage saisi (« 30 », « 12,5 ») → texte décimal à 2 décimales max, ou null si invalide. */
+export function analyserPourcentage(saisie: string): string | null {
+  const t = saisie.trim().replace(",", ".");
+  if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) return null;
+  const n = Number(t);
+  return n > 0 && n < 100 ? t : null;
+}
+
+/** Calcul serveur (même fonction que l'enregistrement) : bases et TVA par taux. */
+export async function calculerAcompte(devisId: string, pourcentage: string): Promise<PartAcompte[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("acompte_calcul", { p_devis_id: devisId, p_pourcentage: pourcentage });
+  if (error) throw new AcompteRefuse(codeAcompte(error.message));
+  return (data as PartAcompte[]).filter((x) => x.ht > 0);
+}
+
+/** Prépare (ou retrouve) l'acompte brouillon d'un devis finalisé. Idempotent côté serveur. */
+export async function preparerAcompte(devisId: string, pourcentage: string): Promise<DocumentAvecDevis> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("preparer_acompte", { p_devis_id: devisId, p_pourcentage: pourcentage });
+  if (error) throw new AcompteRefuse(codeAcompte(error.message));
+  const doc = depuisFacture(data as FactureBase);
+  conserver(doc);
+  return doc;
+}
+
+export async function enregistrerAcompte(
+  id: string, version: number, v: { pourcentage: string; date: string; echeance: string; remarques: string; notes: string },
+): Promise<DocumentAvecDevis> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("enregistrer_acompte", {
+    p_id: id, p_version: version,
+    p: { pourcentage: v.pourcentage, date_facture: v.date, date_echeance: v.echeance, remarques: v.remarques, notes: v.notes },
+  });
+  if (error) {
+    if (error.code === "40001" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw new AcompteRefuse(codeAcompte(error.message));
+  }
+  const doc = depuisFacture(data as FactureBase);
+  conserver(doc);
+  return doc;
+}
 
 export async function enregistrerFacture(id: string, v: DevisBrouillon, version: number): Promise<DocumentAvecDevis> {
   const lignes = versLignes(v);
@@ -403,6 +462,7 @@ export class DevisIncomplet extends Error {
 }
 export class EtatIncertain extends Error {}
 export class FinalisationRefusee extends Error {}
+export class DeductionAcompteRequise extends Error {}
 
 const conserver = (doc: DocumentAvecDevis) =>
   publier({ brouillons: [doc, ...etat.brouillons.filter((d) => d.id !== doc.id)] });
@@ -474,6 +534,7 @@ export async function finaliserFacture(id: string, version: number): Promise<Doc
   const err = res?.error as { code?: string; message: string } | undefined;
   if (err?.message.startsWith("incomplet:")) throw new DevisIncomplet(err.message.slice(10).split(","));
   if (err && (err.code === "40001" || err.message.includes("conflit_version"))) throw new ConflitDevis();
+  if (err?.message.includes("acompte_deduction_requise")) throw new DeductionAcompteRequise();
   if (err && err.code && err.code !== "PGRST000" && !/fetch|network/i.test(err.message)) throw new FinalisationRefusee(err.message);
   try {
     const doc = await relireFacture(id);
