@@ -292,17 +292,17 @@ export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: E
 
 function lignesDeduction(recap: ReturnType<typeof recapituler>, d: Deduction | undefined): Content[][] {
   if (!d) return [];
-  if (d.statut !== "finalise") return [[{ text: t(`Acompte ${d.reference} encore en brouillon — non déduit`), color: GRIS, colSpan: 2 }, ""]];
+  if (d.statut !== "finalise") return [[{ text: t(`Acompte ${d.reference} encore en brouillon — non déduit`), color: GRIS, colSpan: 2 } as Content, ""]];
   const s = solde(recap, d);
   const fin = (x: bigint) => t(formaterCentimes(x));
   return [
-    [{ text: t(`Acompte déjà facturé à déduire — ${d.reference}`), bold: true, colSpan: 2, margin: [0, 8, 0, 0] }, ""],
+    [{ text: t(`Acompte déjà facturé à déduire — ${d.reference}`), bold: true, colSpan: 2, margin: [0, 8, 0, 0] } as Content, ""],
     ...d.parTaux.map((p) => [
       { text: t(`Part à TVA ${labelTaux(p.taux)} : HT -${formaterCentimes(p.ht)} / TVA`), color: GRIS },
       { text: "-" + fin(p.tva), alignment: "right", color: GRIS },
     ] as Content[]),
     [{ text: "Acompte déjà facturé TTC" }, { text: "-" + fin(d.ttc), alignment: "right", bold: true }],
-    [{ text: "Solde de cette facture", bold: true, colSpan: 2, margin: [0, 8, 0, 0] }, ""],
+    [{ text: "Solde de cette facture", bold: true, colSpan: 2, margin: [0, 8, 0, 0] } as Content, ""],
     [{ text: "Solde HT" }, { text: fin(s.ht), alignment: "right", bold: true }],
     ...s.parTaux.map((p) => [
       { text: t(`TVA ${labelTaux(p.taux)} (base ${formaterCentimes(p.ht)})`), color: GRIS },
