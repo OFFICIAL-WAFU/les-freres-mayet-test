@@ -315,7 +315,7 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
   const deduction = acompte_ou(f) ? undefined : lireDeduction(f.deduction_calc ?? f.deduction);
   const acompte = f.nature === "acompte";
   return {
-    ...base, ...(deduction ? { deduction, montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
+    ...base, ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
     ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
   };
 }

@@ -204,7 +204,7 @@ function DocumentsPage() {
                     <td className="px-4 py-3">{d.client}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABELS[d.type]}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {formaterMontant(d.montantTTC)}
+                      {formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="block text-xs text-muted-foreground">solde, acompte déduit</span>}
                     </td>
                     <td className="px-4 py-3">
                       <StatutBadge statut={d.statut} />
@@ -242,7 +242,7 @@ function DocumentsPage() {
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Montant TTC</dt>
-                    <dd>{formaterMontant(d.montantTTC)}</dd>
+                    <dd>{formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="ml-1 text-xs text-muted-foreground">(solde, acompte déduit)</span>}</dd>
                   </div>
                 </dl>
                 <Button
