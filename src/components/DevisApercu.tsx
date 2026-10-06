@@ -1,3 +1,4 @@
+import { solde, type Deduction } from "@/data/deduction";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import {
   formaterCentimes,
@@ -23,7 +24,7 @@ export function versPublic(d: DevisBrouillon): DevisPublic {
   return reste;
 }
 
-export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string; finalisee?: boolean; acompte?: number } }) {
+export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = false, facture }: { devis: DevisPublic; numero: string; entreprise: Entreprise; finalise?: boolean; facture?: { sourceRef: string; finalisee?: boolean; acompte?: number; deduction?: Deduction } }) {
   if (facture) finalise = !!facture.finalisee;
   const factB = !!facture && !finalise;
   const acp = facture?.acompte !== undefined;
@@ -158,12 +159,13 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             </div>
           ))}
           <dt>Total TVA</dt><dd className="text-right font-medium">{formaterCentimes(recap.tva)}</dd>
-          <dt className="mt-2 border-t-2 border-doc-gold pt-2 text-base font-semibold">Total TTC</dt>
+          <dt className="mt-2 border-t-2 border-doc-gold pt-2 text-base font-semibold">{facture?.deduction ? "Total des prestations TTC" : "Total TTC"}</dt>
           <dd className="mt-2 border-t-2 border-doc-gold pt-2 text-right text-base font-semibold" data-testid="apercu-ttc">
             {recap.complet ? formaterCentimes(recap.ttc) : "Calcul incomplet"}
           </dd>
         </dl>
       </section>
+      {facture?.deduction && <ApercuDeduction recap={recap} d={facture.deduction} />}
 
       {d.remarques.trim() && (
         <section className="mt-8">
@@ -181,5 +183,33 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
         </footer>
       )}
     </article>
+  );
+}
+
+function ApercuDeduction({ recap, d }: { recap: ReturnType<typeof recapituler>; d: Deduction }) {
+  if (d.statut !== "finalise") return <p className="mt-3 text-right text-sm text-doc-muted">Acompte {d.reference} encore en brouillon — non déduit.</p>;
+  const s = solde(recap, d);
+  return (
+    <section className="mt-4 flex sm:justify-end" data-testid="apercu-deduction">
+      <dl className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-y-1.5 [&_dd]:pl-4 text-sm sm:w-80">
+        <dt className="col-span-2 font-semibold">Acompte déjà facturé à déduire — {d.reference}</dt>
+        {d.parTaux.map((p) => (
+          <div key={p.taux} className="contents text-doc-muted">
+            <dt>Part à TVA {labelTaux(p.taux)} : HT -{formaterCentimes(p.ht)} / TVA</dt><dd className="text-right">-{formaterCentimes(p.tva)}</dd>
+          </div>
+        ))}
+        <dt>Acompte déjà facturé TTC</dt><dd className="text-right font-medium">-{formaterCentimes(d.ttc)}</dd>
+        <dt className="col-span-2 mt-3 font-semibold">Solde de cette facture</dt>
+        <dt>Solde HT</dt><dd className="text-right font-medium">{formaterCentimes(s.ht)}</dd>
+        {s.parTaux.map((p) => (
+          <div key={p.taux} className="contents text-doc-muted">
+            <dt>TVA {labelTaux(p.taux)} (base {formaterCentimes(p.ht)})</dt><dd className="text-right">{formaterCentimes(p.tva)}</dd>
+          </div>
+        ))}
+        <dt>Solde TVA</dt><dd className="text-right font-medium">{formaterCentimes(s.tva)}</dd>
+        <dt className="mt-2 border-t-2 border-doc-gold pt-2 text-base font-semibold">Solde TTC de cette facture</dt>
+        <dd className="mt-2 border-t-2 border-doc-gold pt-2 text-right text-base font-semibold" data-testid="apercu-solde">{formaterCentimes(s.ttc)}</dd>
+      </dl>
+    </section>
   );
 }

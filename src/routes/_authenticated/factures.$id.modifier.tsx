@@ -40,7 +40,7 @@ function Page() {
           documentId={doc.id}
           numero={doc.numero}
           version={doc.version}
-          facture={{ sourceRef: doc.devisSource?.reference ?? "" }}
+          facture={{ sourceRef: doc.devisSource?.reference ?? "", ...(doc.deduction ? { deduction: doc.deduction } : {}) }}
         />
       ) : (
         <EtatBrouillon statut={etat.statut} />

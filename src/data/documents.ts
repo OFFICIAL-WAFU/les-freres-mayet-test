@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { explicationRefus, lireDeduction, type Deduction } from "@/data/deduction";
 
 import { supabase } from "@/integrations/supabase/client";
 import { depuisLigneEntreprise, type Entreprise } from "@/data/entreprise";
@@ -212,6 +213,8 @@ export interface DocumentAvecDevis extends DemoDocument {
   devisSource?: { id: string; reference: string };
   /** Facture d'acompte : pourcentage appliqué au devis source. */
   pourcentage?: number;
+  /** Facture ordinaire : acompte du même devis à déduire (figé à la finalisation). */
+  deduction?: Deduction;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -298,7 +301,9 @@ interface FactureBase {
   version: number; devis_source_id: string; devis_source_reference: string;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
+  deduction?: unknown; deduction_calc?: unknown;
 }
+const acompte_ou = (f: FactureBase) => f.nature === "acompte";
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
   const base = depuisBase({
     id: f.id, reference: f.reference, client_id: f.client_id, client_copie: f.client_copie, objet: f.objet,
@@ -306,9 +311,10 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
     total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: f.statut ?? "brouillon",
     reference_definitive: f.reference_definitive ?? null, finalise_le: f.finalise_le ?? null, entreprise_copie: f.entreprise_copie ?? null, lignes: f.lignes ?? f.factures_lignes ?? [],
   });
+  const deduction = acompte_ou(f) ? undefined : lireDeduction(f.deduction_calc ?? f.deduction);
   const acompte = f.nature === "acompte";
   return {
-    ...base, type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
+    ...base, ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
     ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
   };
 }
@@ -403,7 +409,7 @@ export async function chargerDocuments(): Promise<void> {
   publier({ statut: "chargement" });
   const tous: DocumentAvecDevis[] = [];
   for (let debut = 0; ; debut += PAGE) {
-    const { data, error } = await supabase.from("factures").select("*, factures_lignes(*)")
+    const { data, error } = await supabase.from("factures").select("*, deduction_calc:deduction_live, factures_lignes(*)")
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
     tous.push(...(data as unknown as FactureBase[]).map(depuisFacture));
@@ -461,7 +467,7 @@ export class DevisIncomplet extends Error {
   constructor(public manques: string[]) { super("Informations manquantes"); }
 }
 export class EtatIncertain extends Error {}
-export class FinalisationRefusee extends Error {}
+export class FinalisationRefusee extends Error { explication = explicationRefus(this.message); }
 export class DeductionAcompteRequise extends Error {}
 
 const conserver = (doc: DocumentAvecDevis) =>

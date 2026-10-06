@@ -50,7 +50,7 @@ export function DocumentSheet({
             </div>
             <div>
               <dt className="text-muted-foreground">Montant TTC</dt>
-              <dd className="font-medium">{formaterMontant(doc.montantTTC)}</dd>
+              <dd className="font-medium">{formaterMontant(doc.montantTTC)}{doc.deduction?.statut === "finalise" && <span className="ml-1 text-xs font-normal text-muted-foreground">(solde, acompte déduit)</span>}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Statut</dt>

@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Recap } from "@/components/DevisForm";
+import { DeductionBloc } from "@/components/DeductionBloc";
+import { MSG_REGLEMENT, solde } from "@/data/deduction";
 import { AcompteDialogue } from "@/components/AcompteDialogue";
 import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
@@ -15,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
-  ConflitDevis, DeductionAcompteRequise, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
+  ConflitDevis, DeductionAcompteRequise, FinalisationRefusee, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
   useEtatDocuments, type DocumentAvecDevis,
 } from "@/data/documents";
 
@@ -29,7 +31,7 @@ const MANQUES: Record<string, string> = {
   objet: "L'objet du document est absent.",
   lignes: "Le document ne contient aucune ligne.",
 };
-const MSG_ACOMPTE = "La déduction de l'acompte doit être disponible avant de finaliser cette facture.";
+const MSG_ACOMPTE = "L'acompte de ce devis est encore en brouillon. Finalisez d'abord l'acompte : sa déduction pourra ensuite être appliquée à cette facture.";
 const frDateHeure = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
 
@@ -46,7 +48,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   const etatDocs = useEtatDocuments();
   const factureLiee = finalise && !estFacture ? factureDuDevis(etatDocs.brouillons, doc.id) : undefined;
   const acompteLie = finalise && !estFacture ? acompteDuDevis(etatDocs.brouillons, doc.id) : undefined;
-  const acompteBloquant = doc.type === "facture" && doc.devisSource ? acompteDuDevis(etatDocs.brouillons, doc.devisSource.id) : undefined;
+  const acompteBloquant = doc.type === "facture" && doc.deduction?.statut === "brouillon" ? doc.deduction : undefined;
   const [dlgAcompte, setDlgAcompte] = useState(false);
   const [confFacture, setConfFacture] = useState(false);
   const [prepEnCours, setPrepEnCours] = useState(false);
@@ -69,7 +71,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   }
   const [confirmer, setConfirmer] = useState(false);
   const [enCours, setEnCours] = useState(false);
-  const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" | "acompte" }>(null);
+  const [echec, setEchec] = useState<null | { type: "manques"; liste: string[] } | { type: "conflit" | "incertain" | "refus" | "acompte" } | { type: "texte"; texte: string }>(null);
 
   async function finaliser() {
     if (enCours || doc.version === undefined) return;
@@ -78,6 +80,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
     try {
       const f = estFacture ? await finaliserFacture(doc.id, doc.version) : await finaliserDevis(doc.id, doc.version);
       setConfirmer(false);
+      if (estAcompte) void chargerDocuments();
       toast.success(`${estAcompte ? "Acompte finalisé" : estFacture ? "Facture finalisée" : "Devis finalisé"} : ${f.numero}`);
     } catch (e) {
       setConfirmer(false);
@@ -85,6 +88,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       else if (e instanceof ConflitDevis) setEchec({ type: "conflit" });
       else if (e instanceof DeductionAcompteRequise) setEchec({ type: "acompte" });
       else if (e instanceof EtatIncertain) setEchec({ type: "incertain" });
+      else if (e instanceof FinalisationRefusee && e.explication) setEchec({ type: "texte", texte: e.explication });
       else setEchec({ type: "refus" });
     } finally {
       setEnCours(false);
@@ -127,6 +131,8 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
               <p>Ce brouillon a été modifié depuis son ouverture. Rechargez la dernière version avant de finaliser.</p>
               <Button size="sm" variant="outline" className="mt-2" onClick={() => void chargerDocuments()}>Recharger la dernière version</Button>
             </>
+          ) : echec.type === "texte" ? (
+            <p>{echec.texte}</p>
           ) : echec.type === "acompte" ? (
             <p>{MSG_ACOMPTE}</p>
           ) : echec.type === "incertain" ? (
@@ -235,7 +241,10 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
                 <div className="flex flex-col gap-2 text-sm">
                   <p><span className="text-muted-foreground">Client :</span> {d.client.nom}</p>
                   <p><span className="text-muted-foreground">Objet :</span> {d.objet}</p>                  {estFacture && <p><span className="text-muted-foreground">Devis source :</span> {doc.devisSource?.reference}</p>}
-                  <p><span className="text-muted-foreground">Total TTC :</span> {formaterCentimes(recap.ttc)}</p>
+                  <p><span className="text-muted-foreground">{doc.deduction ? "Total des prestations TTC :" : "Total TTC :"}</span> {formaterCentimes(recap.ttc)}</p>
+                  {doc.deduction && <p><span className="text-muted-foreground">Acompte déjà facturé ({doc.deduction.reference}) :</span> -{formaterCentimes(doc.deduction.ttc)}</p>}
+                  {doc.deduction && <p className="font-medium text-foreground">Solde TTC de cette facture : {formaterCentimes(solde(recap, doc.deduction).ttc)}</p>}
+                  {doc.deduction && <p className="text-xs">{MSG_REGLEMENT}</p>}
                   <p className="mt-2 text-foreground">{estFacture
                     ? estAcompte ? "Un numéro définitif sera attribué (série commune aux factures). Le contenu de cet acompte ne pourra plus être modifié. Aucun paiement n'est enregistré et aucun email ne sera envoyé." : "Un numéro définitif sera attribué. Le contenu de cette facture ne pourra plus être modifié. Aucun email ne sera envoyé."
                     : "La finalisation attribue un numéro définitif et fige le contenu du devis. Aucun message ne sera envoyé au client."}</p>
@@ -295,8 +304,9 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </section>
 
       <section className="rounded-xl border border-border p-3">
-        <h3 className="font-semibold">Totaux</h3>
+        <h3 className="font-semibold">{doc.deduction ? "Total des prestations" : "Totaux"}</h3>
         <Recap recap={recap} vide={d.lignes.length === 0} />
+        {doc.type === "facture" && doc.deduction && <DeductionBloc recap={recap} deduction={doc.deduction} />}
       </section>
 
       <section>
