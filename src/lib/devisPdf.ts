@@ -229,7 +229,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   ];
 
   if (!av && d.conditions?.trim()) {
-    content.push({ stack: [titreSection("Conditions de paiement"), ...decouper(d.conditions.trim()).map((x) => ({ text: x }))], margin: [0, 18, 0, 0] });
+    content.push({ stack: [titreSection("Conditions de paiement"), { text: d.conditions.trim() }], margin: [0, 18, 0, 0] });
   }
   if (d.remarques.trim()) {
     content.push({ stack: [titreSection("Remarques"), { text: d.remarques }], margin: [0, 18, 0, 0] });
