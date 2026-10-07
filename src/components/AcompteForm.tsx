@@ -18,6 +18,7 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
   const [date, setDate] = useState(d.date);
   const [echeance, setEcheance] = useState(d.validite);
   const [remarques, setRemarques] = useState(d.remarques);
+  const [conditions, setConditions] = useState(d.conditions ?? "");
   const [notes, setNotes] = useState(d.notes);
   const { pct, parts, erreur } = useCalculAcompte(doc.devisSource!.id, saisie);
   const [enCours, setEnCours] = useState(false);
@@ -29,7 +30,7 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
     setEnCours(true);
     setEchec(null);
     try {
-      await enregistrerAcompte(doc.id, doc.version, { pourcentage: pct, date, echeance, remarques, notes });
+      await enregistrerAcompte(doc.id, doc.version, { pourcentage: pct, date, echeance, remarques, notes, conditions });
       toast.success("Acompte brouillon enregistré");
       navigate({ to: "/factures/$id", params: { id: doc.id } });
     } catch (e) {
@@ -63,6 +64,10 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
       {erreur && <p role="alert" className="text-sm text-destructive">{erreur}</p>}
       {echeanceInvalide && <p role="alert" className="text-sm text-destructive">L'échéance ne peut pas être antérieure à la date.</p>}
       {parts && <div className="rounded-xl border border-border p-3"><p className="mb-2 text-sm text-muted-foreground">Lignes recalculées à l'enregistrement</p><TableauAcompte parts={parts} /></div>}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="a-cond">Conditions de paiement (facultatif)</Label>
+        <Textarea id="a-cond" value={conditions} onChange={(e) => setConditions(e.target.value)} />
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="a-rem">Remarques destinées au client</Label>
         <Textarea id="a-rem" value={remarques} onChange={(e) => setRemarques(e.target.value)} />

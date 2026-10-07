@@ -75,6 +75,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             <div className="flex gap-2"><dt className="text-doc-muted">Objet :</dt><dd className="min-w-0 break-words font-medium">{d.objet}</dd></div>
             <div className="flex gap-2"><dt className="text-doc-muted">Date :</dt><dd>{fr(d.date)}</dd></div>
             {d.validite && <div className="flex gap-2"><dt className="text-doc-muted">{facture ? "Échéance :" : "Valable jusqu'au :"}</dt><dd>{fr(d.validite)}</dd></div>}
+            {facture && !acp && d.prestationDebut && <div className="flex gap-2"><dt className="text-doc-muted">{d.prestationFin ? "Période de réalisation :" : "Date de réalisation :"}</dt><dd>{d.prestationFin ? `du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)}</dd></div>}
             {facture && <div className="flex gap-2"><dt className="text-doc-muted">Devis d'origine :</dt><dd>{facture.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Facture d'origine :</dt><dd>{avoir.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Motif :</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{avoir.motif}</dd></div>}
@@ -168,6 +169,13 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
         </dl>
       </section>
       {facture?.deduction && <ApercuDeduction recap={recap} d={facture.deduction} />}
+
+      {!avoir && d.conditions?.trim() && (
+        <section className="mt-8" data-testid="apercu-conditions">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Conditions de paiement</h2>
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm">{d.conditions}</p>
+        </section>
+      )}
 
       {d.remarques.trim() && (
         <section className="mt-8">

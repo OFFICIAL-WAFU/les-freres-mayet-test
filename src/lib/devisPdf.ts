@@ -165,6 +165,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
             titreSection(av ? "Avoir" : acp ? "Facture d'acompte" : facture ? "Facture" : "Devis"),
             { text: [{ text: "Objet : ", color: GRIS }, d.objet] },
             { text: [{ text: "Date : ", color: GRIS }, fr(d.date)] },
+            ...(facture && !acp && !av && d.prestationDebut ? [{ text: [{ text: d.prestationFin ? "Période de réalisation : " : "Date de réalisation : ", color: GRIS }, d.prestationFin ? `du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)] }] : []),
             ...(d.validite ? [{ text: [{ text: facture ? "Échéance : " : "Valable jusqu'au : ", color: GRIS }, fr(d.validite)] }] : []),
             ...(av ? [{ text: [{ text: "Facture d'origine : ", color: GRIS }, facture!.sourceRef] }, { text: [{ text: "Motif : ", color: GRIS }, av.motif] }] : facture ? [{ text: [{ text: "Devis d'origine : ", color: GRIS }, facture.sourceRef] }] : []),
             ...(acp ? [{ text: [{ text: "Acompte : ", color: GRIS }, `${String(facture!.acompte).replace(".", ",")} % du devis`] }] : []),
@@ -227,6 +228,9 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     },
   ];
 
+  if (!av && d.conditions?.trim()) {
+    content.push({ stack: [titreSection("Conditions de paiement"), ...decouper(d.conditions.trim()).map((x) => ({ text: x }))], margin: [0, 18, 0, 0] });
+  }
   if (d.remarques.trim()) {
     content.push({ stack: [titreSection("Remarques"), { text: d.remarques }], margin: [0, 18, 0, 0] });
   }
