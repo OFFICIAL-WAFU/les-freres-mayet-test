@@ -264,7 +264,7 @@ interface LigneBase {
 interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
   objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
-  conditions_paiement?: string; prestation_debut?: string | null; prestation_fin?: string | null;
+  conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
   total_ttc_centimes: number; version: number; statut: "brouillon" | "finalise";
   reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
 }
@@ -311,7 +311,7 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
 interface FactureBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
   date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
-  conditions_paiement?: string; prestation_debut?: string | null; prestation_fin?: string | null;
+  conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
   version: number; devis_source_id: string; devis_source_reference: string;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
