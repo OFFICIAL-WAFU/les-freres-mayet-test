@@ -1,5 +1,5 @@
 import { formaterCentimes, labelTaux, type Recapitulatif } from "@/data/devis";
-import { MSG_REGLEMENT, solde, type Deduction } from "@/data/deduction";
+import { deductionExcessive, MSG_DEDUCTION_EXCESSIVE, MSG_REGLEMENT, solde, type Deduction } from "@/data/deduction";
 
 /** Prestations, acompte déjà facturé à déduire, puis solde de cette facture. */
 export function DeductionBloc({ recap, deduction: d }: { recap: Recapitulatif; deduction: Deduction }) {
@@ -7,6 +7,7 @@ export function DeductionBloc({ recap, deduction: d }: { recap: Recapitulatif; d
   const row = "flex justify-between gap-2";
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 text-sm" data-testid="deduction">
+      {deductionExcessive(recap, d) && <p role="alert" data-testid="alerte-deduction" className="rounded-lg border border-destructive/50 bg-card p-2 font-semibold text-destructive">{MSG_DEDUCTION_EXCESSIVE}</p>}
       <div>
         <p className="font-semibold">Acompte déjà facturé à déduire — {d.reference}{d.statut !== "finalise" && " (brouillon)"}</p>
         {d.statut !== "finalise" ? (

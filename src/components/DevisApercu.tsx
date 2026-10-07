@@ -200,7 +200,8 @@ function ApercuDeduction({ recap, d }: { recap: ReturnType<typeof recapituler>; 
   if (d.statut !== "finalise") return <p className="mt-3 text-right text-sm text-doc-muted">Acompte {d.reference} encore en brouillon — non déduit.</p>;
   const s = solde(recap, d);
   return (
-    <section className="mt-4 flex sm:justify-end" data-testid="apercu-deduction">
+    <section className="mt-4 flex flex-col gap-2 sm:items-end" data-testid="apercu-deduction">
+      {deductionExcessive(recap, d) && <p role="alert" className="w-full rounded-lg border border-destructive/50 p-2 text-sm font-semibold text-destructive sm:w-80">{MSG_DEDUCTION_EXCESSIVE}</p>}
       <dl className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-y-1.5 [&_dd]:pl-4 text-sm sm:w-80">
         <dt className="col-span-2 font-semibold">Acompte déjà facturé à déduire — {d.reference}</dt>
         {d.parTaux.map((p) => (
