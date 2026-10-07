@@ -264,6 +264,7 @@ interface LigneBase {
 interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
   objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
+  conditions_paiement?: string; prestation_debut?: string | null; prestation_fin?: string | null;
   total_ttc_centimes: number; version: number; statut: "brouillon" | "finalise";
   reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
 }
@@ -285,6 +286,9 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
     validite: d.date_validite ?? "",
     remarques: d.remarques,
     notes: d.notes,
+    conditions: d.conditions_paiement ?? "",
+    prestationDebut: d.prestation_debut ?? "",
+    prestationFin: d.prestation_fin ?? "",
     lignes: lignes.map((l) => ({
       cle: l.id, articleId: l.article_id, type: l.type, reference: l.reference,
       designation: l.designation, description: l.description, unite: l.unite as DevisBrouillon["lignes"][number]["unite"],
@@ -307,6 +311,7 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
 interface FactureBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
   date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
+  conditions_paiement?: string; prestation_debut?: string | null; prestation_fin?: string | null;
   version: number; devis_source_id: string; devis_source_reference: string;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
@@ -317,6 +322,7 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
   const base = depuisBase({
     id: f.id, reference: f.reference, client_id: f.client_id, client_copie: f.client_copie, objet: f.objet,
     date_devis: f.date_facture, date_validite: f.date_echeance, remarques: f.remarques, notes: f.notes,
+    conditions_paiement: f.conditions_paiement, prestation_debut: f.prestation_debut, prestation_fin: f.prestation_fin,
     total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: f.statut ?? "brouillon",
     reference_definitive: f.reference_definitive ?? null, finalise_le: f.finalise_le ?? null, entreprise_copie: f.entreprise_copie ?? null, lignes: f.lignes ?? f.factures_lignes ?? [],
   });
@@ -449,12 +455,12 @@ export async function preparerAcompte(devisId: string, pourcentage: string): Pro
 }
 
 export async function enregistrerAcompte(
-  id: string, version: number, v: { pourcentage: string; date: string; echeance: string; remarques: string; notes: string },
+  id: string, version: number, v: { pourcentage: string; date: string; echeance: string; remarques: string; notes: string; conditions?: string },
 ): Promise<DocumentAvecDevis> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.rpc as any)("enregistrer_acompte", {
     p_id: id, p_version: version,
-    p: { pourcentage: v.pourcentage, date_facture: v.date, date_echeance: v.echeance, remarques: v.remarques, notes: v.notes },
+    p: { pourcentage: v.pourcentage, date_facture: v.date, date_echeance: v.echeance, remarques: v.remarques, notes: v.notes, conditions_paiement: v.conditions ?? "" },
   });
   if (error) {
     if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
@@ -469,7 +475,7 @@ export async function enregistrerFacture(id: string, v: DevisBrouillon, version:
   const lignes = versLignes(v);
   const { data, error } = await supabase.rpc("enregistrer_facture", {
     p_id: id, p_version: version,
-    p: { objet: v.objet.trim(), date_facture: v.date, date_echeance: v.validite, remarques: v.remarques, notes: v.notes, lignes } as unknown as Json,
+    p: { objet: v.objet.trim(), date_facture: v.date, date_echeance: v.validite, remarques: v.remarques, notes: v.notes, conditions_paiement: v.conditions ?? "", prestation_debut: v.prestationDebut ?? "", prestation_fin: v.prestationFin ?? "", lignes } as unknown as Json,
   });
   if (error) {
     if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
@@ -536,7 +542,7 @@ export async function enregistrerBrouillon(id: string, v: DevisBrouillon, versio
   const lignes = versLignes(v);
   const charge = {
     client_id: v.clientId, client_copie: v.client, objet: v.objet.trim(), date_devis: v.date,
-    date_validite: v.validite, remarques: v.remarques, notes: v.notes, lignes,
+    date_validite: v.validite, remarques: v.remarques, notes: v.notes, conditions_paiement: v.conditions ?? "", lignes,
   };
   const { data, error } = await supabase.rpc("enregistrer_brouillon", {
     p_id: id, p_version: version as number, p: charge as unknown as Json,

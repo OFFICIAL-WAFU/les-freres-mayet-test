@@ -40,6 +40,11 @@ export interface DevisBrouillon {
   validite: string; // AAAA-MM-JJ ou ""
   remarques: string;
   notes: string;
+  /** Conditions de paiement (devis, factures, acomptes) — distinctes des remarques. */
+  conditions?: string;
+  /** Facture ordinaire : date ou période de réalisation des prestations (AAAA-MM-JJ ou ""). */
+  prestationDebut?: string;
+  prestationFin?: string;
   lignes: LigneSaisie[];
 }
 
