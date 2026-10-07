@@ -1,4 +1,4 @@
-import { solde, type Deduction } from "@/data/deduction";
+import { deductionExcessive, MSG_DEDUCTION_EXCESSIVE, solde, type Deduction } from "@/data/deduction";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import {
   formaterCentimes,
