@@ -41,6 +41,15 @@ export function solde(recap: Recapitulatif, d: Deduction) {
   return { parTaux, ht, tva, ttc: ht + tva };
 }
 
+export const MSG_DEDUCTION_EXCESSIVE = "Acompte supérieur aux prestations — document à corriger";
+/** Vrai si l'acompte (finalisé) dépasse les prestations pour un taux ou au total : document invalide, PDF bloqué. */
+export function deductionExcessive(recap: Recapitulatif, d: Deduction | undefined): boolean {
+  if (!d || d.statut !== "finalise") return false;
+  if (d.depasse) return true;
+  const s = solde(recap, d);
+  return s.ttc < 0n || s.ht < 0n || s.tva < 0n || s.parTaux.some((p) => p.ht < 0n || p.tva < 0n);
+}
+
 export const MSG_REGLEMENT = "La déduction tient compte de l'acompte facturé. Son règlement sera suivi séparément.";
 
 /** Explications compréhensibles des refus serveur liés aux acomptes. */
