@@ -1,4 +1,4 @@
-import { solde, type Deduction } from "@/data/deduction";
+import { deductionExcessive, MSG_DEDUCTION_EXCESSIVE, solde, type Deduction } from "@/data/deduction";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import {
   formaterCentimes,
@@ -75,6 +75,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             <div className="flex gap-2"><dt className="text-doc-muted">Objet :</dt><dd className="min-w-0 break-words font-medium">{d.objet}</dd></div>
             <div className="flex gap-2"><dt className="text-doc-muted">Date :</dt><dd>{fr(d.date)}</dd></div>
             {d.validite && <div className="flex gap-2"><dt className="text-doc-muted">{facture ? "Échéance :" : "Valable jusqu'au :"}</dt><dd>{fr(d.validite)}</dd></div>}
+            {facture && !acp && d.prestationDebut && <div className="flex gap-2"><dt className="text-doc-muted">{d.prestationFin ? "Période de réalisation :" : "Date de réalisation :"}</dt><dd>{d.prestationFin ? `du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)}</dd></div>}
             {facture && <div className="flex gap-2"><dt className="text-doc-muted">Devis d'origine :</dt><dd>{facture.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Facture d'origine :</dt><dd>{avoir.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Motif :</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{avoir.motif}</dd></div>}
@@ -169,6 +170,13 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
       </section>
       {facture?.deduction && <ApercuDeduction recap={recap} d={facture.deduction} />}
 
+      {!avoir && d.conditions?.trim() && (
+        <section className="mt-8" data-testid="apercu-conditions">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Conditions de paiement</h2>
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm">{d.conditions}</p>
+        </section>
+      )}
+
       {d.remarques.trim() && (
         <section className="mt-8">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Remarques</h2>
@@ -192,7 +200,8 @@ function ApercuDeduction({ recap, d }: { recap: ReturnType<typeof recapituler>; 
   if (d.statut !== "finalise") return <p className="mt-3 text-right text-sm text-doc-muted">Acompte {d.reference} encore en brouillon — non déduit.</p>;
   const s = solde(recap, d);
   return (
-    <section className="mt-4 flex sm:justify-end" data-testid="apercu-deduction">
+    <section className="mt-4 flex flex-col gap-2 sm:items-end" data-testid="apercu-deduction">
+      {deductionExcessive(recap, d) && <p role="alert" className="w-full rounded-lg border border-destructive/50 p-2 text-sm font-semibold text-destructive sm:w-80">{MSG_DEDUCTION_EXCESSIVE}</p>}
       <dl className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-y-1.5 [&_dd]:pl-4 text-sm sm:w-80">
         <dt className="col-span-2 font-semibold">Acompte déjà facturé à déduire — {d.reference}</dt>
         {d.parTaux.map((p) => (

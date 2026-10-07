@@ -287,6 +287,7 @@ export type Database = {
         Row: {
           client_copie: Json
           client_id: string
+          conditions_paiement: string
           created_at: string
           date_devis: string
           date_validite: string | null
@@ -311,6 +312,7 @@ export type Database = {
         Insert: {
           client_copie: Json
           client_id: string
+          conditions_paiement?: string
           created_at?: string
           date_devis: string
           date_validite?: string | null
@@ -335,6 +337,7 @@ export type Database = {
         Update: {
           client_copie?: Json
           client_id?: string
+          conditions_paiement?: string
           created_at?: string
           date_devis?: string
           date_validite?: string | null
@@ -512,6 +515,7 @@ export type Database = {
           acompte_deduit_id: string | null
           client_copie: Json
           client_id: string
+          conditions_paiement: string
           created_at: string
           date_echeance: string | null
           date_facture: string
@@ -527,6 +531,8 @@ export type Database = {
           objet: string
           owner_id: string
           pourcentage: number | null
+          prestation_debut: string | null
+          prestation_fin: string | null
           reference: string
           reference_definitive: string | null
           remarques: string
@@ -542,6 +548,7 @@ export type Database = {
           acompte_deduit_id?: string | null
           client_copie: Json
           client_id: string
+          conditions_paiement?: string
           created_at?: string
           date_echeance?: string | null
           date_facture: string
@@ -557,6 +564,8 @@ export type Database = {
           objet: string
           owner_id?: string
           pourcentage?: number | null
+          prestation_debut?: string | null
+          prestation_fin?: string | null
           reference: string
           reference_definitive?: string | null
           remarques?: string
@@ -572,6 +581,7 @@ export type Database = {
           acompte_deduit_id?: string | null
           client_copie?: Json
           client_id?: string
+          conditions_paiement?: string
           created_at?: string
           date_echeance?: string | null
           date_facture?: string
@@ -587,6 +597,8 @@ export type Database = {
           objet?: string
           owner_id?: string
           pourcentage?: number | null
+          prestation_debut?: string | null
+          prestation_fin?: string | null
           reference?: string
           reference_definitive?: string | null
           remarques?: string

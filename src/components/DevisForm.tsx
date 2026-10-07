@@ -164,6 +164,9 @@ export function DevisForm({
     erreurs["d-validite"] = facture
       ? "L'échéance ne peut pas être antérieure à la date de la facture."
       : "La date de validité ne peut pas être antérieure à la date du devis.";
+  if (facture && v.prestationDebut && v.prestationFin && v.prestationFin < v.prestationDebut)
+    erreurs["d-prest-fin"] = "La fin de la période ne peut pas précéder son début.";
+  if (facture && v.prestationFin && !v.prestationDebut) erreurs["d-prest-debut"] = "Indiquez le début de la période (ou seulement une date).";
   const validations = v.lignes.map((l) => ({ l, ...validerLigne(l) }));
   for (const { l, erreurs: e } of validations)
     for (const k of ["designation", "unite", "quantite", "prix", "taux"] as const)
@@ -386,6 +389,25 @@ export function DevisForm({
                 <Input id="d-validite" type="date" value={v.validite} onChange={(e) => maj({ validite: e.target.value })} aria-invalid={!!erreurs["d-validite"]} />
                 <Erreur id="d-validite" texte={erreurs["d-validite"]} />
               </div>
+            </div>
+            {facture && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="d-prest-debut">Date de réalisation des prestations <span className="font-normal text-muted-foreground">(ou début de période, facultatif)</span></Label>
+                  <Input id="d-prest-debut" type="date" value={v.prestationDebut ?? ""} onChange={(e) => maj({ prestationDebut: e.target.value })} aria-invalid={!!erreurs["d-prest-debut"]} />
+                  <Erreur id="d-prest-debut" texte={erreurs["d-prest-debut"]} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="d-prest-fin">Fin de période <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+                  <Input id="d-prest-fin" type="date" value={v.prestationFin ?? ""} onChange={(e) => maj({ prestationFin: e.target.value })} aria-invalid={!!erreurs["d-prest-fin"]} />
+                  <Erreur id="d-prest-fin" texte={erreurs["d-prest-fin"]} />
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="d-conditions">Conditions de paiement <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+              <Textarea id="d-conditions" rows={2} value={v.conditions ?? ""} onChange={(e) => maj({ conditions: e.target.value })} />
+              <p className="text-xs text-muted-foreground">Aucune condition n'est ajoutée par défaut.</p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="d-remarques">Remarques destinées au client <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
