@@ -20,6 +20,7 @@ import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEntrepriseRouteImport } from './routes/_authenticated/entreprise'
 import { Route as AuthenticatedFournisseursRouteImport } from './routes/_authenticated/fournisseurs'
 import { Route as AuthenticatedHistoriqueRouteImport } from './routes/_authenticated/historique'
+import { Route as AuthenticatedImportClientsRouteImport } from './routes/_authenticated/import-clients'
 import { Route as AuthenticatedImportsRouteImport } from './routes/_authenticated/imports'
 import { Route as AuthenticatedMargesRouteImport } from './routes/_authenticated/marges'
 import { Route as AuthenticatedMentionsRouteImport } from './routes/_authenticated/mentions'
@@ -98,6 +99,12 @@ const AuthenticatedHistoriqueRoute = AuthenticatedHistoriqueRouteImport.update({
   path: '/historique',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedImportClientsRoute =
+  AuthenticatedImportClientsRouteImport.update({
+    id: '/import-clients',
+    path: '/import-clients',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedImportsRoute = AuthenticatedImportsRouteImport.update({
   id: '/imports',
   path: '/imports',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/historique': typeof AuthenticatedHistoriqueRoute
+  '/import-clients': typeof AuthenticatedImportClientsRoute
   '/imports': typeof AuthenticatedImportsRoute
   '/marges': typeof AuthenticatedMargesRoute
   '/mentions': typeof AuthenticatedMentionsRoute
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/historique': typeof AuthenticatedHistoriqueRoute
+  '/import-clients': typeof AuthenticatedImportClientsRoute
   '/imports': typeof AuthenticatedImportsRoute
   '/marges': typeof AuthenticatedMargesRoute
   '/mentions': typeof AuthenticatedMentionsRoute
@@ -302,6 +311,7 @@ export interface FileRoutesById {
   '/_authenticated/entreprise': typeof AuthenticatedEntrepriseRoute
   '/_authenticated/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/_authenticated/historique': typeof AuthenticatedHistoriqueRoute
+  '/_authenticated/import-clients': typeof AuthenticatedImportClientsRoute
   '/_authenticated/imports': typeof AuthenticatedImportsRoute
   '/_authenticated/marges': typeof AuthenticatedMargesRoute
   '/_authenticated/mentions': typeof AuthenticatedMentionsRoute
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/fournisseurs'
     | '/historique'
+    | '/import-clients'
     | '/imports'
     | '/marges'
     | '/mentions'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/entreprise'
     | '/fournisseurs'
     | '/historique'
+    | '/import-clients'
     | '/imports'
     | '/marges'
     | '/mentions'
@@ -407,6 +419,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entreprise'
     | '/_authenticated/fournisseurs'
     | '/_authenticated/historique'
+    | '/_authenticated/import-clients'
     | '/_authenticated/imports'
     | '/_authenticated/marges'
     | '/_authenticated/mentions'
@@ -517,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/historique'
       fullPath: '/historique'
       preLoaderRoute: typeof AuthenticatedHistoriqueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/import-clients': {
+      id: '/_authenticated/import-clients'
+      path: '/import-clients'
+      fullPath: '/import-clients'
+      preLoaderRoute: typeof AuthenticatedImportClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/imports': {
@@ -683,6 +703,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntrepriseRoute: typeof AuthenticatedEntrepriseRoute
   AuthenticatedFournisseursRoute: typeof AuthenticatedFournisseursRoute
   AuthenticatedHistoriqueRoute: typeof AuthenticatedHistoriqueRoute
+  AuthenticatedImportClientsRoute: typeof AuthenticatedImportClientsRoute
   AuthenticatedImportsRoute: typeof AuthenticatedImportsRoute
   AuthenticatedMargesRoute: typeof AuthenticatedMargesRoute
   AuthenticatedMentionsRoute: typeof AuthenticatedMentionsRoute
@@ -714,6 +735,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntrepriseRoute: AuthenticatedEntrepriseRoute,
   AuthenticatedFournisseursRoute: AuthenticatedFournisseursRoute,
   AuthenticatedHistoriqueRoute: AuthenticatedHistoriqueRoute,
+  AuthenticatedImportClientsRoute: AuthenticatedImportClientsRoute,
   AuthenticatedImportsRoute: AuthenticatedImportsRoute,
   AuthenticatedMargesRoute: AuthenticatedMargesRoute,
   AuthenticatedMentionsRoute: AuthenticatedMentionsRoute,

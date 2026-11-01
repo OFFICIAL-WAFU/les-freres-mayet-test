@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search, RefreshCw, UserRound, Building2 } from "lucide-react";
 import { PeriodeDocumentsSelect } from "@/components/PeriodeDocumentsSelect";
 import { syntheseClient, dansPeriode, correspondSuiviClient, suiviDocumentClient, PERIODES_DOCUMENTS, type PeriodeDocuments, type FiltreSuiviClient } from "@/lib/suivi-clients";
@@ -146,9 +146,12 @@ function ClientsPage() {
             Vos fiches clients sont enregistrées dans votre espace privé.
           </p>
         </div>
-        <Button variant="action" size="lg" onClick={ouvrirAjout}>
-          <Plus /> Ajouter un client
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="lg"><Link to="/import-clients">Importer un fichier CSV</Link></Button>
+          <Button variant="action" size="lg" onClick={ouvrirAjout}>
+            <Plus /> Ajouter un client
+          </Button>
+        </div>
       </div>
 
       {etat.statut === "erreur" ? (

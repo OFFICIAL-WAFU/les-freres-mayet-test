@@ -140,6 +140,9 @@ export function useEtatClients(): EtatClients {
 }
 
 /** Liste des clients enregistrés (vide tant qu'elle n'est pas chargée). */
+/** Clients actuellement chargés (lecture instantanée, hors composant). */
+export const lireClientsCharges = (): Client[] => etat.clients;
+
 export function useClients(): Client[] {
   return useEtatClients().clients;
 }
