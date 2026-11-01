@@ -316,7 +316,7 @@ function DocumentsPage() {
           </div>
           {typeChoisi && (
             <p className="rounded-xl border border-border bg-secondary/60 p-3 text-sm text-foreground">
-              {typeChoisi === "avoir" ? "Ouvrez une facture finalisée sans acompte, puis choisissez Préparer un avoir total." : "Ouvrez un devis finalisé, puis choisissez Préparer une facture ou Préparer un acompte."}
+              {typeChoisi === "avoir" ? "Ouvrez une facture finalisée sans acompte, puis choisissez Préparer un avoir total ou partiel." : "Ouvrez un devis finalisé, puis choisissez Préparer une facture ou Préparer un acompte."}
             </p>
           )}
           {typeChoisi === "facture" && <Button variant="action" onClick={() => navigate({ to: "/factures/nouveau" })}>Créer une facture sans devis</Button>}

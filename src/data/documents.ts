@@ -3,6 +3,7 @@ import { lireReglement, type Reglement, type ReglementBase } from "@/data/reglem
 import { explicationRefus, lireDeduction, type Deduction } from "@/data/deduction";
 
 import { supabase } from "@/integrations/supabase/client";
+import { MESSAGES_AVOIR_PARTIEL, type DemandeAvoir, type LigneCrediteeAvoir, type LigneFactureAvoir } from "@/lib/avoirs-partiels";
 import { depuisLigneEntreprise, type Entreprise } from "@/data/entreprise";
 import type { Json } from "@/integrations/supabase/types";
 import {
@@ -226,6 +227,11 @@ export interface DocumentAvecDevis extends DemoDocument {
   credite?: bigint;
   /** HT enregistré par le serveur, après déduction d'acompte pour la facture de solde. */
   montantHTCentimes?: bigint;
+  /** Facture finalisée : lignes avec montants (pour calculer ce qui reste à créditer). */
+  lignesFacture?: LigneFactureAvoir[];
+  /** Avoir : « total » ou « partiel » ; lignes créditées (avoir partiel ou total). */
+  typeAvoir?: "total" | "partiel";
+  lignesCreditees?: LigneCrediteeAvoir[];
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -261,7 +267,7 @@ export function definirModeDemo(actif: boolean) { publier({ demo: actif }); }
 interface LigneBase {
   id: string; position: number; type: "materiel" | "prestation"; article_id: string | null;
   reference: string; designation: string; description: string; unite: string;
-  quantite_milliemes: number; prix_ht_centimes: number; taux_tva_milliemes: number;
+  quantite_milliemes: number; prix_ht_centimes: number; taux_tva_milliemes: number; ht_centimes?: number; tva_centimes?: number;
 }
 interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
@@ -334,6 +340,7 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
   return {
     ...base, ...(Number.isSafeInteger(f.total_ht_centimes) ? { montantHTCentimes: BigInt(f.total_ht_centimes!) - (!acompte && deduction?.statut === "finalise" ? deduction.ht : 0n) } : {}), ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", ...(f.devis_source_id && f.devis_source_reference ? { devisSource: { id: f.devis_source_id, reference: f.devis_source_reference } } : {}),
     ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
+    ...(f.statut === "finalise" && !acompte ? { lignesFacture: (f.lignes ?? f.factures_lignes ?? []).filter((l) => typeof l.ht_centimes === "number" && typeof l.tva_centimes === "number").map((l) => ({ id: l.id, designation: l.designation, quantiteMilliemes: l.quantite_milliemes, prixCentimes: l.prix_ht_centimes, taux: l.taux_tva_milliemes, htCentimes: l.ht_centimes!, tvaCentimes: l.tva_centimes! })) } : {}),
     ...(f.statut === "finalise" ? {
       reglements: (f.reglements ?? []).map(lireReglement).sort((a, b) => a.creeLe.localeCompare(b.creeLe)),
       aRegler: BigInt(f.total_ttc_centimes) - (!acompte && f.deduction ? BigInt((f.deduction as { ttc: number }).ttc) : 0n),
@@ -348,18 +355,23 @@ interface AvoirBase {
   id: string; reference: string; facture_source_id: string; facture_source_reference: string; client_id: string;
   client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; total_ht_centimes?: number; date_avoir: string;
   motif: string; remarques: string; version: number;
-  statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
+  statut?: "brouillon" | "finalise" | "abandonne"; type_avoir?: "total" | "partiel"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
 }
 function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
   const base = depuisBase({
     id: a.id, reference: a.reference, client_id: a.client_id, client_copie: a.client_copie, objet: a.objet,
     date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes, ...(a.total_ht_centimes !== undefined ? { total_ht_centimes: a.total_ht_centimes } : {}),
-    version: a.version, statut: a.statut ?? "brouillon", reference_definitive: a.reference_definitive ?? null, finalise_le: a.finalise_le ?? null, entreprise_copie: a.entreprise_copie ?? null, lignes: a.lignes,
+    version: a.version, statut: a.statut === "finalise" ? "finalise" : "brouillon", reference_definitive: a.reference_definitive ?? null, finalise_le: a.finalise_le ?? null, entreprise_copie: a.entreprise_copie ?? null, lignes: a.lignes,
   });
-  return { ...base, type: "avoir", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif };
+  return { ...base, type: "avoir", typeAvoir: a.type_avoir ?? "total", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif,
+    lignesCreditees: (a.lignes ?? []).filter((l) => typeof l.ht_centimes === "number" && typeof l.tva_centimes === "number").map((l) => ({ id: l.id, quantiteMilliemes: l.quantite_milliemes, htCentimes: l.ht_centimes!, tvaCentimes: l.tva_centimes! })) };
 }
-export const avoirDeFacture = (liste: DocumentAvecDevis[], factureId: string) =>
-  liste.find((d) => d.type === "avoir" && d.factureSource?.id === factureId);
+/** Tous les avoirs d'une facture (brouillon ouvert et finalisés), du plus ancien au plus récent. */
+export const avoirsDeFacture = (liste: DocumentAvecDevis[], factureId: string) =>
+  liste.filter((d) => d.type === "avoir" && d.factureSource?.id === factureId);
+/** Lignes déjà créditées par les avoirs FINALISÉS d'une facture. */
+export const lignesCrediteesDe = (liste: DocumentAvecDevis[], factureId: string): LigneCrediteeAvoir[] =>
+  avoirsDeFacture(liste, factureId).filter((a) => a.statut === "Finalisé").flatMap((a) => a.lignesCreditees ?? []);
 /** Avoir possible : facture ordinaire finalisée, sans déduction d'acompte. */
 export const avoirEligible = (d: DocumentAvecDevis) => d.type === "facture" && d.statut === "Finalisé" && !d.deduction;
 export const MSG_AVOIR_ACOMPTE = "Avoir avec acompte : fonctionnalité à venir.";
@@ -369,11 +381,35 @@ const MSG_AVOIR: Record<string, string> = {
   motif_requis: "Le motif est obligatoire.",
   avoir_finalise: "Cet avoir est finalisé : il ne peut plus être modifié.",
   avoir_deja_finalise: "Un avoir est déjà finalisé pour cette facture.",
+  ...MESSAGES_AVOIR_PARTIEL,
   montants_incoherents: "Les montants de l'avoir ne correspondent plus à la facture d'origine.",
   fiche_entreprise: "Enregistrez la fiche Entreprise avant de finaliser.",
   avoir_facture_non_finalisee: "Un avoir ne peut être préparé que sur une facture finalisée.",
 };
-const erreurAvoir = (m: string) => new AvoirRefuse(Object.entries(MSG_AVOIR).find(([k]) => m.includes(k))?.[1] ?? "L'opération n'a pas abouti. Vous pouvez réessayer sans risque de doublon.");
+const erreurAvoir = (m: string, code?: string) => new AvoirRefuse(
+  code === "PGRST202" ? "Les avoirs partiels ne sont pas encore installés dans la base. Demandez l'installation de la migration « Avoirs partiels »."
+  : Object.entries(MSG_AVOIR).find(([k]) => m.includes(k))?.[1] ?? "L'opération n'a pas abouti. Vous pouvez réessayer sans risque de doublon.");
+type RpcLibre = { rpc: (nom: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message: string } | null }> };
+
+/** Prépare (ou retrouve) l'avoir partiel brouillon d'une facture : lignes et quantités à créditer. */
+export async function preparerAvoirPartiel(factureId: string, motif: string, demandes: DemandeAvoir[]): Promise<DocumentAvecDevis> {
+  const { data, error } = await (supabase as unknown as RpcLibre).rpc("preparer_avoir_partiel", {
+    p_facture_id: factureId, p_motif: motif, p_lignes: demandes.map((d) => ({ ligne_id: d.id, quantite_milliemes: d.quantiteMilliemes })),
+  });
+  if (error) throw erreurAvoir(error.message, error.code);
+  const doc = depuisAvoir(data as unknown as AvoirBase);
+  conserver(doc);
+  return doc;
+}
+/** Abandonne un avoir brouillon (jamais supprimé : aucun numéro consommé, la trace reste en base). */
+export async function abandonnerAvoir(id: string, version: number): Promise<void> {
+  const { error } = await (supabase as unknown as RpcLibre).rpc("abandonner_avoir", { p_id: id, p_version: version });
+  if (error) {
+    if (error.code === "PT409" || error.message.includes("conflit_version")) throw new ConflitDevis();
+    throw erreurAvoir(error.message, error.code);
+  }
+  publier({ brouillons: etat.brouillons.filter((d) => d.id !== id) });
+}
 
 /** Prépare (ou retrouve) l'avoir total brouillon d'une facture. Idempotent côté serveur. */
 export async function preparerAvoir(factureId: string, motif: string): Promise<DocumentAvecDevis> {
@@ -523,7 +559,7 @@ export async function chargerDocuments(): Promise<void> {
     const { data, error } = await supabase.from("avoirs").select("*")
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
-    tous.push(...(data as unknown as AvoirBase[]).map(depuisAvoir));
+    tous.push(...(data as unknown as AvoirBase[]).filter((a) => a.statut !== "abandonne").map(depuisAvoir));
     if (data.length < PAGE) break;
   }
   for (let debut = 0; ; debut += PAGE) {

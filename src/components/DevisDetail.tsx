@@ -24,7 +24,7 @@ import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
   ConflitDevis, DeductionAcompteRequise, FinalisationRefusee, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
-  useEtatDocuments, type DocumentAvecDevis, avoirDeFacture, avoirEligible, MSG_AVOIR_ACOMPTE,
+  useEtatDocuments, type DocumentAvecDevis, avoirsDeFacture, avoirEligible, MSG_AVOIR_ACOMPTE,
 } from "@/data/documents";
 
 const MANQUES: Record<string, string> = {
@@ -56,8 +56,11 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
   const acompteLie = finalise && !estFacture ? acompteDuDevis(etatDocs.brouillons, doc.id) : undefined;
   const acompteBloquant = doc.type === "facture" && doc.deduction?.statut === "brouillon" ? doc.deduction : undefined;
   const [dlgAcompte, setDlgAcompte] = useState(false);
-  const [dlgAvoir, setDlgAvoir] = useState(false);
-  const avoirLie = finalise && doc.type === "facture" ? avoirDeFacture(etatDocs.brouillons, doc.id) : undefined;
+  const [dlgAvoir, setDlgAvoir] = useState<"total" | "partiel" | null>(null);
+  const avoirsLies = finalise && doc.type === "facture" ? avoirsDeFacture(etatDocs.brouillons, doc.id) : [];
+  const avoirOuvert = avoirsLies.find((a) => a.statut !== "Finalisé");
+  const creditTtc = avoirsLies.filter((a) => a.statut === "Finalisé").reduce((n, a) => n + Math.round((a.montantTTC ?? 0) * 100), 0);
+  const resteACrediter = doc.lignesFacture ? Math.round((doc.montantTTC ?? 0) * 100) - creditTtc : 0;
   const [confFacture, setConfFacture] = useState(false);
   const [prepEnCours, setPrepEnCours] = useState(false);
   const [prepEchec, setPrepEchec] = useState<string | null>(null);
@@ -177,13 +180,20 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           <Link to="/factures/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>{estAcompte ? "Aperçu de l'acompte" : "Aperçu de la facture"}</Link>
         </Button>
         <FacturePdfBouton doc={doc} />
-        {finalise && avoirLie && (
-          <Button asChild variant="outline"><Link to="/avoirs/$id" params={{ id: avoirLie.id }} onClick={onNavigate}>Ouvrir l'avoir</Link></Button>
+        {avoirsLies.map((a) => (
+          <Button key={a.id} asChild variant="outline">
+            <Link to="/avoirs/$id" params={{ id: a.id }} onClick={onNavigate}>
+              {a.statut === "Finalisé" ? `Avoir ${a.numero}${a.typeAvoir === "partiel" ? " (partiel)" : ""}` : "Ouvrir l'avoir brouillon"}
+            </Link>
+          </Button>
+        ))}
+        {finalise && avoirEligible(doc) && !avoirOuvert && avoirsLies.length === 0 && (
+          <Button variant="outline" onClick={() => setDlgAvoir("total")}>Préparer un avoir total</Button>
         )}
-        {finalise && !avoirLie && avoirEligible(doc) && (
-          <Button variant="outline" onClick={() => setDlgAvoir(true)}>Préparer un avoir total</Button>
+        {finalise && avoirEligible(doc) && !avoirOuvert && resteACrediter > 0 && (
+          <Button variant="outline" onClick={() => setDlgAvoir("partiel")}>Préparer un avoir partiel</Button>
         )}
-        {finalise && !avoirLie && !avoirEligible(doc) && (
+        {finalise && avoirsLies.length === 0 && !avoirEligible(doc) && (
           <p className="text-sm text-muted-foreground sm:basis-full">{MSG_AVOIR_ACOMPTE}</p>
         )}
         {doc.devisSource && (
@@ -228,7 +238,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       )}
 
       <MessageDocument doc={doc} />
-      {dlgAvoir && <AvoirDialogue facture={doc} onFermer={() => setDlgAvoir(false)} onNavigate={onNavigate} />}
+      {dlgAvoir && <AvoirDialogue facture={doc} mode={dlgAvoir} documents={etatDocs.brouillons} onFermer={() => setDlgAvoir(null)} onNavigate={onNavigate} />}
       {dlgAcompte && (
         <AcompteDialogue devisId={doc.id} devisRef={doc.numero}
           onFermer={() => setDlgAcompte(false)}
