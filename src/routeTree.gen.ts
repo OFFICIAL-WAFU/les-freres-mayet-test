@@ -28,6 +28,7 @@ import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRapportsRouteImport } from './routes/_authenticated/rapports'
 import { Route as AuthenticatedReglagesRouteImport } from './routes/_authenticated/reglages'
 import { Route as AuthenticatedTresorerieRouteImport } from './routes/_authenticated/tresorerie'
+import { Route as SignerJetonRouteImport } from './routes/signer.$jeton'
 import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authenticated/devis.nouveau'
 import { Route as AuthenticatedEnDeveloppementRubriqueRouteImport } from './routes/_authenticated/en-developpement.$rubrique'
 import { Route as AuthenticatedFacturesNouveauRouteImport } from './routes/_authenticated/factures.nouveau'
@@ -136,6 +137,11 @@ const AuthenticatedTresorerieRoute = AuthenticatedTresorerieRouteImport.update({
   path: '/tresorerie',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const SignerJetonRoute = SignerJetonRouteImport.update({
+  id: '/signer/$jeton',
+  path: '/signer/$jeton',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDevisNouveauRoute =
   AuthenticatedDevisNouveauRouteImport.update({
     id: '/devis/nouveau',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/rapports': typeof AuthenticatedRapportsRoute
   '/reglages': typeof AuthenticatedReglagesRoute
   '/tresorerie': typeof AuthenticatedTresorerieRoute
+  '/signer/$jeton': typeof SignerJetonRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
   '/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/rapports': typeof AuthenticatedRapportsRoute
   '/reglages': typeof AuthenticatedReglagesRoute
   '/tresorerie': typeof AuthenticatedTresorerieRoute
+  '/signer/$jeton': typeof SignerJetonRoute
   '/': typeof AuthenticatedIndexRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/rapports': typeof AuthenticatedRapportsRoute
   '/_authenticated/reglages': typeof AuthenticatedReglagesRoute
   '/_authenticated/tresorerie': typeof AuthenticatedTresorerieRoute
+  '/signer/$jeton': typeof SignerJetonRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/_authenticated/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/rapports'
     | '/reglages'
     | '/tresorerie'
+    | '/signer/$jeton'
     | '/devis/nouveau'
     | '/en-developpement/$rubrique'
     | '/factures/nouveau'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/rapports'
     | '/reglages'
     | '/tresorerie'
+    | '/signer/$jeton'
     | '/'
     | '/devis/nouveau'
     | '/en-developpement/$rubrique'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rapports'
     | '/_authenticated/reglages'
     | '/_authenticated/tresorerie'
+    | '/signer/$jeton'
     | '/_authenticated/'
     | '/_authenticated/devis/nouveau'
     | '/_authenticated/en-developpement/$rubrique'
@@ -412,6 +424,7 @@ export interface RootRouteChildren {
   ConnexionRoute: typeof ConnexionRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
+  SignerJetonRoute: typeof SignerJetonRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -548,6 +561,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tresorerie'
       preLoaderRoute: typeof AuthenticatedTresorerieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/signer/$jeton': {
+      id: '/signer/$jeton'
+      path: '/signer/$jeton'
+      fullPath: '/signer/$jeton'
+      preLoaderRoute: typeof SignerJetonRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/devis/nouveau': {
       id: '/_authenticated/devis/nouveau'
@@ -705,6 +725,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConnexionRoute: ConnexionRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
+  SignerJetonRoute: SignerJetonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

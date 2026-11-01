@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { RelanceDialogue } from "@/components/RelanceDialogue";
+import { SignatureDistanteBloc } from "@/components/SignatureDistanteBloc";
 import { MessageDocument } from "@/components/MessageDocument";
 import { SourceReprise } from '@/components/RepriseDevis';
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -337,6 +338,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       {estFacture && finalise && <ReglementsBloc doc={doc} />}
       {estFacture && finalise && <RelanceDialogue doc={doc} />}
       {!estFacture && doc.type === "devis" && finalise && !factureLiee && !acompteLie && <RelanceDialogue doc={doc} />}
+      {!estFacture && doc.type === "devis" && finalise && !doc.fictif && <SignatureDistanteBloc devisId={doc.id} reference={doc.numero} clientNom={doc.client} clientEmail={doc.devis?.client.email ?? ""} />}
 
       <section>
         <h3 className="font-semibold">Conditions de paiement</h3>

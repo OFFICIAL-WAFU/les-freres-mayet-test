@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { DocumentAvecDevis } from "@/data/documents";
+import { lireDevisSignes } from "@/data/signature-distante";
 import { lireSuivisDevis, modifierSuiviDevis } from "@/data/suivi-devis";
 import { dateParis } from "@/lib/echeances";
 import { DELAI_RELANCE_PAR_DEFAUT, etatSuiviDevis, marquerEnvoye, marquerRelance, noterReponse, type BibliothequeSuivis, type EtatSuiviDevis, type ReponseDevis, type SuiviDevis } from "@/lib/suivi-devis";
@@ -18,6 +19,8 @@ export function DevisASuivre({ documents }: { documents: DocumentAvecDevis[] }) 
   const [bib, setBib] = useState<BibliothequeSuivis>(VIDE);
   const [erreurSuivi, setErreurSuivi] = useState("");
   const [occupe, setOccupe] = useState(false);
+  const [signes, setSignes] = useState<Record<string, { signeLe: string; nom: string }>>({});
+  useEffect(() => { lireDevisSignes().then(setSignes).catch(() => setSignes({})); }, []);
   const normaliser = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const aujourdHui = dateParis();
 
@@ -36,7 +39,7 @@ export function DevisASuivre({ documents }: { documents: DocumentAvecDevis[] }) 
   const lies = new Set(documents.filter(d => d.type === "facture" || d.type === "acompte").map(d => d.devisSource?.id));
   const candidats = documents.filter(d => !d.fictif && d.type === "devis" && d.statut === "Finalisé" && d.devis && !lies.has(d.id));
   const etat = (d: DocumentAvecDevis) => !d.devis!.validite ? "sans-date" : d.devis!.validite < aujourdHui ? "expire" : "valide";
-  const suiviDe = (d: DocumentAvecDevis) => etatSuiviDevis(bib.suivis[d.id], aujourdHui, delai);
+  const suiviDe = (d: DocumentAvecDevis) => signes[d.id] ? { etat: "accepte" as const, libelle: `Signé à distance par ${signes[d.id]!.nom} le ${new Date(signes[d.id]!.signeLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}` } : etatSuiviDevis(bib.suivis[d.id], aujourdHui, delai);
   const visibles = candidats
     .filter(d => (filtre === "tous" || etat(d) === filtre) && (filtreSuivi === "tous" || suiviDe(d).etat === filtreSuivi) && normaliser(`${d.client} ${d.numero} ${d.devis!.objet}`).includes(normaliser(recherche.trim())))
     .sort((a, b) => (suiviDe(b).etat === "a-relancer" ? 1 : 0) - (suiviDe(a).etat === "a-relancer" ? 1 : 0) || (a.devis!.validite || "9999").localeCompare(b.devis!.validite || "9999"));
