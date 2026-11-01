@@ -1,9 +1,7 @@
-# Migrations en attente
+# Migrations hors dossier `migrations/`
 
-Ce dossier contient des migrations validées dans une base temporaire mais **pas encore appliquées** à la base TEST.
-Elles sont volontairement hors de `supabase/migrations/` pour qu'aucune synchronisation ne les applique par surprise.
-
-Pour installer : relire le fichier, l'appliquer sur la base TEST (Lovable > Cloud > SQL, ou demander à Claude), puis le
-déplacer dans `supabase/migrations/` avec le même nom.
+Ces migrations ont été validées dans une base temporaire. Elles sont rangées ici pour qu'aucune synchronisation ne les rejoue.
 
 - `20261101150000_signature_devis_distante.sql` : signature à distance des devis (voir src/data/AGENTS.md).
+  **Appliquée sur la base TEST le 1er novembre 2026** (vérifiée sur la vraie base : droits, lecture anonyme, création, signature,
+  tout annulé ensuite par rollback). **Ne pas la rejouer.** Avant toute installation sur une autre base, la relire.
