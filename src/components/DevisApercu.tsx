@@ -1,5 +1,7 @@
 import { deductionExcessive, MSG_DEDUCTION_EXCESSIVE, solde, type Deduction } from "@/data/deduction";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
+import { Fragment } from 'react';
+import { presentationLigne, debutLot } from '@/lib/lots';
 import {
   formaterCentimes,
   formaterPrixSaisi,
@@ -76,7 +78,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
             <div className="flex gap-2"><dt className="text-doc-muted">Date :</dt><dd>{fr(d.date)}</dd></div>
             {d.validite && <div className="flex gap-2"><dt className="text-doc-muted">{facture ? "Échéance :" : "Valable jusqu'au :"}</dt><dd>{fr(d.validite)}</dd></div>}
             {facture && !acp && d.prestationDebut && <div className="flex gap-2"><dt className="text-doc-muted">{d.prestationFin ? "Période de réalisation :" : "Date de réalisation :"}</dt><dd>{d.prestationFin ? `du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)}</dd></div>}
-            {facture && <div className="flex gap-2"><dt className="text-doc-muted">Devis d'origine :</dt><dd>{facture.sourceRef}</dd></div>}
+            {facture?.sourceRef && <div className="flex gap-2"><dt className="text-doc-muted">Devis d'origine :</dt><dd>{facture.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Facture d'origine :</dt><dd>{avoir.sourceRef}</dd></div>}
             {avoir && <div className="flex gap-2"><dt className="text-doc-muted">Motif :</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{avoir.motif}</dd></div>}
             {acp && <div className="flex gap-2"><dt className="text-doc-muted">Acompte :</dt><dd>{String(facture!.acompte).replace(".", ",")} % du devis</dd></div>}
@@ -110,21 +112,22 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
           </tr>
         </thead>
         <tbody>
-          {d.lignes.map((l) => {
+          {d.lignes.map((l,i) => {
             const calc = validerLigne(l).calcul;
+            const p=presentationLigne(l),titre=debutLot(d.lignes,i);
             return (
-              <tr key={l.cle} className="border-b border-doc-line align-top">
+              <Fragment key={l.cle}>{titre&&<tr><th colSpan={6} className="bg-secondary px-2 py-2 text-left font-semibold uppercase">{titre}</th></tr>}<tr className="border-b border-doc-line align-top">
                 <td className="py-3 pr-2">
                   <p className="break-words font-medium">{l.designation}</p>
-                  {l.description.trim() && <p className="mt-0.5 whitespace-pre-wrap break-words text-doc-muted">{l.description}</p>}
+                  {p.description.trim() && <p className="mt-0.5 whitespace-pre-wrap break-words text-doc-muted">{p.description}</p>}
                   <p className="mt-0.5 text-[11px] uppercase tracking-wide text-doc-faint">{TYPE_ARTICLE_LABELS[l.type]}</p>
                 </td>
                 <td className="py-3 pr-2 text-right">{formaterQuantite(l.quantite)}</td>
-                <td className="py-3 pr-2">{l.unite ? UNITE_LABELS[l.unite] : ""}</td>
+                <td className="py-3 pr-2">{p.uniteSource ?? (l.unite ? UNITE_LABELS[l.unite] : "")}</td>
                 <td className="py-3 pr-2 text-right whitespace-nowrap">{formaterPrixSaisi(l.prix)}</td>
                 <td className="py-3 pr-2 text-right whitespace-nowrap">{l.taux !== null ? labelTaux(l.taux) : ""}</td>
                 <td className="py-3 text-right whitespace-nowrap font-medium">{calc ? formaterCentimes(calc.ht) : ""}</td>
-              </tr>
+              </tr></Fragment>
             );
           })}
         </tbody>
@@ -133,20 +136,21 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
       {/* Lignes : blocs (téléphone) */}
       <div className="mt-6 flex flex-col sm:hidden">
         <h2 className="border-b-2 border-doc-gold pb-1 text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Détail</h2>
-        {d.lignes.map((l) => {
+        {d.lignes.map((l,i) => {
           const calc = validerLigne(l).calcul;
+          const p=presentationLigne(l),titre=debutLot(d.lignes,i);
           return (
-            <div key={l.cle} className="border-b border-doc-line py-3 text-sm">
+            <Fragment key={l.cle}>{titre&&<h3 className="mt-3 bg-secondary p-2 font-semibold uppercase">{titre}</h3>}<div className="border-b border-doc-line py-3 text-sm">
               <p className="break-words font-medium">{l.designation}</p>
-              {l.description.trim() && <p className="mt-0.5 whitespace-pre-wrap break-words text-doc-muted">{l.description}</p>}
+              {p.description.trim() && <p className="mt-0.5 whitespace-pre-wrap break-words text-doc-muted">{p.description}</p>}
               <p className="mt-0.5 text-[11px] uppercase tracking-wide text-doc-faint">{TYPE_ARTICLE_LABELS[l.type]}</p>
               <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-                <dt className="text-doc-muted">Quantité</dt><dd className="text-right">{formaterQuantite(l.quantite)} {l.unite ? UNITE_LABELS[l.unite] : ""}</dd>
+                <dt className="text-doc-muted">Quantité</dt><dd className="text-right">{formaterQuantite(l.quantite)} {p.uniteSource ?? (l.unite ? UNITE_LABELS[l.unite] : "")}</dd>
                 <dt className="text-doc-muted">Prix unitaire HT</dt><dd className="text-right">{formaterPrixSaisi(l.prix)}</dd>
                 <dt className="text-doc-muted">TVA</dt><dd className="text-right">{l.taux !== null ? labelTaux(l.taux) : ""}</dd>
                 <dt className="font-medium">Total HT</dt><dd className="text-right font-medium">{calc ? formaterCentimes(calc.ht) : ""}</dd>
               </dl>
-            </div>
+            </div></Fragment>
           );
         })}
       </div>

@@ -1,0 +1,20 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const url=p=>'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
+const {lireLot,ecrireLot,presentationLigne,debutLot,deplacerLigne,dupliquerLigne}=await import(url('src/lib/lots.ts'));
+const {recapituler}=await import(url('src/data/devis.ts'));
+const ligne=(cle,description,prix='60.50')=>({cle,articleId:null,type:'prestation',reference:'',designation:'Service TEST',description,unite:'forfait',quantite:'1',prix,taux:100});
+const a=ligne('a','Lot : CUISINE\nUnité source : Ens\nDescription réelle'),b=ligne('b','Lot : CUISINE\nTexte'),c=ligne('c','Lot : VMC\nTexte','582.76');
+assert.deepEqual(lireLot('Texte libre\nLot : Ligne normale'),{lot:'',description:'Texte libre\nLot : Ligne normale'});
+assert.equal(ecrireLot(a.description,'VMC'),'Lot : VMC\nUnité source : Ens\nDescription réelle');
+assert.equal(ecrireLot(a.description,''),'Unité source : Ens\nDescription réelle');
+assert.equal(lireLot(ecrireLot('', 'Salle de ')).lot,'Salle de '); // saisie multi-mots, espace non perdu
+assert.equal(presentationLigne(a).uniteSource,'Ens');assert.equal(presentationLigne(a).description,'Description réelle');
+assert.equal(presentationLigne({...a,unite:'heure'}).uniteSource,null);assert.match(presentationLigne({...a,unite:'heure'}).description,/Unité source/);
+const lignes=[a,b,c],avant=structuredClone(lignes),total=recapituler(lignes);
+assert.deepEqual(lignes.map((_,i)=>debutLot(lignes,i)),['CUISINE','','VMC']);
+assert.equal(recapituler(deplacerLigne(lignes,'c',-1)).ttc,total.ttc);
+assert.deepEqual(deplacerLigne(lignes,'c',-1).map(l=>l.cle),['a','c','b']);
+const copie=dupliquerLigne(lignes,'a','nouveau');assert.equal(copie.length,4);assert.equal(copie[1].cle,'nouveau');assert.equal(copie[1].description,a.description);
+assert.equal(recapituler(copie).ttc,total.ttc+6655n);
+assert.deepEqual(dupliquerLigne(lignes,'a','b'),lignes);assert.deepEqual(deplacerLigne(lignes,'a',-1),lignes);assert.deepEqual(lignes,avant);
+console.log('Lots : description conservée, unités source équivalentes seulement, titres par séquence sans réordonner, déplacement sans changement de total, duplication indépendante, saisie des espaces et limites vérifiées.');

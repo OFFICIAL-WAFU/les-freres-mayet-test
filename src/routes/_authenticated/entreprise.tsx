@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useBlocker } from "@tanstack/react-router";
+import { createFileRoute, useBlocker, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -147,6 +147,7 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
 
   return (
     <AppLayout titre="Entreprise">
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit"><span className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white">Entreprise</span><Link to="/messages" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Messages par défaut</Link><Link to="/en-developpement/$rubrique" params={{rubrique:"personnalisation"}} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Personnalisation · En développement</Link></div>
       <h1 className="text-2xl font-semibold lg:text-3xl">Entreprise</h1>
       <p className="mt-1 text-sm text-muted-foreground">Les informations reprises dans l'aperçu de vos devis.</p>
       <p className="mt-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
@@ -216,6 +217,7 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
           </AlertDialogContent>
         </AlertDialog>
       )}
+      <section className="mt-6 rounded-xl border bg-card p-5"><h2 className="font-semibold">Coordonnées bancaires, page de garde et annexes</h2><Link to="/en-developpement/$rubrique" params={{rubrique:"annexes"}} className="mt-2 inline-flex text-sm text-primary underline">En développement</Link></section>
     </AppLayout>
   );
 }

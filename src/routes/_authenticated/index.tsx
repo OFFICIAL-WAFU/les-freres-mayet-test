@@ -1,11 +1,15 @@
 import { suivre } from "@/data/reglements";
+import { telechargerDocumentsCsv } from "@/lib/export-documents";
+import { suiviEcheance } from "@/lib/echeances";
 import { formaterCentimes } from "@/data/devis";
+import { PeriodeDocumentsSelect } from "@/components/PeriodeDocumentsSelect";
+import { dansPeriode, type PeriodeDocuments } from "@/lib/suivi-clients";
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { StatutBadge } from "@/components/StatutBadge";
+import { StatutDocument } from "@/components/StatutDocument";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,12 +58,14 @@ export const Route = createFileRoute("/_authenticated/")({
   component: DocumentsPage,
 });
 
-const TYPES_CREATION: DocumentType[] = ["devis", "facture", "acompte", "avoir", "rapport"];
+const TYPES_CREATION: DocumentType[] = ["devis", "facture", "acompte", "avoir"];
 
 function DocumentsPage() {
   const [recherche, setRecherche] = useState("");
   const [type, setType] = useState<DocumentType | "tous">("tous");
   const [statut, setStatut] = useState<DocumentStatut | "tous">("tous");
+  const [paiement, setPaiement] = useState("tous");
+  const [periode, setPeriode] = useState<PeriodeDocuments>("toutes");
   const [documentOuvert, setDocumentOuvert] = useState<DocumentAvecDevis | null>(null);
   const [creationOuverte, setCreationOuverte] = useState(false);
   const [typeChoisi, setTypeChoisi] = useState<DocumentType | null>(null);
@@ -79,6 +85,8 @@ function DocumentsPage() {
     setRecherche("");
     setType("tous");
     setStatut("tous");
+    setPaiement("tous");
+    setPeriode("toutes");
   }
 
   const resultats = useMemo(() => {
@@ -87,37 +95,40 @@ function DocumentsPage() {
       const correspondRecherche =
         q === "" ||
         d.client.toLowerCase().includes(q) ||
-        d.numero.toLowerCase().includes(q);
+        d.numero.toLowerCase().includes(q) || (d.devis?.objet ?? "").toLowerCase().includes(q);
       const correspondType = type === "tous" || d.type === type;
       const correspondStatut = statut === "tous" || d.statut === statut;
-      return correspondRecherche && correspondType && correspondStatut;
+      const suivi = !d.fictif && d.statut === "Finalisé" && (d.type === "facture" || d.type === "acompte") && d.aRegler !== undefined ? suivre(d.aRegler, d.reglements ?? [], d.credite ?? 0n) : null;
+      const echeance = suivi ? suiviEcheance(d.devis?.validite, suivi.reste) : null;
+      const correspondPaiement = paiement === "tous" || !!suivi && (paiement === "reste" ? suivi.reste > 0n : paiement === "credit" ? suivi.creditClient > 0n : paiement === "retard" ? echeance?.etat === "retard" : paiement === "sans-date" ? echeance?.etat === "absente" : suivi.reste === 0n);
+      return correspondRecherche && correspondType && correspondStatut && correspondPaiement && dansPeriode(d.date, periode);
     });
-  }, [documents, recherche, type, statut]);
+  }, [documents, recherche, type, statut, paiement, periode]);
 
   return (
     <AppLayout titre="Documents">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="khosmos-page-heading flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Documents</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Retrouvez vos devis, factures, acomptes et avoirs.
           </p>
         </div>
-        <Button variant="action" size="lg" onClick={() => setCreationOuverte(true)}>
-          <Plus /> Créer un document
-        </Button>
+        <div className="flex flex-wrap gap-3"><Button variant="outline" disabled={etatDocs.statut !== "pret" || resultats.length === 0} onClick={() => telechargerDocumentsCsv(resultats)}>Exporter</Button><Button variant="action" size="lg" onClick={() => setCreationOuverte(true)}>
+          <Plus /> Créer un doc
+        </Button></div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
+      <div className="khosmos-page-filters mt-6 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-wrap gap-3 lg:items-center">
+          <div className="relative w-full basis-full">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
-              placeholder="Rechercher un client ou un numéro…"
+              placeholder="Client, N° de doc ou paiement…"
               aria-label="Rechercher un client ou un numéro"
-              className="h-10 pl-9"
+              className="h-12 max-w-sm pl-9"
             />
           </div>
           <Select value={type} onValueChange={(v) => changerType(v as DocumentType | "tous")}>
@@ -148,9 +159,19 @@ function DocumentsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" disabled title="En développement">Expéditeur · En développement</Button>
+          <PeriodeDocumentsSelect value={periode} onChange={setPeriode} />
           <Button variant="outline" className="h-10" onClick={reinitialiser}>
             Réinitialiser
           </Button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Select value={paiement} onValueChange={setPaiement}>
+            <SelectTrigger className="w-full sm:w-64" aria-label="Filtrer par règlement"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="tous">Tous les règlements</SelectItem><SelectItem value="reste">Reste à régler</SelectItem><SelectItem value="retard">En retard</SelectItem><SelectItem value="sans-date">Échéance non renseignée</SelectItem><SelectItem value="solde">Solde à zéro</SelectItem><SelectItem value="credit">Crédit client à traiter</SelectItem></SelectContent>
+          </Select>
+
+          <span className="text-xs text-muted-foreground">Compatible Excel · liste filtrée · export de suivi</span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           {resultats.length} document{resultats.length > 1 ? "s" : ""} affiché
@@ -171,7 +192,7 @@ function DocumentsPage() {
       ) : documents.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-sm font-medium">Aucun document enregistré pour le moment.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Créez votre premier devis avec « Créer un document ».</p>
+          <p className="mt-1 text-sm text-muted-foreground">Créez votre premier devis avec « Créer un doc ».</p>
         </div>
       ) : resultats.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
@@ -185,15 +206,16 @@ function DocumentsPage() {
       ) : (
         <>
           {/* Tableau (ordinateur) */}
-          <div className="mt-6 hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
-            <table className="w-full text-sm">
+          <div className="khosmos-list mt-6 hidden lg:block">
+            <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/60 text-left">
                   <th className="px-4 py-3 font-semibold">Date</th>
-                  <th className="px-4 py-3 font-semibold">Numéro</th>
+                  <th className="px-4 py-3 font-semibold">N° document</th>
                   <th className="px-4 py-3 font-semibold">Client</th>
-                  <th className="px-4 py-3 font-semibold">Type</th>
+                  <th className="px-4 py-3 font-semibold">Document</th>
                   <th className="px-4 py-3 text-right font-semibold">Montant TTC</th>
+                  <th className="px-4 py-3 font-semibold">Expéditeur</th>
                   <th className="px-4 py-3 font-semibold">Statut</th>
                   <th className="px-4 py-3 text-right font-semibold">Action</th>
                 </tr>
@@ -202,15 +224,15 @@ function DocumentsPage() {
                 {resultats.map((d) => (
                   <tr key={d.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 whitespace-nowrap">{d.date}</td>
-                    <td className="px-4 py-3 font-medium whitespace-nowrap">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs">Fictif</span>}</td>
-                    <td className="px-4 py-3">{d.client}</td>
+                    <td className="px-3 py-3 font-medium break-all">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs">Fictif</span>}</td>
+                    <td className="px-4 py-3 font-semibold text-primary">{d.client}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABELS[d.type]}</td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-3 py-3 text-right break-words">
                       {formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="block text-xs text-muted-foreground">solde, acompte déduit</span>}
-                      <SuiviLigne d={d} />
                     </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">En développement</td>
                     <td className="px-4 py-3">
-                      <StatutBadge statut={d.statut} />
+                      <StatutDocument document={d} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Button variant="outline" size="sm" onClick={() => setDocumentOuvert(d)}>
@@ -232,7 +254,7 @@ function DocumentsPage() {
                     <p className="font-semibold">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-normal">Fictif</span>}</p>
                     <p className="truncate text-sm text-muted-foreground">{d.client}</p>
                   </div>
-                  <StatutBadge statut={d.statut} />
+                  <StatutDocument document={d} />
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
@@ -275,7 +297,7 @@ function DocumentsPage() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Créer un document</DialogTitle>
+            <DialogTitle>Générer un nouveau document</DialogTitle>
             <DialogDescription>Choisissez le type de document à créer.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -289,12 +311,23 @@ function DocumentsPage() {
                 {TYPE_LABELS[t]}
               </Button>
             ))}
+            <Button variant="outline" className="justify-between" onClick={() => navigate({to:"/rapports"})}>Rapport d’intervention<span className="text-xs text-muted-foreground">Disponible</span></Button>
+            <Button variant="outline" className="justify-between" onClick={() => navigate({to:"/planning"})}>Planning<span className="text-xs text-muted-foreground">Disponible</span></Button>
           </div>
           {typeChoisi && (
             <p className="rounded-xl border border-border bg-secondary/60 p-3 text-sm text-foreground">
-              La création de ce type de document sera ajoutée à une prochaine étape.
+              {typeChoisi === "avoir" ? "Ouvrez une facture finalisée sans acompte, puis choisissez Préparer un avoir total." : "Ouvrez un devis finalisé, puis choisissez Préparer une facture ou Préparer un acompte."}
             </p>
           )}
+          {typeChoisi === "facture" && <Button variant="action" onClick={() => navigate({ to: "/factures/nouveau" })}>Créer une facture sans devis</Button>}
+          {typeChoisi && <div className="max-h-64 overflow-y-auto">
+            {documents.filter(d => !d.fictif && d.statut === "Finalisé" && (typeChoisi === "avoir" ? d.type === "facture" && !d.deduction : d.type === "devis")).map(d => (
+              <Button key={d.id} variant="ghost" className="h-auto w-full justify-start whitespace-normal py-3 text-left" onClick={() => { setCreationOuverte(false); setTypeChoisi(null); setDocumentOuvert(d); }}>
+                {d.numero} · {d.client}
+              </Button>
+            ))}
+            {!documents.some(d => !d.fictif && d.statut === "Finalisé" && (typeChoisi === "avoir" ? d.type === "facture" && !d.deduction : d.type === "devis")) && <p className="py-3 text-sm text-muted-foreground">Aucun document source disponible.</p>}
+          </div>}
         </DialogContent>
       </Dialog>
     </AppLayout>
@@ -307,6 +340,7 @@ function SuiviLigne({ d }: { d: DocumentAvecDevis }) {
   return (
     <span className="block text-xs text-muted-foreground">
       {s.etat}{s.credite > 0n ? ` · crédité ${formaterCentimes(s.credite)}` : ""} · réglé {formaterCentimes(s.regle)} · reste {formaterCentimes(s.reste)}{s.creditClient > 0n ? ` · crédit client à traiter ${formaterCentimes(s.creditClient)}` : ""}
+      {s.reste > 0n && <span className={suiviEcheance(d.devis?.validite, s.reste).etat === "retard" ? "block font-medium text-destructive" : "block"}>{suiviEcheance(d.devis?.validite, s.reste).libelle}</span>}
     </span>
   );
 }

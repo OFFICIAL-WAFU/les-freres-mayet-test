@@ -57,8 +57,8 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
   devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
   facture: ["Brouillon", "Finalisé", "En attente de paiement", "Payée"],
-  acompte: ["Brouillon", "En attente de paiement", "Payé"],
-  avoir: ["Brouillon", "Émis"],
+  acompte: ["Brouillon", "Finalisé", "En attente de paiement", "Payé"],
+  avoir: ["Brouillon", "Finalisé", "Émis"],
   rapport: ["Finalisé"],
 };
 
@@ -224,6 +224,8 @@ export interface DocumentAvecDevis extends DemoDocument {
   motif?: string;
   /** Facture : montant TTC crédité par avoirs finalisés (centimes). */
   credite?: bigint;
+  /** HT enregistré par le serveur, après déduction d'acompte pour la facture de solde. */
+  montantHTCentimes?: bigint;
 }
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
@@ -265,7 +267,7 @@ interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
   objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
   conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
-  total_ttc_centimes: number; version: number; statut: "brouillon" | "finalise";
+  total_ttc_centimes: number; total_ht_centimes?: number; version: number; statut: "brouillon" | "finalise";
   reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
 }
 
@@ -300,6 +302,7 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
   return {
     id: d.id, date: `${j}/${m}/${a}`, numero: d.reference_definitive ?? d.reference, client: d.client_copie.nom, clientId: d.client_id,
     type: "devis", montantTTC: d.total_ttc_centimes / 100, statut: d.statut === "finalise" ? "Finalisé" : "Brouillon",
+    ...(Number.isSafeInteger(d.total_ht_centimes) ? { montantHTCentimes: BigInt(d.total_ht_centimes!) } : {}),
     devis, version: d.version, referenceProvisoire: d.reference,
     ...(d.statut === "finalise" && d.finalise_le && d.entreprise_copie
       ? { finaliseLe: d.finalise_le, entrepriseFigee: depuisLigneEntreprise(d.entreprise_copie as never) }
@@ -310,9 +313,9 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
 // --- Factures brouillons (étape 14) -----------------------------------------
 interface FactureBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient; objet: string;
-  date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number;
+  date_facture: string; date_echeance: string | null; remarques: string; notes: string; total_ttc_centimes: number; total_ht_centimes?: number;
   conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
-  version: number; devis_source_id: string; devis_source_reference: string;
+  version: number; devis_source_id: string | null; devis_source_reference: string | null;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
   deduction?: unknown; deduction_calc?: unknown; reglements?: ReglementBase[];
@@ -329,7 +332,7 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
   const deduction = acompte_ou(f) ? undefined : lireDeduction(f.deduction_calc ?? f.deduction);
   const acompte = f.nature === "acompte";
   return {
-    ...base, ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", devisSource: { id: f.devis_source_id, reference: f.devis_source_reference },
+    ...base, ...(Number.isSafeInteger(f.total_ht_centimes) ? { montantHTCentimes: BigInt(f.total_ht_centimes!) - (!acompte && deduction?.statut === "finalise" ? deduction.ht : 0n) } : {}), ...(deduction ? { deduction } : {}), ...(deduction?.statut === "finalise" ? { montantTTC: (f.total_ttc_centimes - Number(deduction.ttc)) / 100 } : {}), type: acompte ? "acompte" : "facture", ...(f.devis_source_id && f.devis_source_reference ? { devisSource: { id: f.devis_source_id, reference: f.devis_source_reference } } : {}),
     ...(acompte && f.pourcentage != null ? { pourcentage: Number(f.pourcentage) } : {}),
     ...(f.statut === "finalise" ? {
       reglements: (f.reglements ?? []).map(lireReglement).sort((a, b) => a.creeLe.localeCompare(b.creeLe)),
@@ -343,14 +346,14 @@ export class DevisNonFinalise extends Error {}
 // --- Avoirs brouillons (étape 21) -------------------------------------------
 interface AvoirBase {
   id: string; reference: string; facture_source_id: string; facture_source_reference: string; client_id: string;
-  client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; date_avoir: string;
+  client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; total_ht_centimes?: number; date_avoir: string;
   motif: string; remarques: string; version: number;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
 }
 function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
   const base = depuisBase({
     id: a.id, reference: a.reference, client_id: a.client_id, client_copie: a.client_copie, objet: a.objet,
-    date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes,
+    date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes, ...(a.total_ht_centimes !== undefined ? { total_ht_centimes: a.total_ht_centimes } : {}),
     version: a.version, statut: a.statut ?? "brouillon", reference_definitive: a.reference_definitive ?? null, finalise_le: a.finalise_le ?? null, entreprise_copie: a.entreprise_copie ?? null, lignes: a.lignes,
   });
   return { ...base, type: "avoir", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif };
@@ -486,6 +489,25 @@ export async function enregistrerFacture(id: string, v: DevisBrouillon, version:
   return doc;
 }
 
+export async function factureDirecteDisponible(): Promise<boolean> {
+  const rpc = supabase as unknown as { rpc: (nom: string) => Promise<{ data: unknown; error: { code?: string } | null }> };
+  const { data, error } = await rpc.rpc("facture_directe_disponible");
+  if (error?.code === "PGRST202") return false;
+  if (error) throw new ErreurDevis("Impossible de vérifier la création directe. Réessayez lorsque la connexion est rétablie.");
+  return data === true;
+}
+
+export async function creerFactureDirecte(id: string, v: DevisBrouillon): Promise<DocumentAvecDevis> {
+  const rpc = supabase as unknown as { rpc: (nom: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message: string } | null }> };
+  const { data, error } = await rpc.rpc("enregistrer_facture_directe", { p_id: id, p: {
+    client_id: v.clientId, objet: v.objet.trim(), date_facture: v.date, date_echeance: v.validite,
+    remarques: v.remarques, notes: v.notes, conditions_paiement: v.conditions ?? "",
+    prestation_debut: v.prestationDebut ?? "", prestation_fin: v.prestationFin ?? "", lignes: versLignes(v),
+  } });
+  if (error) throw new ErreurDevis(error.code === "PGRST202" ? "La création sans devis nécessite l’installation de la migration Factures directes dans Lovable TEST. Votre saisie reste affichée." : "La facture n’a pas été confirmée. Votre saisie est conservée ; réessayez avec cette même tentative.");
+  const doc = depuisFacture(data as FactureBase); conserver(doc); return doc;
+}
+
 const PAGE = 500;
 export async function chargerDocuments(): Promise<void> {
   publier({ statut: "chargement" });
@@ -615,6 +637,19 @@ export async function relireFacture(id: string): Promise<DocumentAvecDevis | nul
   const doc = depuisFacture(data as unknown as FactureBase);
   conserver(doc);
   return doc;
+}
+
+/** Lecture complète pour préparer un message : même lecture SQL pour facture,
+ * règlements et avoirs, sans remise à zéro du suivi par une réponse RPC partielle. */
+export async function relireFactureAvecSuivi(id: string): Promise<DocumentAvecDevis | null> {
+  const {data,error}=await supabase.from("factures")
+    .select("*, deduction_calc:deduction_live, factures_lignes(*), reglements(*), avoirs(statut,total_ttc_centimes)").eq("id",id).maybeSingle();
+  if(error)throw new ErreurDevis("Impossible de relire la facture et ses règlements. Aucun message n’a été préparé.");
+  if(!data)return null;
+  const f=data as unknown as FactureBase & {avoirs:{statut:string;total_ttc_centimes:number}[]};
+  const doc=depuisFacture(f);
+  doc.credite=(f.avoirs ?? []).filter(a=>a.statut==="finalise").reduce((s,a)=>s+BigInt(a.total_ttc_centimes),0n);
+  conserver(doc);return doc;
 }
 
 /** Finalise une facture brouillon (numéro FAC-LFM attribué par le serveur, idempotent). */

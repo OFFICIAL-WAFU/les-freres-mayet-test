@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { RelanceDialogue } from "@/components/RelanceDialogue";
+import { MessageDocument } from "@/components/MessageDocument";
+import { SourceReprise } from '@/components/RepriseDevis';
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
@@ -101,6 +104,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
 
   return (
     <div className="flex flex-col gap-5 text-sm">
+      {doc.type==='devis' && <SourceReprise id={doc.id} />}
       <div className="flex flex-wrap items-center gap-2">
         <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} libelle={estFacture && finalise ? "Finalisée" : undefined} />
         {estAcompte && finalise ? (
@@ -189,6 +193,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </div>
       ) : (
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {!doc.fictif && doc.type === "devis" && <Button asChild variant="outline"><Link to="/devis/nouveau" search={{ modele: doc.id }} onClick={onNavigate}>Réutiliser ce devis</Link></Button>}
         {finalise && (factureLiee ? (
           <Button asChild variant="action">
             <Link to="/factures/$id" params={{ id: factureLiee.id }} onClick={onNavigate}>{factureLiee.statut === "Finalisé" ? "Ouvrir la facture" : "Ouvrir la facture brouillon"}</Link>
@@ -221,6 +226,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </div>
       )}
 
+      <MessageDocument doc={doc} />
       {dlgAvoir && <AvoirDialogue facture={doc} onFermer={() => setDlgAvoir(false)} onNavigate={onNavigate} />}
       {dlgAcompte && (
         <AcompteDialogue devisId={doc.id} devisRef={doc.numero}
@@ -282,6 +288,12 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           <div><dt className="text-muted-foreground">Date</dt><dd className="font-medium">{fr(d.date)}</dd></div>
           {estAcompte && <div><dt className="text-muted-foreground">Pourcentage</dt><dd className="font-medium">{String(doc.pourcentage ?? "").replace(".", ",")} %</dd></div>}
           <div><dt className="text-muted-foreground">{estFacture ? "Échéance" : "Validité"}</dt><dd className="font-medium">{fr(d.validite)}</dd></div>
+          {estFacture && !estAcompte && d.prestationDebut && (
+            <div className="sm:col-span-3">
+              <dt className="text-muted-foreground">{d.prestationFin ? "Période de réalisation des prestations" : "Date de réalisation des prestations"}</dt>
+              <dd className="font-medium">{d.prestationFin ? `Du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)}</dd>
+            </div>
+          )}
         </dl>
       </section>
 
@@ -323,6 +335,13 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         {doc.type === "facture" && doc.deduction && <DeductionBloc recap={recap} deduction={doc.deduction} />}
       </section>
       {estFacture && finalise && <ReglementsBloc doc={doc} />}
+      {estFacture && finalise && <RelanceDialogue doc={doc} />}
+      {!estFacture && doc.type === "devis" && finalise && !factureLiee && !acompteLie && <RelanceDialogue doc={doc} />}
+
+      <section>
+        <h3 className="font-semibold">Conditions de paiement</h3>
+        <p className="mt-1 whitespace-pre-wrap break-words">{d.conditions?.trim() || "—"}</p>
+      </section>
 
       <section>
         <h3 className="font-semibold">Remarques destinées au client</h3>

@@ -16,6 +16,13 @@ dist-ssr
 .nitro
 *.local
 
+# Configuration locale et données privées de reprise (hors dépôt de code)
+.env
+.env.*
+!.env.example
+khosmos-test-sources.json
+*.backup
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

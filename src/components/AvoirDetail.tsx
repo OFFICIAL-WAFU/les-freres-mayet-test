@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MessageDocument } from "@/components/MessageDocument";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import {
@@ -67,6 +68,7 @@ export function AvoirDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           <Button asChild variant="ghost"><Link to="/factures/$id" params={{ id: doc.factureSource.id }} onClick={onNavigate}>Voir la facture {doc.factureSource.reference}</Link></Button>
         )}
       </div>
+      <MessageDocument doc={doc} />
       {dlg && <FinaliserAvoirDialogue doc={doc} onFermer={() => setDlg(false)} />}
       <section>
         <h3 className="font-semibold">Informations de l'avoir</h3>

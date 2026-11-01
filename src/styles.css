@@ -177,3 +177,55 @@
     color: var(--color-foreground);
   }
 }
+
+/* Référence : écrans Khosmos v2.4.2 observés le 07/10/2026.
+   Habillage de l’espace de gestion seulement ; les PDF gardent leur thème. */
+.khosmos-ui {
+  --background: oklch(0.947 0.025 260);
+  --secondary: oklch(0.938 0.03 260);
+  --primary: oklch(0.411 0.223 264);
+  --foreground: oklch(0.32 0.069 264);
+  --accent: oklch(0.718 0.186 45);
+}
+.khosmos-page-heading, .khosmos-page-filters {
+  background: var(--primary);
+  color: white;
+  border: 0;
+  border-radius: 0;
+  margin-left: -16px;
+  margin-right: -16px;
+  padding: 24px 16px;
+}
+.khosmos-page-heading { margin-top: -24px; padding-bottom: 16px; }
+.khosmos-page-filters { margin-top: 0; padding-top: 8px; }
+.khosmos-page-heading h1, .khosmos-page-heading p,
+.khosmos-page-filters > p, .khosmos-page-filters span.text-muted-foreground { color: white; }
+.khosmos-page-filters input { background: white; color: var(--foreground); border-radius: 999px; }
+.khosmos-page-filters button { background: var(--secondary); color: var(--foreground); }
+.khosmos-list table { border-collapse: separate; border-spacing: 0 10px; }
+.khosmos-list thead tr { background: transparent; border: 0; }
+.khosmos-list th { padding-top: 0; padding-bottom: 0; }
+.khosmos-list tbody tr { background: white; border: 0; }
+.khosmos-list td:first-child { border-radius: 12px 0 0 12px; }
+.khosmos-list td:last-child { border-radius: 0 12px 12px 0; }
+.khosmos-list td { border: 0; }
+.khosmos-summary { background: var(--primary); padding: 24px; border-radius: 16px; }
+.khosmos-summary section { background: oklch(0.52 0.2 264); border: 0; color: white; }
+.khosmos-summary section h2, .khosmos-summary section p { color: white; }
+@media (min-width: 1024px) {
+  .khosmos-page-heading, .khosmos-page-filters { margin-left: -30px; margin-right: -30px; padding-left: 30px; padding-right: 30px; }
+}
+
+.khosmos-list th { font-size: 12px; }
+.khosmos-list th::first-line { background: white; }
+.khosmos-list td { padding: 12px 10px; }
+.khosmos-ui nav > a { border-radius: 10px; }
+.khosmos-ui nav > a[href="/catalogue"] { border-radius: 0; }
+
+.saisie-apercu .devis-doc { padding: 20px; font-size: 12px; }
+.saisie-apercu .devis-doc header { flex-direction: column; }
+.saisie-apercu .devis-doc table { table-layout: fixed; }
+.saisie-apercu .devis-doc th, .saisie-apercu .devis-doc td { white-space: normal; overflow-wrap: anywhere; font-size: 10px; }
+.saisie-apercu .devis-doc col:nth-child(1) { width: 40%; }
+.saisie-apercu .devis-doc col:nth-child(2), .saisie-apercu .devis-doc col:nth-child(3), .saisie-apercu .devis-doc col:nth-child(5) { width: 10%; }
+.saisie-apercu .devis-doc col:nth-child(4), .saisie-apercu .devis-doc col:nth-child(6) { width: 15%; }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowLeft, Download, Info, Loader2 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -9,6 +9,8 @@ import { useEtatDocuments } from "@/data/documents";
 import { chargerEntreprise, useEtatEntreprise } from "@/data/entreprise";
 import { telechargerDevisPdf } from "@/lib/devisPdf";
 import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
+import { SourceReprise } from '@/components/RepriseDevis';
+import { lireReprise } from '@/data/reprises-devis';
 
 export const Route = createFileRoute("/_authenticated/devis/$id/apercu")({
   head: () => ({
@@ -26,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/devis/$id/apercu")({
 
 function Page() {
   const { id } = Route.useParams();
+  const [source,setSource]=useState(false),[interne,setInterne]=useState(false);
+  useEffect(()=>{let actif=true;setSource(false);setInterne(false);void lireReprise(id).then(r=>{if(actif)setSource(Boolean(r));}).catch(()=>{});return()=>{actif=false;};},[id]);
   const etatEnt = useEtatEntreprise();
   const etatDocs0 = useEtatDocuments();
   const doc0 = etatDocs0.brouillons.find((d) => d.id === id && d.type === "devis");
@@ -66,9 +70,11 @@ function Page() {
           </div>
           <Button variant="action" onClick={telecharger} disabled={enCours || !entreprise} aria-busy={enCours} className="shrink-0">
             {enCours ? <Loader2 className="animate-spin" /> : <Download />}
-            {enCours ? "Génération du PDF…" : finalise ? "Télécharger le PDF" : "Télécharger le PDF de brouillon"}
+            {enCours ? "Génération du PDF…" : finalise ? "Télécharger le PDF" : source ? "PDF du brouillon interne" : "Télécharger le PDF de brouillon"}
           </Button>
           </div>
+          <div className="mt-4"><SourceReprise id={id} ouverte /></div>
+          {source && <div className="mt-4 rounded-xl border bg-card p-4 text-sm"><p>La copie ci-dessus conserve la présentation du devis d’origine. Le modèle interne utilise les unités et la fiche entreprise de l’application ; il ne reproduit pas encore cette présentation.</p><Button className="mt-2" variant="outline" onClick={()=>setInterne(!interne)}>{interne?'Masquer le modèle interne':'Afficher le modèle interne'}</Button></div>}
           {echec && (
             <div role="alert" className="mt-4 flex flex-col gap-2 rounded-xl border border-destructive/40 bg-card p-3 text-sm sm:flex-row sm:items-center">
               <AlertTriangle className="size-4 shrink-0 text-destructive" />
@@ -99,7 +105,7 @@ function Page() {
             Adresse de l'entreprise non renseignée.
           </p>
           )}
-          {entreprise && <div className="-mx-4 mt-4 bg-neutral-soft px-2 py-4 sm:mx-0 sm:rounded-2xl sm:p-8">
+          {entreprise && (!source || interne) && <div className="-mx-4 mt-4 bg-neutral-soft px-2 py-4 sm:mx-0 sm:rounded-2xl sm:p-8">
             <DevisApercu devis={versPublic(doc.devis)} numero={doc.numero} entreprise={entreprise} finalise={finalise} />
           </div>}
         </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -129,10 +129,11 @@ function CataloguePage() {
   const voir = (a: Article) => setPanneau({ mode: "fiche", id: a.id });
 
   return (
-    <AppLayout titre="Catalogue">
+    <AppLayout titre="Inventaire">
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit">{([ ["prestation", "Services"], ["materiel", "Matériel"], ["tous", "Tout l’inventaire"] ] as const).map(([value,label]) => <Button key={value} variant={type === value ? "action" : "ghost"} onClick={() => setType(value)}>{label}</Button>)}<Button variant="ghost" asChild><Link to="/fournisseurs">Catalogue fournisseur · En développement</Link></Button></div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Catalogue</h1>
+          <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Inventaire</h1>
           <p className="mt-2 text-sm text-muted-foreground">Votre matériel et vos prestations habituelles.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Votre catalogue est enregistré dans votre espace privé.

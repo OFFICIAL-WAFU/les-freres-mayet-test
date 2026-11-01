@@ -1,0 +1,15 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/lib/sauvegarde.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {creerSauvegarde,lireSauvegarde,fusionner,fusionnerSuivis,nomFichierSauvegarde}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const d={rapports:[{id:'r1',numero:'RI-2026-001'}],prochainRapport:2,interventions:[{id:'i1'}],charges:[{id:'c1'}],solde:{date:'2026-10-01',montant:1000},suivis:{d1:{reponse:'attente'}}};
+const s=creerSauvegarde(d,'2026-10-31T12:00:00Z');
+assert.deepEqual(lireSauvegarde(JSON.stringify(s)),s);
+assert.equal(creerSauvegarde({...d,solde:undefined},'x').solde,undefined);assert.ok(!('solde' in creerSauvegarde({...d,solde:undefined},'x')));
+for(const [t,re] of [['pas du json',/lisible/],['[]',/pas une sauvegarde/],['{"format":"autre"}',/pas une sauvegarde/],[JSON.stringify({...s,version:2}),/Version/],[JSON.stringify({...s,rapports:'x'}),/rapports/],[JSON.stringify({...s,suivis:[]}),/suivis/],[JSON.stringify({...s,prochainRapport:0}),/compteur/]])assert.throws(()=>lireSauvegarde(t),re,t);
+assert.throws(()=>lireSauvegarde('x'.repeat(150_000_001)),/volumineux/);
+const f=fusionner([{id:'a'},{id:'b'}],[{id:'b'},{id:'c'}]);assert.deepEqual(f.resultat.map(x=>x.id),['a','b','c']);assert.equal(f.ajoutes,1);assert.equal(f.ignores,1);
+const g=fusionner([{id:'a',n:'1'}],[{id:'z',n:'1'},{id:'y',n:'2'}],(x,y)=>x.n===y.n);assert.deepEqual(g.resultat.map(x=>x.id),['a','y']);assert.equal(g.ignores,1,'conflit de numéro ignoré');
+const base=[{id:'a'}];fusionner(base,[{id:'b'}]);assert.equal(base.length,1,'liste d’origine non modifiée');
+const h=fusionnerSuivis({d1:{reponse:'accepte'}},{d1:{reponse:'refuse'},d2:{reponse:'attente'}});assert.equal(h.resultat.d1.reponse,'accepte','l’existant prime');assert.equal(h.ajoutes,1);assert.equal(h.ignores,1);
+assert.equal(nomFichierSauvegarde('2026-10-31'),'Sauvegarde_Les_Freres_Mayet_2026-10-31.json');
+console.log('Sauvegarde : format contrôlé, fusion sans écrasement ni suppression, conflits de numéro et identifiants ignorés, existant prioritaire.');
