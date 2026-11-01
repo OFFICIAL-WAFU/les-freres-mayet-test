@@ -29,6 +29,7 @@ import { Route as AuthenticatedRapportsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReglagesRouteImport } from './routes/_authenticated/reglages'
 import { Route as AuthenticatedTresorerieRouteImport } from './routes/_authenticated/tresorerie'
 import { Route as SignerJetonRouteImport } from './routes/signer.$jeton'
+import { Route as AuthenticatedDevisAssistantRouteImport } from './routes/_authenticated/devis.assistant'
 import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authenticated/devis.nouveau'
 import { Route as AuthenticatedEnDeveloppementRubriqueRouteImport } from './routes/_authenticated/en-developpement.$rubrique'
 import { Route as AuthenticatedFacturesNouveauRouteImport } from './routes/_authenticated/factures.nouveau'
@@ -142,6 +143,12 @@ const SignerJetonRoute = SignerJetonRouteImport.update({
   path: '/signer/$jeton',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDevisAssistantRoute =
+  AuthenticatedDevisAssistantRouteImport.update({
+    id: '/devis/assistant',
+    path: '/devis/assistant',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDevisNouveauRoute =
   AuthenticatedDevisNouveauRouteImport.update({
     id: '/devis/nouveau',
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/reglages': typeof AuthenticatedReglagesRoute
   '/tresorerie': typeof AuthenticatedTresorerieRoute
   '/signer/$jeton': typeof SignerJetonRoute
+  '/devis/assistant': typeof AuthenticatedDevisAssistantRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
   '/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
@@ -268,6 +276,7 @@ export interface FileRoutesByTo {
   '/tresorerie': typeof AuthenticatedTresorerieRoute
   '/signer/$jeton': typeof SignerJetonRoute
   '/': typeof AuthenticatedIndexRoute
+  '/devis/assistant': typeof AuthenticatedDevisAssistantRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
   '/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
@@ -303,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/tresorerie': typeof AuthenticatedTresorerieRoute
   '/signer/$jeton': typeof SignerJetonRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/devis/assistant': typeof AuthenticatedDevisAssistantRoute
   '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
   '/_authenticated/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
   '/_authenticated/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/reglages'
     | '/tresorerie'
     | '/signer/$jeton'
+    | '/devis/assistant'
     | '/devis/nouveau'
     | '/en-developpement/$rubrique'
     | '/factures/nouveau'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/tresorerie'
     | '/signer/$jeton'
     | '/'
+    | '/devis/assistant'
     | '/devis/nouveau'
     | '/en-developpement/$rubrique'
     | '/factures/nouveau'
@@ -405,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tresorerie'
     | '/signer/$jeton'
     | '/_authenticated/'
+    | '/_authenticated/devis/assistant'
     | '/_authenticated/devis/nouveau'
     | '/_authenticated/en-developpement/$rubrique'
     | '/_authenticated/factures/nouveau'
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignerJetonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/devis/assistant': {
+      id: '/_authenticated/devis/assistant'
+      path: '/devis/assistant'
+      fullPath: '/devis/assistant'
+      preLoaderRoute: typeof AuthenticatedDevisAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/devis/nouveau': {
       id: '/_authenticated/devis/nouveau'
       path: '/devis/nouveau'
@@ -672,6 +692,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReglagesRoute: typeof AuthenticatedReglagesRoute
   AuthenticatedTresorerieRoute: typeof AuthenticatedTresorerieRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedDevisAssistantRoute: typeof AuthenticatedDevisAssistantRoute
   AuthenticatedDevisNouveauRoute: typeof AuthenticatedDevisNouveauRoute
   AuthenticatedEnDeveloppementRubriqueRoute: typeof AuthenticatedEnDeveloppementRubriqueRoute
   AuthenticatedFacturesNouveauRoute: typeof AuthenticatedFacturesNouveauRoute
@@ -702,6 +723,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReglagesRoute: AuthenticatedReglagesRoute,
   AuthenticatedTresorerieRoute: AuthenticatedTresorerieRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedDevisAssistantRoute: AuthenticatedDevisAssistantRoute,
   AuthenticatedDevisNouveauRoute: AuthenticatedDevisNouveauRoute,
   AuthenticatedEnDeveloppementRubriqueRoute:
     AuthenticatedEnDeveloppementRubriqueRoute,
