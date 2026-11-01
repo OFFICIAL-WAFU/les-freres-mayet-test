@@ -16,7 +16,7 @@ import {
   recapituler,
   validerLigne,
 } from "@/data/devis";
-import { formaterCapital, type Entreprise } from "@/data/entreprise";
+import { formaterCapital, formaterIban, type Entreprise } from "@/data/entreprise";
 import type { DevisPublic } from "@/components/DevisApercu";
 
 const OR = "#b08d3c";
@@ -124,12 +124,15 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   ];
 
   const content: Content[] = [
+    ...(ent.bandeau.trim() ? [{ text: ent.bandeau.trim().toUpperCase(), alignment: "center", bold: true, fontSize: 8, color: OR_TEXTE, margin: [0, 0, 0, 8] } as Content] : []),
     {
       columns: [
         {
           width: "*",
           columns: [
-            {
+            ent.logo
+              ? { width: 110, image: ent.logo, fit: [110, 44] }
+              : {
               width: 40,
               stack: [
                 { canvas: [{ type: "ellipse", x: 18, y: 18, r1: 17, r2: 17, lineColor: OR, lineWidth: 1.5 }] },
@@ -237,6 +240,17 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   if (d.remarques.trim()) {
     content.push({ stack: [titreSection("Remarques"), { text: d.remarques }], margin: [0, 18, 0, 0] });
   }
+  const virement = !av && (ent.iban || ent.bic)
+    ? [{ text: "Paiement par virement", style: "section" } as Content,
+       { text: [ent.iban && `IBAN : ${formaterIban(ent.iban)}`, ent.bic && `BIC : ${ent.bic}`].filter(Boolean).join("   ·   ") } as Content]
+    : [];
+  if (virement.length) content.push({ stack: virement, margin: [0, 18, 0, 0], unbreakable: true });
+  if (ent.assureur || ent.contratAssurance) {
+    content.push({ text: `Assurance décennale / RC Pro : ${[ent.assureur, ent.contratAssurance && `contrat n° ${ent.contratAssurance}`].filter(Boolean).join(" — ")}`, fontSize: 7.5, color: PALE, alignment: "center", margin: [0, 14, 0, 0] });
+  }
+  if (ent.codeNaf || ent.regimeTva) {
+    content.push({ text: [ent.codeNaf && `Code NAF : ${ent.codeNaf}`, ent.regimeTva].filter(Boolean).join(" · "), fontSize: 7.5, color: PALE, alignment: "center", margin: [0, 2, 0, 0] });
+  }
   if (legal.length) {
     content.push({
       stack: legal.map((x) => ({ text: x })),
@@ -268,8 +282,24 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
       ],
       margin: [40, 20, 40, 0],
     }),
-    content,
+    content: [...content, ...pagesCgv(ent.cgv)],
   };
+}
+
+/** CGV : nouvelles pages après le document. Une ligne « Article … » devient un titre ; paragraphes séparés par une ligne vide. */
+function pagesCgv(cgv: string): Content[] {
+  const texte = cgv.trim();
+  if (!texte) return [];
+  const sortie: Content[] = [{ text: "CONDITIONS GÉNÉRALES DE VENTE", bold: true, fontSize: 11, pageBreak: "before", margin: [0, 0, 0, 8] }];
+  for (const bloc of texte.split(/\n\s*\n/)) {
+    const lignes = bloc.split("\n").map((x) => x.trim()).filter(Boolean);
+    if (!lignes.length) continue;
+    lignes.forEach((l, i) => {
+      if (/^article\b/i.test(l)) sortie.push({ text: l, bold: true, fontSize: 8.5, margin: [0, i === 0 ? 6 : 2, 0, 2] });
+      else sortie.push({ text: l, fontSize: 7.5, color: GRIS, margin: [0, 0, 0, 2], alignment: "justify" });
+    });
+  }
+  return sortie;
 }
 
 /** Génère le PDF et déclenche le téléchargement. Rejette en cas d'échec. */

@@ -22,6 +22,19 @@ export interface Entreprise {
   siret: string;
   tva: string;
   immatriculation: string;
+  /** Annexes des documents (copiées avec la fiche à la finalisation). */
+  iban: string;
+  bic: string;
+  assureur: string;
+  contratAssurance: string;
+  codeNaf: string;
+  regimeTva: string;
+  /** Ligne libre en haut des documents (ex. « URGENCE 7J/7 »). */
+  bandeau: string;
+  /** Logo : image PNG ou JPEG en data URL (300 000 caractères au plus). */
+  logo: string;
+  /** Conditions générales de vente : paragraphes séparés par une ligne vide. */
+  cgv: string;
 }
 
 export const ENTREPRISE_DEPART: Entreprise = {
@@ -41,6 +54,7 @@ export const ENTREPRISE_DEPART: Entreprise = {
   siret: "",
   tva: "",
   immatriculation: "",
+  iban: "", bic: "", assureur: "", contratAssurance: "", codeNaf: "", regimeTva: "", bandeau: "", logo: "", cgv: "",
 };
 
 export type ErreursEntreprise = Partial<Record<keyof Entreprise, string>>;
@@ -76,10 +90,32 @@ export function validerEntreprise(v: Entreprise): { erreurs: ErreursEntreprise; 
       e.site = "Adresse de site invalide : seuls les liens http:// ou https:// sont acceptés.";
     }
   }
+  const iban = v.iban.replace(/\s/g, "").toUpperCase();
+  if (iban && !ibanValide(iban)) e.iban = "IBAN invalide : vérifiez les caractères (contrôle de clé).";
+  const bic = v.bic.replace(/\s/g, "").toUpperCase();
+  if (bic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic)) e.bic = "BIC invalide (8 ou 11 caractères).";
+  if (t(v.assureur).length > 200) e.assureur = "200 caractères au maximum.";
+  if (t(v.contratAssurance).length > 100) e.contratAssurance = "100 caractères au maximum.";
+  if (t(v.codeNaf).length > 20) e.codeNaf = "20 caractères au maximum.";
+  if (t(v.regimeTva).length > 200) e.regimeTva = "200 caractères au maximum.";
+  if (t(v.bandeau).length > 200) e.bandeau = "200 caractères au maximum.";
+  if (v.logo && !logoValide(v.logo)) e.logo = "Logo invalide : image PNG ou JPEG de 200 Ko au plus.";
+  if (v.cgv.length > 60000) e.cgv = "Les CGV ne peuvent pas dépasser 60 000 caractères.";
   if (Object.keys(e).length) return { erreurs: e };
   const propre = Object.fromEntries(Object.entries(v).map(([k, s]) => [k, s.trim()])) as unknown as Entreprise;
-  return { erreurs: {}, propre: { ...propre, capital, site } };
+  return { erreurs: {}, propre: { ...propre, capital, site, iban, bic } };
 }
+
+/** IBAN : forme + clé de contrôle (modulo 97). L'IBAN est fourni sans espace et en majuscules. */
+export function ibanValide(iban: string): boolean {
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const r = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  let reste = 0;
+  for (const ch of r) reste = (reste * 10 + Number(ch)) % 97;
+  return reste === 1;
+}
+export const logoValide = (l: string) => /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(l) && l.length <= 300000;
+export const formaterIban = (i: string) => i.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim();
 
 /** "10000.5" → "10 000,50 €" */
 export function formaterCapital(c: string): string {
@@ -114,6 +150,9 @@ function depuisLigne(l: Ligne): Entreprise {
     formeJuridique: l.forme_juridique,
     capital: l.capital === null || l.capital === undefined ? "" : normaliserCapital(String(l.capital)),
     siret: l.siret, tva: l.tva, immatriculation: l.immatriculation,
+    // Les copies figées avant l'ajout des annexes n'ont pas ces clés : valeur vide.
+    iban: l.iban ?? "", bic: l.bic ?? "", assureur: l.assureur ?? "", contratAssurance: l.contrat_assurance ?? "", codeNaf: l.code_naf ?? "",
+    regimeTva: l.regime_tva ?? "", bandeau: l.bandeau ?? "", logo: l.logo ?? "", cgv: l.cgv ?? "",
   };
 }
 function normaliserCapital(s: string): string {
@@ -130,6 +169,8 @@ function versLigne(e: Entreprise): Omit<Insertion, "owner_id"> {
     // Chaîne transmise telle quelle : PostgreSQL la convertit en numeric exact.
     capital: (e.capital === "" ? null : e.capital) as unknown as number | null,
     siret: e.siret.replace(/\s/g, ""), tva: e.tva, immatriculation: e.immatriculation,
+    iban: e.iban, bic: e.bic, assureur: e.assureur, contrat_assurance: e.contratAssurance, code_naf: e.codeNaf,
+    regime_tva: e.regimeTva, bandeau: e.bandeau, logo: e.logo, cgv: e.cgv,
   };
 }
 

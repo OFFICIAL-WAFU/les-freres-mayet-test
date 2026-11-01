@@ -463,6 +463,15 @@ export type Database = {
           tva: string
           updated_at: string
           ville: string
+          iban: string
+          bic: string
+          assureur: string
+          contrat_assurance: string
+          code_naf: string
+          regime_tva: string
+          bandeau: string
+          logo: string
+          cgv: string
         }
         Insert: {
           activite?: string
@@ -485,6 +494,15 @@ export type Database = {
           tva?: string
           updated_at?: string
           ville?: string
+          iban?: string
+          bic?: string
+          assureur?: string
+          contrat_assurance?: string
+          code_naf?: string
+          regime_tva?: string
+          bandeau?: string
+          logo?: string
+          cgv?: string
         }
         Update: {
           activite?: string
@@ -507,6 +525,15 @@ export type Database = {
           tva?: string
           updated_at?: string
           ville?: string
+          iban?: string
+          bic?: string
+          assureur?: string
+          contrat_assurance?: string
+          code_naf?: string
+          regime_tva?: string
+          bandeau?: string
+          logo?: string
+          cgv?: string
         }
         Relationships: []
       }
