@@ -123,8 +123,8 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
         {label}
         <span className="ml-1 font-normal text-muted-foreground">{opts.requis ? "(obligatoire)" : "(facultatif)"}</span>
       </Label>
-      {k === "immatriculation" ? (
-        <Textarea id={`e-${k}`} value={saisie[k]} onChange={(e) => maj(k, e.target.value)} rows={2}
+      {k === "immatriculation" || k === "cgv" ? (
+        <Textarea id={`e-${k}`} value={saisie[k]} onChange={(e) => maj(k, e.target.value)} rows={k === "cgv" ? 14 : 2}
           placeholder={opts.placeholder} aria-invalid={!!erreurs[k]} />
       ) : (
         <Input id={`e-${k}`} type={opts.type ?? "text"} inputMode={opts.inputMode} value={saisie[k]}
@@ -142,6 +142,14 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div>
     </section>
   );
+
+  const chargerLogo = async (f: File) => {
+    try {
+      const { logoDepuisFichier } = await import("@/lib/logo");
+      maj("logo", await logoDepuisFichier(f));
+      setErreurs((e) => ({ ...e, logo: "" }));
+    } catch (e) { setErreurs((x) => ({ ...x, logo: e instanceof Error ? e.message : "Logo illisible." })); }
+  };
 
   const declare = "Informations déclarées — aucune vérification auprès d'un registre externe.";
 
@@ -181,6 +189,35 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
           <div className="sm:col-span-2">{champ("immatriculation", "Mention d'immatriculation", { placeholder: "Ex. RCS … / RM …" })}</div>
         </>)}
 
+        {section("En-tête et logo", <>
+          <div className="sm:col-span-2">{champ("bandeau", "Ligne libre en haut des documents", { placeholder: "Ex. URGENCE 7J/7", aide: "Facultatif : affichée en haut de chaque devis, facture et acompte." })}</div>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <Label htmlFor="e-logo-fichier">Logo <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+            {saisie.logo && <img src={saisie.logo} alt="Aperçu du logo" className="max-h-20 w-auto max-w-full self-start rounded border border-border bg-white p-2" />}
+            <input id="e-logo-fichier" type="file" accept="image/png,image/jpeg" className="text-sm"
+              onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) void chargerLogo(f); }} />
+            <div className="flex gap-2">{saisie.logo && <Button type="button" size="sm" variant="outline" onClick={() => maj("logo", "")}>Retirer le logo</Button>}</div>
+            <p className="text-xs text-muted-foreground">PNG ou JPEG, redimensionné automatiquement (700 pixels de large au plus, 200 Ko au plus).</p>
+            {erreurs.logo && <p role="alert" className="text-sm font-medium text-destructive">{erreurs.logo}</p>}
+          </div>
+        </>)}
+        {section("Coordonnées bancaires, assurance et régime fiscal", <>
+          {champ("iban", "IBAN", { placeholder: "FR76 …", aide: "Affiché sur les devis, factures et acomptes pour le paiement par virement." })}
+          {champ("bic", "BIC")}
+          {champ("assureur", "Assureur (garantie décennale / RC Pro)", { placeholder: "Ex. SMA BTP" })}
+          {champ("contratAssurance", "Numéro de contrat d'assurance")}
+          {champ("codeNaf", "Code NAF / APE", { placeholder: "Ex. 4322A" })}
+          {champ("regimeTva", "Régime de TVA", { placeholder: "Ex. TVA sur les débits" })}
+        </>)}
+        {section("Conditions générales de vente", <>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <p className="text-sm text-muted-foreground">Ajoutées à la fin de vos devis, factures et acomptes (nouvelles pages). Séparez les paragraphes par une ligne vide ; une ligne commençant par « Article » devient un titre. Laissez vide pour ne rien ajouter.</p>
+            <input type="file" accept=".txt,text/plain" className="text-sm" aria-label="Charger un fichier texte de CGV"
+              onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) void f.text().then((t) => maj("cgv", t.replace(/\r\n/g, "\n"))); }} />
+          </div>
+          <div className="sm:col-span-2">{champ("cgv", "Texte des CGV")}</div>
+        </>)}
+
         <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-border bg-background/95 px-4 py-3 sm:static sm:mx-0 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0">
           <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
             {enCours && <Loader2 className="animate-spin" />}{enCours ? "Enregistrement…" : "Enregistrer les informations"}
@@ -217,7 +254,6 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
           </AlertDialogContent>
         </AlertDialog>
       )}
-      <section className="mt-6 rounded-xl border bg-card p-5"><h2 className="font-semibold">Coordonnées bancaires, page de garde et annexes</h2><Link to="/en-developpement/$rubrique" params={{rubrique:"annexes"}} className="mt-2 inline-flex text-sm text-primary underline">En développement</Link></section>
     </AppLayout>
   );
 }

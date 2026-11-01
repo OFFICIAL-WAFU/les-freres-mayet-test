@@ -1,0 +1,16 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const p='src/data/entreprise.ts',texte=fs.readFileSync(p,'utf8'),arbre=ts.createSourceFile(p,texte,ts.ScriptTarget.Latest,true);
+const noms=['ibanValide','logoValide','formaterIban'];
+const src=arbre.statements.filter(s=>ts.isVariableStatement(s)&&s.declarationList.declarations.some(d=>noms.includes(d.name.getText(arbre)))||ts.isFunctionDeclaration(s)&&noms.includes(s.name?.text)).map(s=>s.getText(arbre)).join('\n');
+const js=ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const m=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+assert(!m.ibanValide('FR76 1551 9390 4100 0209 0360 248'));
+assert(m.ibanValide('FR7615519390410002090360248'));
+assert(!m.ibanValide('FR76 1551'));
+assert(!m.ibanValide('1234'));
+assert.equal(m.formaterIban('FR7615519390410002090360248'),'FR76 1551 9390 4100 0209 0360 248');
+assert(m.logoValide('data:image/png;base64,AAAA'));
+assert(!m.logoValide('data:image/svg+xml;base64,AAAA'));
+assert(!m.logoValide('http://x/y.png'));
+assert(!m.logoValide('data:image/png;base64,'+'A'.repeat(300001)));
+console.log('annexes entreprise OK');
