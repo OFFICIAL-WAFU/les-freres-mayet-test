@@ -7,6 +7,7 @@ import { deductionExcessive, MSG_DEDUCTION_EXCESSIVE, solde, type Deduction } fr
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
+import { presentationLigne, debutLot } from '@/lib/lots';
 import {
   formaterCentimes,
   formaterPrixSaisi,
@@ -82,9 +83,11 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   // en lignes de suite, sans filet, pour pouvoir continuer sur la page suivante sans perte.
   const suites = new Set<number>(); // index (dans body) des lignes de suite
   const corps: Content[][] = [];
-  d.lignes.forEach((l) => {
+  d.lignes.forEach((l,i) => {
     const calc = validerLigne(l).calcul;
-    const morceaux = decouper(l.description.trim());
+    const p=presentationLigne(l),titre=debutLot(d.lignes,i);
+    if(titre)corps.push([{text:titre.toUpperCase(),bold:true,colSpan:6,fillColor:'#edf3fa',margin:[0,2,0,2]} as Content,'','','','','']);
+    const morceaux = decouper(p.description.trim());
     const desig: Content[] = [{ text: l.designation, bold: true }];
     if (morceaux[0]) desig.push({ text: morceaux[0], color: GRIS, margin: [0, 2, 0, 0] });
     const type: Content = { text: TYPE_ARTICLE_LABELS[l.type].toUpperCase(), fontSize: 7, color: PALE, margin: [0, 2, 0, 0] };
@@ -92,7 +95,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
     corps.push([
       { stack: desig },
       { text: t(formaterQuantite(l.quantite)), alignment: "right" },
-      { text: l.unite ? UNITE_LABELS[l.unite] : "" },
+      { text: p.uniteSource ?? (l.unite ? UNITE_LABELS[l.unite] : "") },
       { text: t(formaterPrixSaisi(l.prix)), alignment: "right", noWrap: true },
       { text: l.taux !== null ? t(labelTaux(l.taux)) : "", alignment: "right", noWrap: true },
       { text: calc ? t(formaterCentimes(calc.ht)) : "", alignment: "right", noWrap: true, bold: true },
@@ -167,7 +170,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
             { text: [{ text: "Date : ", color: GRIS }, fr(d.date)] },
             ...(facture && !acp && !av && d.prestationDebut ? [{ text: [{ text: d.prestationFin ? "Période de réalisation : " : "Date de réalisation : ", color: GRIS }, d.prestationFin ? `du ${fr(d.prestationDebut)} au ${fr(d.prestationFin)}` : fr(d.prestationDebut)] }] : []),
             ...(d.validite ? [{ text: [{ text: facture ? "Échéance : " : "Valable jusqu'au : ", color: GRIS }, fr(d.validite)] }] : []),
-            ...(av ? [{ text: [{ text: "Facture d'origine : ", color: GRIS }, facture!.sourceRef] }, { text: [{ text: "Motif : ", color: GRIS }, av.motif] }] : facture ? [{ text: [{ text: "Devis d'origine : ", color: GRIS }, facture.sourceRef] }] : []),
+            ...(av ? [{ text: [{ text: "Facture d'origine : ", color: GRIS }, facture!.sourceRef] }, { text: [{ text: "Motif : ", color: GRIS }, av.motif] }] : facture?.sourceRef ? [{ text: [{ text: "Devis d'origine : ", color: GRIS }, facture.sourceRef] }] : []),
             ...(acp ? [{ text: [{ text: "Acompte : ", color: GRIS }, `${String(facture!.acompte).replace(".", ",")} % du devis`] }] : []),
           ],
         },

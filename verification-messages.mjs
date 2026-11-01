@@ -1,0 +1,24 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/lib/messages.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {validerMessages,validerModele,rendreMessage,MODELES_MESSAGES,sauvegardeMessages,lireSauvegardeMessages,fusionnerMessages}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const c={client:'Client {reste}',numero:'FAC-TEST-001',objet:'Intervention TEST',entreprise:'Entreprise TEST',montant:'306,77 €',reste:'100,00 €',echeance:''};
+const m={sujet:'Document {numero} — {client}',texte:'Bonjour {client}, montant {montant}, reste {reste}, échéance {echeance}.'};
+const r=rendreMessage(m,c);
+assert.equal(r.sujet,'Document FAC-TEST-001 — Client {reste}');
+assert.equal(r.texte,'Bonjour Client {reste}, montant 306,77 €, reste 100,00 €, échéance Non renseigné.');
+assert.match(rendreMessage(MODELES_MESSAGES.facture,c).texte,/306,77 €/);assert.doesNotMatch(rendreMessage(MODELES_MESSAGES.facture,c).texte,/350,00/);
+assert.match(rendreMessage(MODELES_MESSAGES.rappelPaiement,c).texte,/100,00 €/);
+assert.doesNotMatch(rendreMessage(MODELES_MESSAGES.avoir,c).texte,/rembours|payé|signature/i);
+assert.equal(rendreMessage(m,{...c,client:'Client\nInjecté'}).sujet.includes('\n'),false);
+for(const invalide of [{sujet:'',texte:'X'},{sujet:'X\nY',texte:'X'},{sujet:'X',texte:'{secret}'},{sujet:'X',texte:'{client'},{sujet:'X'.repeat(201),texte:'Y'},{sujet:'X',texte:'Y'.repeat(10001)}])assert.throws(()=>validerModele(invalide));
+for(const invalide of [null,{}, {version:-1,modeles:{}}, {version:0,modeles:{__proto__:null,inconnu:m}}, {version:0,modeles:[]}])assert.throws(()=>validerMessages(invalide));
+const b={version:3,modeles:{facture:m}};
+assert.deepEqual(lireSauvegardeMessages(JSON.parse(JSON.stringify(sauvegardeMessages(b)))),b.modeles);
+assert.equal(fusionnerMessages(b,{facture:m}).modeles.facture.texte,m.texte);
+assert.throws(()=>fusionnerMessages(b,{facture:{...m,texte:'Autre'}}),/différent/);
+assert.equal(Object.keys(fusionnerMessages(b,{devis:MODELES_MESSAGES.devis}).modeles).length,2);
+assert.equal(b.modeles.facture.texte,m.texte);
+assert.throws(()=>lireSauvegardeMessages({format:'mayet-messages',schema:2,modeles:{}}));
+// Aucun texte privé ne peut entrer par un jeton arbitraire.
+assert.throws(()=>validerModele({sujet:'X',texte:'{notes}'}));
+console.log('Messages : variables contrôlées, remplacement en une passe, sujet sans retour ligne, montant de solde, reste à régler, sauvegarde relue, fusion sans écrasement et textes invalides refusés.');

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MentionsInserer } from "@/components/MentionsInserer";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -67,10 +68,12 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="a-cond">Conditions de paiement (facultatif)</Label>
         <Textarea id="a-cond" value={conditions} onChange={(e) => setConditions(e.target.value)} />
+        <MentionsInserer usage="acompte" valeur={conditions} onChange={setConditions}/>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="a-rem">Remarques destinées au client</Label>
         <Textarea id="a-rem" value={remarques} onChange={(e) => setRemarques(e.target.value)} />
+        <MentionsInserer usage="acompte" valeur={remarques} onChange={setRemarques}/>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="a-notes">Notes internes (jamais sur le document)</Label>

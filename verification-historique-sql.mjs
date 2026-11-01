@@ -1,0 +1,35 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import {PGlite} from '@electric-sql/pglite';
+const db=new PGlite();
+const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
+const {analyseFictive}=await import('./verification-fixture.mjs');
+const analyse=process.argv[2] ? JSON.parse(fs.readFileSync(process.argv[2],'utf8')) : analyseFictive;
+const nombre=analyse.documents.length;
+const migration=fs.readFileSync('supabase/migrations/20261007160000_historique_khosmos.sql','utf8');
+const resultats=[];
+try {
+ await db.exec(`create schema auth;create role anon;create role authenticated;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('app.user_id',true),'')::uuid $$;grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;insert into auth.users values('${owner}'),('${other}');`);
+ await db.exec(migration);resultats.push('Migration installée sans erreur dans la base temporaire');
+ await db.exec(`set role authenticated;set app.user_id='${owner}';`);
+ const save=async a=>(await db.query('select public.enregistrer_historique_khosmos($1::jsonb) as contenu',[JSON.stringify(a)])).rows[0].contenu;
+ assert.equal((await save(analyse)).documents.length,nombre);resultats.push(`${nombre} documents archivés avec leurs montants source`);
+ for(let i=0;i<3;i++)assert.equal((await save({...analyse,genereLe:'2026-10-08'})).documents.length,nombre);
+ assert.equal((await db.query('select count(*)::int as n from public.historiques_khosmos')).rows[0].n,1);resultats.push('Reprises identiques : une seule archive, données existantes conservées');
+ const different=structuredClone(analyse);different.documents[0].ttc++;
+ await assert.rejects(save(different),/historique_different/);resultats.push('Historique différent refusé sans écraser la copie enregistrée');
+ for(const mauvais of [{...analyse,documents:[analyse.documents[0],analyse.documents[0]]},{...analyse,documents:[{...analyse.documents[0],ttc:1.5}]},{...analyse,documents:[{...analyse.documents[0],ttc:'100'}]},{documents:[]}]) await assert.rejects(save(mauvais));
+ resultats.push('Doublon de référence, centimes décimaux, montant texte et analyse incomplète refusés');
+ await assert.rejects(db.query('update public.historiques_khosmos set contenu=$1::jsonb',[JSON.stringify(different)]),/permission denied/);
+ await assert.rejects(db.query('delete from public.historiques_khosmos'),/permission denied/);resultats.push('Modification et suppression directes interdites au compte connecté');
+ await db.exec(`set app.user_id='${other}';`);
+ assert.equal((await db.query('select public.lire_historique_khosmos() as a')).rows[0].a,null);
+ assert.equal((await db.query('select count(*)::int as n from public.historiques_khosmos')).rows[0].n,0);resultats.push('Autre compte : aucun accès à la première archive via fonction ou table');
+ await db.exec(`reset role;set role anon;set app.user_id='';`);
+ await assert.rejects(db.query('select public.lire_historique_khosmos()'),/permission denied/);
+ await assert.rejects(db.query('select public.enregistrer_historique_khosmos($1::jsonb)',[JSON.stringify(analyse)]),/permission denied/);
+ await assert.rejects(db.query('select * from public.historiques_khosmos'),/permission denied/);resultats.push('Compte anonyme : aucune lecture ni écriture');
+ await db.exec('reset role');
+ const tables=(await db.query("select table_name from information_schema.tables where table_schema='public'")).rows;
+ assert.deepEqual(tables.map(t=>t.table_name),['historiques_khosmos']);resultats.push('Aucune table métier ni aucun compteur touché par la migration');
+ if(process.argv[3]) fs.writeFileSync(process.argv[3],['VALIDATION LOCALE DE LA MIGRATION HISTORIQUE KHOSMOS',...resultats,'Limites : moteur PostgreSQL PGlite local en mémoire, authentification simulée. Aucun test sur Lovable Cloud ; concurrence interconnexions non testée ; migration distante non appliquée.'].join('\n'));
+ console.log(resultats.join('\n'));
+} catch(e) {console.error(JSON.stringify({message:e.message,code:e.code,position:e.position}));process.exitCode=1;} finally {await db.close();}

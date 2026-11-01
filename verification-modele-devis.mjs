@@ -1,0 +1,10 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const compile=n=>ts.transpileModule(fs.readFileSync(`src/lib/${n}.ts`,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const url=code=>'data:text/javascript;base64,'+Buffer.from(code).toString('base64');
+const echeances=url(compile('echeances'));
+const {devisDepuisModele}=await import(url(compile('modele-devis').replace('"./echeances"',JSON.stringify(echeances))));
+const source={clientId:'ancien-client',client:{nom:'Ancien',telephone:'01',email:'ancien@test.fr',adresse:['Adresse']},objet:'Chantier',date:'2026-01-01',validite:'2026-02-01',remarques:'Remarque client',notes:'Confidentiel',conditions:'Conditions',lignes:[{cle:'ancienne-ligne',articleId:'article',type:'materiel',reference:'R1',designation:'Matériel',description:'Description',unite:'piece',quantite:'2.75',prix:'42.30',taux:100}]};
+const avant=JSON.stringify(source);let id=0;const copie=devisDepuisModele(source,'2026-10-07',()=>`nouvelle-${++id}`);
+assert.equal(copie.clientId,'');assert.equal(copie.client.nom,'');assert.equal(copie.notes,'');assert.equal(copie.validite,'');assert.equal(copie.date,'2026-10-07');assert.equal(copie.conditions,'Conditions');assert.equal(copie.lignes[0].prix,'42.30');assert.equal(copie.lignes[0].quantite,'2.75');assert.notEqual(copie.lignes[0].cle,source.lignes[0].cle);
+copie.lignes[0].prix='99';assert.equal(JSON.stringify(source),avant);
+console.log('Réutilisation devis : coordonnées et notes privées exclues, date/validité réinitialisées, conditions/lignes conservées, nouvelles clés, aucune modification de la source.');

@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw, UserRound, Building2 } from "lucide-react";
+import { PeriodeDocumentsSelect } from "@/components/PeriodeDocumentsSelect";
+import { syntheseClient, dansPeriode, correspondSuiviClient, suiviDocumentClient, PERIODES_DOCUMENTS, type PeriodeDocuments, type FiltreSuiviClient } from "@/lib/suivi-clients";
+import { formaterCentimes } from "@/data/devis";
 
 import { AppLayout } from "@/components/AppLayout";
 import { ClientForm } from "@/components/ClientForm";
@@ -36,6 +39,8 @@ import {
 } from "@/data/clients";
 import {
   useDocuments,
+  useEtatDocuments,
+  chargerDocuments,
   TYPE_LABELS,
   formaterMontant,
   type DocumentAvecDevis as DemoDocument,
@@ -63,13 +68,15 @@ const FILTRES: { value: ClientType | "tous"; label: string }[] = [
 
 type Panneau =
   | { mode: "ajout" }
-  | { mode: "fiche"; id: string }
+  | { mode: "fiche"; id: string; suivi?: FiltreSuiviClient }
   | { mode: "edition"; id: string }
   | null;
 
 function ClientsPage() {
   const etat = useEtatClients();
   const clients = etat.clients;
+  const etatDocs = useEtatDocuments();
+  const [periode, setPeriode] = useState<PeriodeDocuments>("annee");
   const [confirmation, setConfirmation] = useState(false);
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<ClientType | "tous">("tous");
@@ -80,6 +87,7 @@ function ClientsPage() {
   const reinitialiser = () => {
     setRecherche("");
     setFiltre("tous");
+    setPeriode("annee");
   };
 
   const resultats = useMemo(() => {
@@ -88,11 +96,20 @@ function ClientsPage() {
     return clients.filter((c) => {
       if (filtre !== "tous" && c.type !== filtre) return false;
       if (!q) return true;
-      const textes = [nomClient(c), c.nom, c.prenom, c.raisonSociale, c.email, c.telephone];
+      const textes = [nomClient(c), c.nom, c.prenom, c.raisonSociale, c.email, c.telephone, c.adresse, c.complement, c.codePostal, c.ville, c.pays];
       if (textes.some((t) => t.toLowerCase().includes(q))) return true;
       return qChiffres.length >= 2 && c.telephone.replace(/\D/g, "").includes(qChiffres);
     });
   }, [clients, recherche, filtre]);
+
+  function montantClient(c: Client, cle: "facture" | "attente" | "retard" | "paye", suivi: FiltreSuiviClient) {
+    if (etatDocs.statut !== "pret") return <span className="text-xs text-muted-foreground">{etatDocs.statut === "erreur" ? "Indisponible" : "Chargement…"}</span>;
+    const s = syntheseClient(etatDocs.liste, c.id, periode);
+    const couleurs = { facture: "text-primary", attente: "text-orange-600", retard: "text-rose-600", paye: "text-teal-600" };
+    return <button type="button" className={`rounded px-1 py-1 font-semibold underline-offset-4 hover:underline focus-visible:outline-2 ${couleurs[cle]}`} onClick={() => setPanneau({ mode: "fiche", id: c.id, suivi })} aria-label={`${cle === "facture" ? "Total facturé" : cle === "paye" ? "Payé" : cle === "retard" ? "En retard" : "En attente"} pour ${nomClient(c)}`}>
+      {formaterCentimes(s[cle])}
+    </button>;
+  }
 
   const clientCourant =
     panneau && panneau.mode !== "ajout" ? clients.find((c) => c.id === panneau.id) : undefined;
@@ -122,7 +139,7 @@ function ClientsPage() {
 
   return (
     <AppLayout titre="Clients">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="khosmos-page-heading flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Clients</h1>
           <p className="mt-2 text-xs text-muted-foreground">
@@ -155,14 +172,14 @@ function ClientsPage() {
         </div>
       ) : (
         <>
-          <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+          <div className="khosmos-page-filters mt-6 rounded-2xl border border-border bg-card p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={recherche}
                   onChange={(e) => setRecherche(e.target.value)}
-                  placeholder="Rechercher un nom, une entreprise, un téléphone ou un e-mail…"
+                  placeholder="Nom, Tél., E-mail, Adresse"
                   aria-label="Rechercher un client"
                   className="h-10 pl-9"
                 />
@@ -179,6 +196,8 @@ function ClientsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <PeriodeDocumentsSelect value={periode} onChange={setPeriode} />
+              <Button variant="outline" className="h-10" onClick={() => { void chargerClients(); void chargerDocuments(); }} disabled={etat.statut === "chargement" || etatDocs.statut === "chargement"}><RefreshCw className="size-4" /> Rafraîchir</Button>
               <Button variant="outline" className="h-10" onClick={reinitialiser}>
                 Réinitialiser
               </Button>
@@ -188,6 +207,8 @@ function ClientsPage() {
               {resultats.length > 1 ? "s" : ""} sur {clients.length}
             </p>
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">TTC des factures et acomptes finalisés émis sur la période, après déduction de l’acompte sur le solde. « En attente » exclut les retards ; « Payé » inclut les règlements partiels actifs. Les avoirs et crédits sont détaillés dans la fiche. Archives Khosmos séparées.</p>
+          {etatDocs.statut === "erreur" && <p role="alert" className="mt-3 text-sm text-destructive">Le suivi financier n’a pas pu être chargé. Utilisez « Rafraîchir » pour réessayer.</p>}
 
           {resultats.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-border bg-card p-8 text-center">
@@ -198,26 +219,26 @@ function ClientsPage() {
             </div>
           ) : (
             <>
-              <div className="mt-6 hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
+              <div className="khosmos-list mt-6 hidden lg:block">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-secondary/60 text-left">
-                      <th className="px-4 py-3 font-semibold">Nom du client</th>
-                      <th className="px-4 py-3 font-semibold">Type</th>
-                      <th className="px-4 py-3 font-semibold">Téléphone</th>
-                      <th className="px-4 py-3 font-semibold">E-mail</th>
-                      <th className="px-4 py-3 font-semibold">Ville</th>
+                      <th className="px-4 py-3 font-semibold">Nom ou raison sociale</th>
+                      <th className="px-4 py-3 font-semibold text-primary">Total facturé</th>
+                      <th className="px-4 py-3 font-semibold text-orange-600">En attente</th>
+                      <th className="px-4 py-3 font-semibold text-rose-600">En retard</th>
+                      <th className="px-4 py-3 font-semibold text-teal-600">Payé</th>
                       <th className="px-4 py-3 text-right font-semibold">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {resultats.map((c) => (
                       <tr key={c.id} className="border-b border-border last:border-0">
-                        <td className="px-4 py-3 font-medium">{nomClient(c)}</td>
-                        <td className="px-4 py-3">{TYPE_CLIENT_LABELS[c.type]}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{c.telephone || "—"}</td>
-                        <td className="px-4 py-3 break-all">{c.email || "—"}</td>
-                        <td className="px-4 py-3">{c.ville || "—"}</td>
+                        <td className="px-4 py-3 font-medium"><button type="button" onClick={() => setPanneau({ mode: "fiche", id: c.id })} className="flex items-center gap-3 text-left text-primary hover:underline">{c.type === "entreprise" ? <Building2 className="size-5 shrink-0" /> : <UserRound className="size-5 shrink-0" />}{nomClient(c)}</button></td>
+                        <td className="px-4 py-3 whitespace-nowrap">{montantClient(c, "facture", "tous")}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{montantClient(c, "attente", "attente")}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{montantClient(c, "retard", "retard")}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{montantClient(c, "paye", "paye")}</td>
                         <td className="px-4 py-3 text-right">
                           <Button
                             variant="outline"
@@ -242,6 +263,7 @@ function ClientsPage() {
                         {TYPE_CLIENT_LABELS[c.type]}
                       </span>
                     </div>
+                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">{([ ["Total facturé", "facture", "tous"], ["En attente", "attente", "attente"], ["En retard", "retard", "retard"], ["Payé", "paye", "paye"] ] as const).map(([label, cle, suivi]) => <div key={cle}><dt className="text-xs text-muted-foreground">{label}</dt><dd>{montantClient(c, cle, suivi)}</dd></div>)}</dl>
                     <dl className="mt-3 flex flex-col gap-1 text-sm">
                       <div className="flex gap-2">
                         <dt className="text-muted-foreground">Tél. :</dt>
@@ -316,7 +338,10 @@ function ClientsPage() {
           )}
           {panneau?.mode === "fiche" && clientCourant && (
             <FicheClient
+              key={`${clientCourant.id}-${panneau.suivi ?? "tous"}`}
               client={clientCourant}
+              periode={periode}
+              filtreInitial={panneau.suivi ?? "tous"}
               confirmation={confirmation}
               onModifier={() => {
                 setConfirmation(false);
@@ -349,15 +374,23 @@ function FicheClient({
   onModifier,
   onVoirDocument,
   onFermer,
+  periode,
+  filtreInitial,
 }: {
   client: Client;
   confirmation: boolean;
   onModifier: () => void;
   onVoirDocument: (d: DemoDocument) => void;
   onFermer: () => void;
+  periode: PeriodeDocuments;
+  filtreInitial: FiltreSuiviClient;
 }) {
   const nom = nomClient(c);
-  const docs = useDocuments().filter((d) => d.clientId === c.id);
+  const etatDocs = useEtatDocuments();
+  const [filtreSuivi, setFiltreSuivi] = useState<FiltreSuiviClient>(filtreInitial);
+  const tousDocs = useDocuments().filter((d) => d.clientId === c.id);
+  const docs = tousDocs.filter(d => dansPeriode(d.date, periode) && correspondSuiviClient(d, filtreSuivi));
+  const synthese = syntheseClient(tousDocs, c.id, periode);
   const adresse = [c.adresse, c.complement, [c.codePostal, c.ville].filter(Boolean).join(" "), c.pays]
     .map((s) => s.trim())
     .filter(Boolean);
@@ -412,12 +445,17 @@ function FicheClient({
       </section>
 
       <section className="mt-6">
+        <h3 className="text-sm font-semibold">Suivi financier · {PERIODES_DOCUMENTS[periode]}</h3>
+        {etatDocs.statut === "pret" ? <dl className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-secondary p-3 text-sm">{([ ["Total facturé TTC", synthese.facture], ["Crédité par avoir", synthese.credite], ["En attente", synthese.attente], ["En retard", synthese.retard], ["Règlements actifs", synthese.paye], ["Crédit client à traiter", synthese.creditClient] ] as const).map(([label, montant]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="font-semibold">{formaterCentimes(montant)}</dd></div>)}</dl> : <p role="status" className="mt-2 text-sm">{etatDocs.statut === "erreur" ? "Suivi indisponible" : "Chargement du suivi…"}</p>}
+      </section>
+      <section className="mt-6">
         <h3 className="text-sm font-semibold">Documents associés</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Les devis sont encore temporaires et seront sauvegardés durablement lors d'une prochaine étape.
+          Documents sauvegardés dans cet espace, sur la période sélectionnée.
         </p>
-        {docs.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Aucun document associé à ce client.</p>
+        <div className="mt-3 flex flex-wrap gap-2">{([ ["tous", "Tous"], ["attente", "En attente"], ["retard", "En retard"], ["paye", "Avec règlement"] ] as const).map(([cle, label]) => <Button key={cle} variant={filtreSuivi === cle ? "default" : "outline"} size="sm" onClick={() => setFiltreSuivi(cle)}>{label}</Button>)}</div>
+        {etatDocs.statut !== "pret" ? <p role="status" className="mt-2 text-sm">{etatDocs.statut === "erreur" ? "Documents indisponibles" : "Chargement des documents…"}</p> : docs.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">Aucun document pour cette période et ce filtre.</p>
         ) : (
           <ul className="mt-2 flex flex-col gap-2">
             {docs.map((d) => (
@@ -435,6 +473,7 @@ function FicheClient({
                 {d.client !== nom && (
                   <p className="mt-1 text-xs text-muted-foreground">Établi au nom de : {d.client}</p>
                 )}
+                {(() => { const s = suiviDocumentClient(d); return s ? <p className="mt-2 text-xs">{s.etat} · Reste à régler : {formaterCentimes(s.reste)}{s.creditClient > 0n ? ` · Crédit client : ${formaterCentimes(s.creditClient)}` : ""}</p> : null; })()}
                 <Button variant="outline" size="sm" className="mt-2" onClick={() => onVoirDocument(d)}>
                   Voir le document
                 </Button>

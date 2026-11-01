@@ -12,3 +12,6 @@
 - Sign-out must call effacerDonneesSession() (src/lib/session.ts); why: in-memory demo business data must not survive a session.
 - Version conflicts are raised with SQLSTATE 'PT409' (HTTP 409), never '40001'. Why: the Data API retries 40001 indefinitely, which hung every conflict request.
 - Each business table (clients, articles, entreprises, devis, factures, reglements, avoirs) has a single access module in src/data/ and SQL-function-only writes; detailed rules live in src/data/AGENTS.md. Why: keep RLS/trigger invariants in one place.
+
+- Product priority (user 07/10/2026): reproduce the observed Khosmos v2.4.2 interface and familiar navigation before adding new extensions. Reference screenshots are in ../outputs/references-khosmos; they are private and must never be included in code delivery. Missing functions must be visible as « En développement », with no simulated actions or invented financial indicators. Keep Les Frères Mayet branding and frozen document data intact.
+- Lots use the existing public description prefix through src/lib/lots.ts; never rewrite saved or finalized documents to add groups. Render only contiguous groups in the chosen order. Historical Ens/U units replace their exact native equivalents only, without changing calculations.

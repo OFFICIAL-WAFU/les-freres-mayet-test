@@ -18,8 +18,19 @@ import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedEntrepriseRouteImport } from './routes/_authenticated/entreprise'
+import { Route as AuthenticatedFournisseursRouteImport } from './routes/_authenticated/fournisseurs'
+import { Route as AuthenticatedHistoriqueRouteImport } from './routes/_authenticated/historique'
+import { Route as AuthenticatedImportsRouteImport } from './routes/_authenticated/imports'
+import { Route as AuthenticatedMargesRouteImport } from './routes/_authenticated/marges'
+import { Route as AuthenticatedMentionsRouteImport } from './routes/_authenticated/mentions'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
+import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
+import { Route as AuthenticatedRapportsRouteImport } from './routes/_authenticated/rapports'
 import { Route as AuthenticatedReglagesRouteImport } from './routes/_authenticated/reglages'
+import { Route as AuthenticatedTresorerieRouteImport } from './routes/_authenticated/tresorerie'
 import { Route as AuthenticatedDevisNouveauRouteImport } from './routes/_authenticated/devis.nouveau'
+import { Route as AuthenticatedEnDeveloppementRubriqueRouteImport } from './routes/_authenticated/en-developpement.$rubrique'
+import { Route as AuthenticatedFacturesNouveauRouteImport } from './routes/_authenticated/factures.nouveau'
 import { Route as AuthenticatedAvoirsIdIndexRouteImport } from './routes/_authenticated/avoirs.$id.index'
 import { Route as AuthenticatedAvoirsIdApercuRouteImport } from './routes/_authenticated/avoirs.$id.apercu'
 import { Route as AuthenticatedAvoirsIdModifierRouteImport } from './routes/_authenticated/avoirs.$id.modifier'
@@ -74,15 +85,73 @@ const AuthenticatedEntrepriseRoute = AuthenticatedEntrepriseRouteImport.update({
   path: '/entreprise',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFournisseursRoute =
+  AuthenticatedFournisseursRouteImport.update({
+    id: '/fournisseurs',
+    path: '/fournisseurs',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHistoriqueRoute = AuthenticatedHistoriqueRouteImport.update({
+  id: '/historique',
+  path: '/historique',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedImportsRoute = AuthenticatedImportsRouteImport.update({
+  id: '/imports',
+  path: '/imports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMargesRoute = AuthenticatedMargesRouteImport.update({
+  id: '/marges',
+  path: '/marges',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMentionsRoute = AuthenticatedMentionsRouteImport.update({
+  id: '/mentions',
+  path: '/mentions',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlanningRoute = AuthenticatedPlanningRouteImport.update({
+  id: '/planning',
+  path: '/planning',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRapportsRoute = AuthenticatedRapportsRouteImport.update({
+  id: '/rapports',
+  path: '/rapports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReglagesRoute = AuthenticatedReglagesRouteImport.update({
   id: '/reglages',
   path: '/reglages',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTresorerieRoute = AuthenticatedTresorerieRouteImport.update({
+  id: '/tresorerie',
+  path: '/tresorerie',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDevisNouveauRoute =
   AuthenticatedDevisNouveauRouteImport.update({
     id: '/devis/nouveau',
     path: '/devis/nouveau',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEnDeveloppementRubriqueRoute =
+  AuthenticatedEnDeveloppementRubriqueRouteImport.update({
+    id: '/en-developpement/$rubrique',
+    path: '/en-developpement/$rubrique',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFacturesNouveauRoute =
+  AuthenticatedFacturesNouveauRouteImport.update({
+    id: '/factures/nouveau',
+    path: '/factures/nouveau',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAvoirsIdIndexRoute =
@@ -149,8 +218,19 @@ export interface FileRoutesByFullPath {
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/fournisseurs': typeof AuthenticatedFournisseursRoute
+  '/historique': typeof AuthenticatedHistoriqueRoute
+  '/imports': typeof AuthenticatedImportsRoute
+  '/marges': typeof AuthenticatedMargesRoute
+  '/mentions': typeof AuthenticatedMentionsRoute
+  '/messages': typeof AuthenticatedMessagesRoute
+  '/planning': typeof AuthenticatedPlanningRoute
+  '/rapports': typeof AuthenticatedRapportsRoute
   '/reglages': typeof AuthenticatedReglagesRoute
+  '/tresorerie': typeof AuthenticatedTresorerieRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
+  '/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
   '/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
   '/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
@@ -169,9 +249,20 @@ export interface FileRoutesByTo {
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/fournisseurs': typeof AuthenticatedFournisseursRoute
+  '/historique': typeof AuthenticatedHistoriqueRoute
+  '/imports': typeof AuthenticatedImportsRoute
+  '/marges': typeof AuthenticatedMargesRoute
+  '/mentions': typeof AuthenticatedMentionsRoute
+  '/messages': typeof AuthenticatedMessagesRoute
+  '/planning': typeof AuthenticatedPlanningRoute
+  '/rapports': typeof AuthenticatedRapportsRoute
   '/reglages': typeof AuthenticatedReglagesRoute
+  '/tresorerie': typeof AuthenticatedTresorerieRoute
   '/': typeof AuthenticatedIndexRoute
   '/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
+  '/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
   '/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
   '/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
@@ -192,9 +283,20 @@ export interface FileRoutesById {
   '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/entreprise': typeof AuthenticatedEntrepriseRoute
+  '/_authenticated/fournisseurs': typeof AuthenticatedFournisseursRoute
+  '/_authenticated/historique': typeof AuthenticatedHistoriqueRoute
+  '/_authenticated/imports': typeof AuthenticatedImportsRoute
+  '/_authenticated/marges': typeof AuthenticatedMargesRoute
+  '/_authenticated/mentions': typeof AuthenticatedMentionsRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
+  '/_authenticated/planning': typeof AuthenticatedPlanningRoute
+  '/_authenticated/rapports': typeof AuthenticatedRapportsRoute
   '/_authenticated/reglages': typeof AuthenticatedReglagesRoute
+  '/_authenticated/tresorerie': typeof AuthenticatedTresorerieRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/devis/nouveau': typeof AuthenticatedDevisNouveauRoute
+  '/_authenticated/en-developpement/$rubrique': typeof AuthenticatedEnDeveloppementRubriqueRoute
+  '/_authenticated/factures/nouveau': typeof AuthenticatedFacturesNouveauRoute
   '/_authenticated/avoirs/$id/apercu': typeof AuthenticatedAvoirsIdApercuRoute
   '/_authenticated/avoirs/$id/modifier': typeof AuthenticatedAvoirsIdModifierRoute
   '/_authenticated/devis/$id/apercu': typeof AuthenticatedDevisIdApercuRoute
@@ -216,8 +318,19 @@ export interface FileRouteTypes {
     | '/catalogue'
     | '/clients'
     | '/entreprise'
+    | '/fournisseurs'
+    | '/historique'
+    | '/imports'
+    | '/marges'
+    | '/mentions'
+    | '/messages'
+    | '/planning'
+    | '/rapports'
     | '/reglages'
+    | '/tresorerie'
     | '/devis/nouveau'
+    | '/en-developpement/$rubrique'
+    | '/factures/nouveau'
     | '/avoirs/$id/apercu'
     | '/avoirs/$id/modifier'
     | '/devis/$id/apercu'
@@ -236,9 +349,20 @@ export interface FileRouteTypes {
     | '/catalogue'
     | '/clients'
     | '/entreprise'
+    | '/fournisseurs'
+    | '/historique'
+    | '/imports'
+    | '/marges'
+    | '/mentions'
+    | '/messages'
+    | '/planning'
+    | '/rapports'
     | '/reglages'
+    | '/tresorerie'
     | '/'
     | '/devis/nouveau'
+    | '/en-developpement/$rubrique'
+    | '/factures/nouveau'
     | '/avoirs/$id/apercu'
     | '/avoirs/$id/modifier'
     | '/devis/$id/apercu'
@@ -258,9 +382,20 @@ export interface FileRouteTypes {
     | '/_authenticated/catalogue'
     | '/_authenticated/clients'
     | '/_authenticated/entreprise'
+    | '/_authenticated/fournisseurs'
+    | '/_authenticated/historique'
+    | '/_authenticated/imports'
+    | '/_authenticated/marges'
+    | '/_authenticated/mentions'
+    | '/_authenticated/messages'
+    | '/_authenticated/planning'
+    | '/_authenticated/rapports'
     | '/_authenticated/reglages'
+    | '/_authenticated/tresorerie'
     | '/_authenticated/'
     | '/_authenticated/devis/nouveau'
+    | '/_authenticated/en-developpement/$rubrique'
+    | '/_authenticated/factures/nouveau'
     | '/_authenticated/avoirs/$id/apercu'
     | '/_authenticated/avoirs/$id/modifier'
     | '/_authenticated/devis/$id/apercu'
@@ -344,6 +479,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEntrepriseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/fournisseurs': {
+      id: '/_authenticated/fournisseurs'
+      path: '/fournisseurs'
+      fullPath: '/fournisseurs'
+      preLoaderRoute: typeof AuthenticatedFournisseursRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/historique': {
+      id: '/_authenticated/historique'
+      path: '/historique'
+      fullPath: '/historique'
+      preLoaderRoute: typeof AuthenticatedHistoriqueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/imports': {
+      id: '/_authenticated/imports'
+      path: '/imports'
+      fullPath: '/imports'
+      preLoaderRoute: typeof AuthenticatedImportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/marges': {
+      id: '/_authenticated/marges'
+      path: '/marges'
+      fullPath: '/marges'
+      preLoaderRoute: typeof AuthenticatedMargesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mentions': {
+      id: '/_authenticated/mentions'
+      path: '/mentions'
+      fullPath: '/mentions'
+      preLoaderRoute: typeof AuthenticatedMentionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/planning': {
+      id: '/_authenticated/planning'
+      path: '/planning'
+      fullPath: '/planning'
+      preLoaderRoute: typeof AuthenticatedPlanningRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rapports': {
+      id: '/_authenticated/rapports'
+      path: '/rapports'
+      fullPath: '/rapports'
+      preLoaderRoute: typeof AuthenticatedRapportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reglages': {
       id: '/_authenticated/reglages'
       path: '/reglages'
@@ -351,11 +542,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReglagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tresorerie': {
+      id: '/_authenticated/tresorerie'
+      path: '/tresorerie'
+      fullPath: '/tresorerie'
+      preLoaderRoute: typeof AuthenticatedTresorerieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/devis/nouveau': {
       id: '/_authenticated/devis/nouveau'
       path: '/devis/nouveau'
       fullPath: '/devis/nouveau'
       preLoaderRoute: typeof AuthenticatedDevisNouveauRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/en-developpement/$rubrique': {
+      id: '/_authenticated/en-developpement/$rubrique'
+      path: '/en-developpement/$rubrique'
+      fullPath: '/en-developpement/$rubrique'
+      preLoaderRoute: typeof AuthenticatedEnDeveloppementRubriqueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/factures/nouveau': {
+      id: '/_authenticated/factures/nouveau'
+      path: '/factures/nouveau'
+      fullPath: '/factures/nouveau'
+      preLoaderRoute: typeof AuthenticatedFacturesNouveauRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/avoirs/$id/': {
@@ -429,9 +641,20 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCatalogueRoute: typeof AuthenticatedCatalogueRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedEntrepriseRoute: typeof AuthenticatedEntrepriseRoute
+  AuthenticatedFournisseursRoute: typeof AuthenticatedFournisseursRoute
+  AuthenticatedHistoriqueRoute: typeof AuthenticatedHistoriqueRoute
+  AuthenticatedImportsRoute: typeof AuthenticatedImportsRoute
+  AuthenticatedMargesRoute: typeof AuthenticatedMargesRoute
+  AuthenticatedMentionsRoute: typeof AuthenticatedMentionsRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
+  AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
+  AuthenticatedRapportsRoute: typeof AuthenticatedRapportsRoute
   AuthenticatedReglagesRoute: typeof AuthenticatedReglagesRoute
+  AuthenticatedTresorerieRoute: typeof AuthenticatedTresorerieRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDevisNouveauRoute: typeof AuthenticatedDevisNouveauRoute
+  AuthenticatedEnDeveloppementRubriqueRoute: typeof AuthenticatedEnDeveloppementRubriqueRoute
+  AuthenticatedFacturesNouveauRoute: typeof AuthenticatedFacturesNouveauRoute
   AuthenticatedAvoirsIdApercuRoute: typeof AuthenticatedAvoirsIdApercuRoute
   AuthenticatedAvoirsIdModifierRoute: typeof AuthenticatedAvoirsIdModifierRoute
   AuthenticatedDevisIdApercuRoute: typeof AuthenticatedDevisIdApercuRoute
@@ -448,9 +671,21 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCatalogueRoute: AuthenticatedCatalogueRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedEntrepriseRoute: AuthenticatedEntrepriseRoute,
+  AuthenticatedFournisseursRoute: AuthenticatedFournisseursRoute,
+  AuthenticatedHistoriqueRoute: AuthenticatedHistoriqueRoute,
+  AuthenticatedImportsRoute: AuthenticatedImportsRoute,
+  AuthenticatedMargesRoute: AuthenticatedMargesRoute,
+  AuthenticatedMentionsRoute: AuthenticatedMentionsRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
+  AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
+  AuthenticatedRapportsRoute: AuthenticatedRapportsRoute,
   AuthenticatedReglagesRoute: AuthenticatedReglagesRoute,
+  AuthenticatedTresorerieRoute: AuthenticatedTresorerieRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDevisNouveauRoute: AuthenticatedDevisNouveauRoute,
+  AuthenticatedEnDeveloppementRubriqueRoute:
+    AuthenticatedEnDeveloppementRubriqueRoute,
+  AuthenticatedFacturesNouveauRoute: AuthenticatedFacturesNouveauRoute,
   AuthenticatedAvoirsIdApercuRoute: AuthenticatedAvoirsIdApercuRoute,
   AuthenticatedAvoirsIdModifierRoute: AuthenticatedAvoirsIdModifierRoute,
   AuthenticatedDevisIdApercuRoute: AuthenticatedDevisIdApercuRoute,

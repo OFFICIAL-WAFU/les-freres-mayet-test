@@ -1,3 +1,8 @@
+import { DevisApercu, versPublic } from "@/components/DevisApercu";
+import { MentionsInserer } from "@/components/MentionsInserer";
+import { lireLot, ecrireLot, deplacerLigne, dupliquerLigne } from '@/lib/lots';
+import { dateParis } from "@/lib/echeances";
+import { useEtatEntreprise } from "@/data/entreprise";
 import { DeductionBloc } from "@/components/DeductionBloc";
 import type { Deduction } from "@/data/deduction";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -50,12 +55,10 @@ import {
   type LigneSaisie,
   type TauxTVA,
 } from "@/data/devis";
-import { chargerDocuments, ConflitDevis, enregistrerBrouillon, enregistrerFacture } from "@/data/documents";
+import { chargerDocuments, ConflitDevis, enregistrerBrouillon, enregistrerFacture, creerFactureDirecte } from "@/data/documents";
 
 function aujourdhui() {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return dateParis();
 }
 
 export function copierCoordonnees(c: Client): CoordonneesClient {
@@ -108,19 +111,23 @@ export function DevisForm({
   numero,
   version,
   facture,
+  avantEnregistrer,
 }: {
   /** Mode facture brouillon : client figé, échéance au lieu de validité. */
-  facture?: { sourceRef: string; deduction?: Deduction };
+  facture?: { sourceRef: string; deduction?: Deduction; directe?: boolean };
   initial?: DevisBrouillon;
   documentId?: string;
   numero?: string;
   version?: number | undefined;
+  avantEnregistrer?: (id: string) => Promise<void>;
 }) {
   const idTentative = useRef<string>(documentId ?? crypto.randomUUID());
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState<null | "reseau" | "conflit">(null);
+  const [detailEchec, setDetailEchec] = useState("");
   const [confirmerRecharge, setConfirmerRecharge] = useState(false);
   const navigate = useNavigate();
+  const entrepriseApercu = useEtatEntreprise();
   const etatClients = useEtatClients();
   const clients = etatClients.clients;
   const etatCatalogue = useEtatCatalogue();
@@ -129,7 +136,7 @@ export function DevisForm({
   const [v, setV] = useState<DevisBrouillon>(() => JSON.parse(depart));
   const [tentative, setTentative] = useState(false);
   const [rechercheClient, setRechercheClient] = useState("");
-  const [choixClient, setChoixClient] = useState(!initial);
+  const [choixClient, setChoixClient] = useState(!initial?.clientId);
   const [catalogueOuvert, setCatalogueOuvert] = useState(false);
   const [rechercheArticle, setRechercheArticle] = useState("");
   const [typeArticle, setTypeArticle] = useState<ArticleType | "tous">("tous");
@@ -147,7 +154,7 @@ export function DevisForm({
   const blocker = useBlocker({
     shouldBlockFn: () => modifie && !enregistre.current,
     withResolver: true,
-    enableBeforeUnload: false,
+    enableBeforeUnload: modifie && !enregistre.current,
   });
 
   const maj = (patch: Partial<DevisBrouillon>) => setV((x) => ({ ...x, ...patch }));
@@ -189,17 +196,21 @@ export function DevisForm({
     setEchec(null);
     try {
       if (facture) {
-        const doc = await enregistrerFacture(idTentative.current, v, version!);
+        const doc = facture.directe && !documentId
+          ? await creerFactureDirecte(idTentative.current, v)
+          : await enregistrerFacture(idTentative.current, v, version!);
         enregistre.current = true;
         toast.success("Facture brouillon enregistrée");
         navigate({ to: "/factures/$id", params: { id: doc.id } });
         return;
       }
+      if (avantEnregistrer) await avantEnregistrer(idTentative.current);
       const doc = await enregistrerBrouillon(idTentative.current, v, version ?? null);
       enregistre.current = true;
       toast.success("Brouillon enregistré");
       navigate({ to: "/devis/$id", params: { id: doc.id } });
     } catch (e) {
+      setDetailEchec(e instanceof Error ? e.message : "L’enregistrement n’a pas été confirmé.");
       setEchec(e instanceof ConflitDevis ? "conflit" : "reseau");
       setEnCours(false);
     }
@@ -268,12 +279,12 @@ export function DevisForm({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold lg:text-3xl">
-              {facture ? "Modifier la facture brouillon" : documentId ? "Modifier le brouillon" : "Nouveau devis"}
+              {facture ? documentId ? "Modifier la facture brouillon" : "Nouvelle facture" : documentId ? "Modifier le brouillon" : "Nouveau devis"}
             </h1>
             <StatutBadge statut="Brouillon" />
           </div>
           {numero && <p className="mt-1 text-sm text-muted-foreground">Référence provisoire : {numero}</p>}
-          {facture && <p className="mt-1 text-sm text-muted-foreground">Issue du devis {facture.sourceRef} — facture non émise.</p>}
+          {facture && <p className="mt-1 text-sm text-muted-foreground">{facture.sourceRef ? `Issue du devis ${facture.sourceRef}` : "Facture sans devis d’origine"} — facture non émise.</p>}
           <p className="mt-2 text-sm text-muted-foreground">Démonstration — aucun document ne sera envoyé.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Les brouillons enregistrés sont conservés dans votre espace privé.
@@ -283,7 +294,7 @@ export function DevisForm({
 
       <form
         noValidate
-        className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+        className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:items-start"
         onSubmit={(e) => {
           e.preventDefault();
           enregistrer();
@@ -305,14 +316,14 @@ export function DevisForm({
               <p className="text-sm">
                 Aucun client n'existe encore. Créez d'abord un client dans la rubrique Clients.
               </p>
-            ) : facture ? (
+            ) : facture && !(facture.directe && !documentId) ? (
               <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
                 <p className="font-semibold">{v.client.nom}</p>
                 {v.client.contact && <p>Contact : {v.client.contact}</p>}
                 {v.client.telephone && <p>{v.client.telephone}</p>}
                 {v.client.email && <p className="break-all">{v.client.email}</p>}
                 {v.client.adresse.map((l, i) => <p key={i}>{l}</p>)}
-                <p className="mt-2 text-xs text-muted-foreground">Coordonnées reprises du devis {facture.sourceRef}. Le client ne peut pas être changé.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Coordonnées figées lors de la création{facture.sourceRef ? ` depuis le devis ${facture.sourceRef}` : ""}. Le client ne peut pas être changé.</p>
               </div>
             ) : v.clientId && !choixClient ? (
               <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
@@ -407,11 +418,13 @@ export function DevisForm({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="d-conditions">Conditions de paiement <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
               <Textarea id="d-conditions" rows={2} value={v.conditions ?? ""} onChange={(e) => maj({ conditions: e.target.value })} />
+              <MentionsInserer usage={facture ? "facture" : "devis"} valeur={v.conditions ?? ""} onChange={conditions => maj({conditions})}/>
               <p className="text-xs text-muted-foreground">Aucune condition n'est ajoutée par défaut.</p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="d-remarques">Remarques destinées au client <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
               <Textarea id="d-remarques" rows={3} value={v.remarques} onChange={(e) => maj({ remarques: e.target.value })} />
+              <MentionsInserer usage={facture ? "facture" : "devis"} valeur={v.remarques} onChange={remarques => maj({remarques})}/>
               <p className="text-xs text-muted-foreground">{facture ? "Visibles par le client sur la facture." : "Visibles par le client sur le devis."}</p>
             </div>
             <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-border bg-muted p-3">
@@ -442,6 +455,9 @@ export function DevisForm({
                 err={(k) => err(`l-${l.cle}-${k}`)}
                 onChange={(p) => majLigne(l.cle, p)}
                 onRetirer={() => maj({ lignes: v.lignes.filter((x) => x.cle !== l.cle) })}
+                onDupliquer={() => maj({lignes:dupliquerLigne(v.lignes,l.cle,nouvelleCle())})}
+                onMonter={i>0?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,-1)}):undefined}
+                onDescendre={i<v.lignes.length-1?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,1)}):undefined}
               />
             ))}
 
@@ -516,7 +532,7 @@ export function DevisForm({
         </div>
 
         {/* Récapitulatif */}
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-6">
           <div className="rounded-2xl border border-border bg-card p-4">
             <h2 className="text-lg font-semibold">Récapitulatif</h2>
             <Recap recap={recap} vide={v.lignes.length === 0} />
@@ -535,7 +551,7 @@ export function DevisForm({
               <div role="alert" className="rounded-xl border border-destructive/40 bg-card p-3 text-sm">
                 <p>{echec === "conflit"
                   ? "Une version plus récente de ce brouillon a été enregistrée ailleurs. Vos saisies sont conservées ici et n'ont pas été enregistrées."
-                  : "L'enregistrement a échoué. Rien n'a été modifié ; vos saisies sont conservées et vous pouvez réessayer."}</p>
+                  : detailEchec || "L’enregistrement n’a pas été confirmé. Vos saisies sont conservées ; réessayez avec cette même tentative."}</p>
                 {echec === "conflit" && (
                   <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setConfirmerRecharge(true)}>
                     Recharger la version enregistrée
@@ -560,6 +576,11 @@ export function DevisForm({
               Annuler
             </Button>
           </div>
+          <details open className="rounded-2xl border border-border bg-card p-3">
+            <summary className="cursor-pointer text-sm font-semibold">Aperçu pendant la saisie</summary>
+            <p className="mt-2 text-xs text-muted-foreground">Prévisualisation non enregistrée. Les notes internes restent absentes du document.</p>
+            {entrepriseApercu.statut === "pret" ? <div className="saisie-apercu mt-3 max-h-[700px] overflow-y-auto rounded-xl border border-border"><DevisApercu devis={versPublic(v)} numero={numero ?? "À attribuer après enregistrement"} entreprise={entrepriseApercu.fiche} {...(facture ? {facture} : {})} /></div> : <p className="mt-3 text-sm text-muted-foreground">Enregistrez votre fiche entreprise pour afficher cet aperçu.</p>}
+          </details>
         </aside>
       </form>
 
@@ -629,6 +650,7 @@ function LigneBloc({
   err,
   onChange,
   onRetirer,
+  onDupliquer, onMonter, onDescendre,
 }: {
   index: number;
   ligne: LigneSaisie;
@@ -637,16 +659,25 @@ function LigneBloc({
   err: (k: string) => string | undefined;
   onChange: (p: Partial<LigneSaisie>) => void;
   onRetirer: () => void;
+  onDupliquer: () => void;
+  onMonter?: (() => void) | undefined;
+  onDescendre?: (() => void) | undefined;
 }) {
   const id = (k: string) => `l-${l.cle}-${k}`;
+  const lot=lireLot(l.description);
   return (
     <div className="rounded-xl border border-border p-3" data-ligne={index + 1}>
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">
           Ligne {index + 1}
           {l.articleId && <span className="ml-2 font-normal text-muted-foreground">Depuis le catalogue · {l.reference}</span>}
         </p>
-        <Button type="button" variant="ghost" size="sm" onClick={onRetirer}>Retirer</Button>
+        <div className="flex flex-wrap gap-1">
+          <Button type="button" variant="ghost" size="sm" disabled={!onMonter} onClick={onMonter} aria-label={`Monter la ligne ${index+1}`}>↑</Button>
+          <Button type="button" variant="ghost" size="sm" disabled={!onDescendre} onClick={onDescendre} aria-label={`Descendre la ligne ${index+1}`}>↓</Button>
+          <Button type="button" variant="outline" size="sm" onClick={onDupliquer} aria-label={`Dupliquer la ligne ${index+1}`}>Dupliquer</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onRetirer}>Retirer</Button>
+        </div>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-12">
         <div className="col-span-2 flex flex-col gap-1 lg:col-span-3">
@@ -665,8 +696,10 @@ function LigneBloc({
           <Erreur id={id("designation")} texte={err("designation")} />
         </div>
         <div className="col-span-2 flex flex-col gap-1 lg:col-span-12">
+          <Label htmlFor={id('lot')}>Lot <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+          <Input id={id('lot')} maxLength={100} placeholder="Ex. Cuisine, Tableau électrique, VMC" value={lot.lot} onChange={e=>onChange({description:ecrireLot(l.description,e.target.value)})}/>
           <Label htmlFor={id("description")}>Description <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
-          <Textarea id={id("description")} rows={2} value={l.description} onChange={(e) => onChange({ description: e.target.value })} />
+          <Textarea id={id("description")} rows={2} value={lot.description} onChange={(e) => onChange({ description: ecrireLot(e.target.value,lot.lot) })} />
         </div>
         <div className="flex flex-col gap-1 lg:col-span-2">
           <Label htmlFor={id("unite")}>Unité</Label>
