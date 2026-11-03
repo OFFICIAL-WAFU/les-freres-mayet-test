@@ -272,3 +272,12 @@ export function reinitialiserCatalogue() {
   generation++;
   definir(INITIAL);
 }
+
+const UNITE_PLURIEL: Record<Unite, string> = { piece: "pièces", heure: "heures", forfait: "forfaits", metre: "mètres", m2: "m²", m3: "m³" };
+const UNITE_SINGULIER: Record<Unite, string> = { piece: "pièce", heure: "heure", forfait: "forfait", metre: "mètre", m2: "m²", m3: "m³" };
+/** Unité au singulier ou au pluriel selon la quantité (« 1 pièce », « 24 pièces »), en minuscules. */
+export function uniteAccordee(unite: Unite | string, quantite: number | string): string {
+  const q = typeof quantite === "number" ? quantite : Number(String(quantite).replace(/\s/g, "").replace(",", "."));
+  if (!(unite in UNITE_SINGULIER)) return String(unite);
+  return (Number.isFinite(q) && q > 1 ? UNITE_PLURIEL : UNITE_SINGULIER)[unite as Unite];
+}

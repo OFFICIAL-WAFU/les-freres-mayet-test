@@ -112,7 +112,7 @@ function Page() {
     {edition && f && <section className="mt-6 rounded-2xl border bg-card p-5" aria-label="Édition du rapport">
       <h2 className="text-lg font-semibold">{edition.id ? "Modifier le rapport" : "Nouveau rapport"}</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <label className="grid gap-1 text-sm sm:col-span-2">Client enregistré (facultatif)<select className="rounded-md border bg-background p-2" defaultValue="" onChange={e => choisirClient(e.target.value)}><option value="">— Choisir un client pour préremplir —</option>{clients.map(c => <option key={c.id} value={c.id}>{nomClient(c)}</option>)}</select></label>
+        <label className="grid gap-1 text-sm sm:col-span-2">Client enregistré <select className="rounded-md border bg-background p-2" defaultValue="" onChange={e => choisirClient(e.target.value)}><option value="">— Choisir un client pour préremplir —</option>{clients.map(c => <option key={c.id} value={c.id}>{nomClient(c)}</option>)}</select></label>
         <label className="grid gap-1 text-sm">Nom du client *<input className="rounded-md border bg-background p-2" maxLength={120} value={f.clientNom} onChange={champ("clientNom")} /></label>
         <label className="grid gap-1 text-sm">Téléphone<input className="rounded-md border bg-background p-2" maxLength={30} value={f.clientTel} onChange={champ("clientTel")} /></label>
         <label className="grid gap-1 text-sm sm:col-span-2">Adresse du client<input className="rounded-md border bg-background p-2" maxLength={200} value={f.clientAdresse} onChange={champ("clientAdresse")} /></label>

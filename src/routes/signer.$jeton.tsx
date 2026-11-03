@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { SignatureCadre, type SignatureCadreRef } from "@/components/SignatureCadre";
 import { Button } from "@/components/ui/button";
-import { UNITE_LABELS } from "@/data/catalogue";
+import { uniteAccordee } from "@/data/catalogue";
 import { lireDevisPourSignature, signerDevisDistant } from "@/data/signature-distante";
 import { euros, jetonValide, messageErreurSignature, quantite, type LectureSignature } from "@/lib/signature-distante";
 
@@ -75,7 +75,7 @@ function Page() {
       <ul className="mt-2 divide-y">{d.lignes.map(l => <li key={l.position} className="py-3 text-sm">
         <div className="flex flex-wrap justify-between gap-2"><span className="min-w-0 break-words font-medium">{l.designation}</span><span className="shrink-0 font-medium">{euros(l.ttc_centimes)} TTC</span></div>
         {l.description && <p className="whitespace-pre-line break-words text-muted-foreground">{l.description}</p>}
-        <p className="text-xs text-muted-foreground">{quantite(l.quantite_milliemes)}{l.unite ? ` ${(UNITE_LABELS as Record<string, string>)[l.unite]?.toLowerCase() ?? l.unite}` : ""} × {euros(l.prix_ht_centimes)} HT · TVA {(l.taux_tva_milliemes / 10).toString().replace(".", ",")} %</p>
+        <p className="text-xs text-muted-foreground">{quantite(l.quantite_milliemes)}{l.unite ? ` ${uniteAccordee(l.unite, l.quantite_milliemes / 1000)}` : ""} × {euros(l.prix_ht_centimes)} HT · TVA {(l.taux_tva_milliemes / 10).toString().replace(".", ",")} %</p>
       </li>)}</ul>
       <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t pt-3 text-sm"><dt>Total HT</dt><dd className="text-right">{euros(d.total_ht_centimes)}</dd><dt>TVA</dt><dd className="text-right">{euros(d.total_tva_centimes)}</dd><dt className="font-semibold">Total TTC</dt><dd className="text-right text-base font-semibold">{euros(d.total_ttc_centimes)}</dd></dl>
       {d.conditions_paiement.trim() && <><h3 className="mt-4 text-sm font-semibold">Conditions de paiement</h3><p className="whitespace-pre-line break-words text-sm">{d.conditions_paiement}</p></>}
