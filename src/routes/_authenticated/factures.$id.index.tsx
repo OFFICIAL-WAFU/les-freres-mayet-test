@@ -24,7 +24,7 @@ function Page() {
   const etat = useEtatDocuments();
   const doc = etat.brouillons.find((d) => d.id === id && (d.type === "facture" || d.type === "acompte"));
   return (
-    <AppLayout titre="Facture brouillon">
+    <AppLayout titre={doc?.statut === "Finalisé" ? "Facture" : "Facture brouillon"}>
       {doc?.devis ? (
         <div className="max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>

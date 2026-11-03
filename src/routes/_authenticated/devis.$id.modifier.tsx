@@ -8,9 +8,9 @@ export const Route = createFileRoute("/_authenticated/devis/$id/modifier")({
   head: () => ({
     meta: [
       { title: "Modifier le brouillon — Les Frères Mayet" },
-      { name: "description", content: "Modifier un brouillon de devis de démonstration." },
+      { name: "description", content: "Modifier un brouillon de devis." },
       { property: "og:title", content: "Modifier le brouillon — Les Frères Mayet" },
-      { property: "og:description", content: "Modifier un brouillon de devis de démonstration." },
+      { property: "og:description", content: "Modifier un brouillon de devis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
