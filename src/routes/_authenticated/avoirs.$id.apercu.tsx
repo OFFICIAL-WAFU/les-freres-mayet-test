@@ -10,9 +10,9 @@ import { useEtatEntreprise } from "@/data/entreprise";
 export const Route = createFileRoute("/_authenticated/avoirs/$id/apercu")({
   head: () => ({
     meta: [
-      { title: "Aperçu de l'avoir brouillon — Les Frères Mayet" },
+      { title: "Aperçu de l'avoir — Les Frères Mayet" },
       { name: "description", content: "Aperçu d'un avoir brouillon non émis." },
-      { property: "og:title", content: "Aperçu de l'avoir brouillon — Les Frères Mayet" },
+      { property: "og:title", content: "Aperçu de l'avoir — Les Frères Mayet" },
       { property: "og:description", content: "Aperçu d'un avoir brouillon non émis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

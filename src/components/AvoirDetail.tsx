@@ -9,7 +9,7 @@ import {
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
+import { TYPE_ARTICLE_LABELS, uniteAccordee } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import { toast } from "sonner";
 import { AlertTriangle, Download } from "lucide-react";
@@ -103,7 +103,7 @@ export function AvoirDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
                   <p className="font-semibold">{c ? formaterCentimes(c.ht) : "—"} HT</p>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {TYPE_ARTICLE_LABELS[l.type]} · {l.quantite} {l.unite ? UNITE_LABELS[l.unite] : ""} × {l.prix} € HT · TVA {l.taux !== null ? labelTaux(l.taux) : "—"}
+                  {TYPE_ARTICLE_LABELS[l.type]} · {l.quantite} {l.unite ? uniteAccordee(l.unite, l.quantite) : ""} × {l.prix} € HT · TVA {l.taux !== null ? labelTaux(l.taux) : "—"}
                 </p>
               </li>
             );

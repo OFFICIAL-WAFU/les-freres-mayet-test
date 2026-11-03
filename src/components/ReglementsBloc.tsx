@@ -99,7 +99,7 @@ export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
               {Object.entries(MODES_REGLEMENT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </label>
-          <label className="flex flex-col gap-1">Référence ou commentaire interne (facultatif)
+          <label className="flex flex-col gap-1">Référence ou commentaire interne
             <Input value={commentaire} onChange={(e) => setCommentaire(e.target.value)} maxLength={500} />
           </label>
           <div className="flex gap-2 sm:col-span-2">

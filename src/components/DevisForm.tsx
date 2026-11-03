@@ -412,7 +412,7 @@ export function DevisForm({
                 <Erreur id="d-date" texte={err("d-date")} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="d-validite">{facture ? "Échéance" : "Date de validité"} <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+                <Label htmlFor="d-validite">{facture ? "Échéance" : "Date de validité"}</Label>
                 <Input id="d-validite" type="date" value={v.validite} onChange={(e) => maj({ validite: e.target.value })} aria-invalid={!!erreurs["d-validite"]} />
                 <Erreur id="d-validite" texte={erreurs["d-validite"]} />
               </div>
@@ -425,26 +425,26 @@ export function DevisForm({
                   <Erreur id="d-prest-debut" texte={erreurs["d-prest-debut"]} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="d-prest-fin">Fin de période <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+                  <Label htmlFor="d-prest-fin">Fin de période</Label>
                   <Input id="d-prest-fin" type="date" value={v.prestationFin ?? ""} onChange={(e) => maj({ prestationFin: e.target.value })} aria-invalid={!!erreurs["d-prest-fin"]} />
                   <Erreur id="d-prest-fin" texte={erreurs["d-prest-fin"]} />
                 </div>
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="d-conditions">Conditions de paiement <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+              <Label htmlFor="d-conditions">Conditions de paiement</Label>
               <Textarea id="d-conditions" rows={2} value={v.conditions ?? ""} onChange={(e) => maj({ conditions: e.target.value })} />
               <MentionsInserer usage={facture ? "facture" : "devis"} valeur={v.conditions ?? ""} onChange={conditions => maj({conditions})}/>
               <p className="text-xs text-muted-foreground">Aucune condition n'est ajoutée par défaut.</p>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="d-remarques">Remarques destinées au client <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+              <Label htmlFor="d-remarques">Remarques destinées au client</Label>
               <Textarea id="d-remarques" rows={3} value={v.remarques} onChange={(e) => maj({ remarques: e.target.value })} />
               <MentionsInserer usage={facture ? "facture" : "devis"} valeur={v.remarques} onChange={remarques => maj({remarques})}/>
               <p className="text-xs text-muted-foreground">{facture ? "Visibles par le client sur la facture." : "Visibles par le client sur le devis."}</p>
             </div>
             <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-border bg-muted p-3">
-              <Label htmlFor="d-notes">Notes internes <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+              <Label htmlFor="d-notes">Notes internes</Label>
               <Textarea id="d-notes" rows={2} className="bg-card" value={v.notes} onChange={(e) => maj({ notes: e.target.value })} />
               <p className="text-xs text-muted-foreground">Ces notes ne sont pas destinées aux documents clients.</p>
             </div>
@@ -743,9 +743,9 @@ function LigneBloc({
           <Erreur id={id("designation")} texte={err("designation")} />
         </div>
         <div className="col-span-2 flex flex-col gap-1 lg:col-span-12">
-          <Label htmlFor={id('lot')}>Lot <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+          <Label htmlFor={id('lot')}>Lot</Label>
           <Input id={id('lot')} maxLength={100} placeholder="Ex. Cuisine, Tableau électrique, VMC" value={lot.lot} onChange={e=>onChange({description:ecrireLot(l.description,e.target.value)})}/>
-          <Label htmlFor={id("description")}>Description <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+          <Label htmlFor={id("description")}>Description</Label>
           <Textarea id={id("description")} rows={2} value={lot.description} onChange={(e) => onChange({ description: ecrireLot(e.target.value,lot.lot) })} />
         </div>
         <div className="flex flex-col gap-1 lg:col-span-2">
