@@ -19,6 +19,7 @@ import { MSG_REGLEMENT, solde } from "@/data/deduction";
 import { AcompteDialogue } from "@/components/AcompteDialogue";
 import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
+import { FriseDossier } from "@/components/FriseDossier";
 import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
@@ -125,6 +126,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
           <span className="text-muted-foreground">Référence provisoire {doc.numero} — brouillon non émis</span>
         )}
       </div>
+      {finalise && !estFacture && <FriseDossier doc={doc} />}
       {finalise && (
         <p className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 p-3 font-medium">
           <Lock className="size-4" /> Document finalisé — contenu verrouillé

@@ -1,3 +1,4 @@
+import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { genererJeton, lienSignature, lireReponseSignature, type LectureSignature } from "@/lib/signature-distante";
 
@@ -55,4 +56,21 @@ export async function signerDevisDistant(jeton: string, nom: string, image: stri
   const r = data as { empreinte?: unknown; signe_le?: unknown } | null;
   if (!r || typeof r.empreinte !== "string" || typeof r.signe_le !== "string") throw new Error("Réponse inattendue du serveur : la signature n’est pas confirmée.");
   return { empreinte: r.empreinte, signeLe: r.signe_le };
+}
+
+// --- Devis signés : état partagé pour la liste Documents et la frise du devis ---
+type Signes = Record<string, { signeLe: string; nom: string }>;
+let signesCache: Signes = {};
+const abonnes = new Set<() => void>();
+function rechargerSignes() {
+  lireDevisSignes().then((r) => { signesCache = r; abonnes.forEach((f) => f()); }).catch(() => { /* on garde l'état précédent */ });
+}
+/** Devis signés à distance (indexés par identifiant de devis), rechargés à chaque affichage de l'écran. */
+export function useDevisSignes(): Signes {
+  useEffect(() => { rechargerSignes(); }, []);
+  return useSyncExternalStore(
+    (f) => { abonnes.add(f); return () => { abonnes.delete(f); }; },
+    () => signesCache,
+    () => signesCache,
+  );
 }
