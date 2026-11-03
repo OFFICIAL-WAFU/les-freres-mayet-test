@@ -4,7 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { ArticleForm } from "@/components/ArticleForm";
+import { ArticleForm, type ModeSauvegarde } from "@/components/ArticleForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -105,16 +105,23 @@ function CataloguePage() {
 
   const courant = panneau && panneau.mode !== "ajout" ? articles.find((a) => a.id === panneau.id) : undefined;
 
-  function ouvrirAjout() { setFormKey((k) => k + 1); setPanneau({ mode: "ajout" }); }
-  async function sauver(s: ArticleSaisie, idTentative: string) {
+  const [typeAjout, setTypeAjout] = useState<ArticleType>("materiel");
+  function ouvrirAjout() { setTypeAjout(type === "prestation" ? "prestation" : "materiel"); setFormKey((k) => k + 1); setPanneau({ mode: "ajout" }); }
+  async function sauver(s: ArticleSaisie, idTentative: string, mode: ModeSauvegarde = "fermer") {
     if (panneau?.mode === "edition") {
       const id = panneau.id;
       const version = articles.find((a) => a.id === id)?.majLe ?? "";
       await modifierArticle(id, s, version);
       setPanneau({ mode: "fiche", id });
     } else {
-      const a = await ajouterArticle(idTentative, s);
-      setPanneau({ mode: "fiche", id: a.id });
+      await ajouterArticle(idTentative, s);
+      if (mode === "suivant") {
+        // On repart d'un formulaire vide du même type, pour enchaîner les saisies.
+        setTypeAjout(s.type);
+        setFormKey((k) => k + 1);
+      } else {
+        setPanneau(null);
+      }
     }
     toast.success("Article enregistré");
   }
@@ -259,7 +266,7 @@ function CataloguePage() {
                 <SheetTitle>Ajouter un article</SheetTitle>
                 <SheetDescription>Matériel ou prestation de votre catalogue.</SheetDescription>
               </SheetHeader>
-              <ArticleForm key={formKey} articles={articles} onCancel={() => setPanneau(null)} onSave={sauver} onVoirExistant={voir} />
+              <ArticleForm key={formKey} typeInitial={typeAjout} articles={articles} onCancel={() => setPanneau(null)} onSave={sauver} onVoirExistant={voir} />
             </>
           )}
           {panneau?.mode === "edition" && courant && (
