@@ -57,15 +57,28 @@ function versValeurs(a: Article): Valeurs {
   };
 }
 
+const UNITE_PAR_DEFAUT: Record<ArticleType, Unite> = { materiel: "piece", prestation: "forfait" };
+
+/** Référence interne proposée à partir de la désignation (sans accents, majuscules), unique dans le catalogue. */
+export function genererReference(designation: string, articles: Article[]): string {
+  const base = designation
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 14).replace(/-+$/g, "") || "ART";
+  const pris = new Set(articles.map((a) => normaliserReference(a.reference)));
+  if (!pris.has(normaliserReference(base))) return base;
+  for (let i = 2; i < 1000; i++) if (!pris.has(normaliserReference(`${base}-${i}`))) return `${base}-${i}`;
+  return `${base}-${Date.now()}`;
+}
+
 function vide(type: ArticleType): Valeurs {
   return {
-    type, reference: "", designation: "", description: "", metier: "general", unite: "",
+    type, reference: "", designation: "", description: "", metier: "general", unite: UNITE_PAR_DEFAUT[type],
     prix: "", marque: "", referenceFabricant: "", notes: "",
   };
 }
 
 function Champ({ id, label, facultatif, erreur, aide, children }: {
-  id: string; label: string; facultatif?: boolean; erreur?: string | undefined; aide?: string;
+  id: string; label: string; facultatif?: boolean; erreur?: string | undefined; aide?: string | undefined;
   children: React.ReactNode;
 }) {
   return (
@@ -73,7 +86,7 @@ function Champ({ id, label, facultatif, erreur, aide, children }: {
       <Label htmlFor={id}>
         {label}
         <span className="ml-1 font-normal text-muted-foreground">
-          {facultatif ? "(facultatif)" : "(obligatoire)"}
+          {!facultatif && "(obligatoire)"}
         </span>
       </Label>
       {children}
@@ -83,35 +96,25 @@ function Champ({ id, label, facultatif, erreur, aide, children }: {
   );
 }
 
-export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistant, onRecharger }: {
+export type ModeSauvegarde = "fermer" | "suivant";
+
+export function ArticleForm({ initial, typeInitial = "materiel", articles, onCancel, onSave, onVoirExistant, onRecharger }: {
   initial?: Article;
+  /** Type proposé à la création (le formulaire s'ouvre directement, sans écran de choix). */
+  typeInitial?: ArticleType;
   articles: Article[];
   onCancel: () => void;
   /** Résout après confirmation du serveur ; rejette en cas d'échec. */
-  onSave: (s: ArticleSaisie, idTentative: string) => Promise<unknown>;
+  onSave: (s: ArticleSaisie, idTentative: string, mode: ModeSauvegarde) => Promise<unknown>;
   onVoirExistant: (a: Article) => void;
   onRecharger?: () => void;
 }) {
-  const [v, setV] = useState<Valeurs | null>(initial ? versValeurs(initial) : null);
+  const [v, setV] = useState<Valeurs>(initial ? versValeurs(initial) : vide(typeInitial));
   const [erreurs, setErreurs] = useState<Erreurs>({});
   const [doublon, setDoublon] = useState<Article | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState<"reseau" | "conflit" | null>(null);
   const idTentative = useRef<string>(crypto.randomUUID());
-
-  if (!v) {
-    return (
-      <div className="mt-6 flex flex-col gap-3">
-        <p className="text-sm font-medium">Quel type d'article souhaitez-vous ajouter ?</p>
-        {(["materiel", "prestation"] as ArticleType[]).map((t) => (
-          <Button key={t} variant="outline" size="lg" className="justify-start" onClick={() => setV(vide(t))}>
-            {TYPE_ARTICLE_LABELS[t]}
-          </Button>
-        ))}
-        <Button variant="ghost" className="mt-2" onClick={onCancel}>Annuler</Button>
-      </div>
-    );
-  }
 
   const val = v;
   const set = (k: Cle, valeur: string) => {
@@ -130,9 +133,16 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
     />
   );
 
-  function enregistrer() {
+  function changerType(t: ArticleType) {
+    if (t === val.type) return;
+    const unitePrecedente = UNITE_PAR_DEFAUT[val.type];
+    setV({ ...val, type: t, unite: val.unite === unitePrecedente ? UNITE_PAR_DEFAUT[t] : val.unite });
+  }
+
+  function enregistrer(mode: ModeSauvegarde = "fermer") {
     const e: Erreurs = {};
-    if (!val.reference.trim()) e.reference = "Indiquez une référence interne.";
+    // À la création, une référence vide est remplie automatiquement ; en modification elle reste obligatoire.
+    if (!val.reference.trim() && initial) e.reference = "Indiquez une référence interne.";
     if (!val.designation.trim()) e.designation = "Indiquez une désignation.";
     if (!val.metier) e.metier = "Choisissez un métier.";
     if (!val.unite) e.unite = "Choisissez une unité.";
@@ -149,11 +159,12 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
     if (Object.keys(e).length > 0 || typeof prix === "string") return;
     if (enCours) return;
     const materiel = val.type === "materiel";
+    const reference = val.reference.trim() || genererReference(val.designation, articles);
     setEnCours(true);
     setEchec(null);
     onSave({
       type: val.type,
-      reference: val.reference.trim(),
+      reference,
       designation: val.designation.trim(),
       description: val.description.trim(),
       metier: val.metier as Metier,
@@ -162,7 +173,7 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
       marque: materiel ? val.marque.trim() : "",
       referenceFabricant: materiel ? val.referenceFabricant.trim() : "",
       notes: val.notes.trim(),
-    }, idTentative.current)
+    }, idTentative.current, mode)
       .catch((err: unknown) => {
         if (err instanceof ReferenceDejaUtilisee) {
           const x = err.existant;
@@ -181,10 +192,23 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
   }
 
   return (
-    <form className="mt-6 flex flex-col gap-4" noValidate onSubmit={(e) => { e.preventDefault(); enregistrer(); }}>
-      <p className="text-sm">Type : <span className="font-semibold">{TYPE_ARTICLE_LABELS[val.type]}</span></p>
+    <form className="mt-6 flex flex-col gap-4" noValidate onSubmit={(e) => { e.preventDefault(); enregistrer("fermer"); }}>
+      {initial ? (
+        <p className="text-sm">Type : <span className="font-semibold">{TYPE_ARTICLE_LABELS[val.type]}</span></p>
+      ) : (
+        <div role="group" aria-label="Type d'article" className="flex w-fit gap-1 rounded-xl bg-secondary p-1">
+          {(["materiel", "prestation"] as ArticleType[]).map((t) => (
+            <Button key={t} type="button" size="sm" variant={val.type === t ? "action" : "ghost"} aria-pressed={val.type === t} onClick={() => changerType(t)}>
+              {TYPE_ARTICLE_LABELS[t]}
+            </Button>
+          ))}
+        </div>
+      )}
 
-      <Champ id="a-reference" label="Référence interne" erreur={erreurs.reference}>
+      <Champ id="a-designation" label="Désignation" erreur={erreurs.designation}>
+        {inp("designation", { autoFocus: !initial })}
+      </Champ>
+      <Champ id="a-reference" label="Référence interne" facultatif={!initial} aide={initial ? undefined : "Laissez vide : elle sera créée à partir de la désignation."} erreur={erreurs.reference}>
         {inp("reference", { autoComplete: "off" })}
       </Champ>
       {doublon && (
@@ -198,9 +222,6 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
           </Button>
         </div>
       )}
-      <Champ id="a-designation" label="Désignation" erreur={erreurs.designation}>
-        {inp("designation")}
-      </Champ>
       <Champ id="a-description" label="Description" facultatif aide="Cette description pourra être reprise dans vos futurs devis.">
         <Textarea id="a-description" rows={3} value={val.description} onChange={(e) => set("description", e.target.value)} />
       </Champ>
@@ -263,6 +284,11 @@ export function ArticleForm({ initial, articles, onCancel, onSave, onVoirExistan
       )}
       <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel} disabled={enCours}>Annuler</Button>
+        {!initial && (
+          <Button type="button" variant="outline" disabled={enCours} onClick={() => enregistrer("suivant")}>
+            Enregistrer et ajouter un autre
+          </Button>
+        )}
         <Button type="submit" variant="action" disabled={enCours} aria-busy={enCours}>
           {enCours ? "Enregistrement…" : "Enregistrer l'article"}
         </Button>
