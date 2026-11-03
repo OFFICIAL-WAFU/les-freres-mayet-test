@@ -1,3 +1,4 @@
+import { useDevisSignes } from "@/data/signature-distante";
 import { suivre } from "@/data/reglements";
 import { telechargerDocumentsCsv } from "@/lib/export-documents";
 import { suiviEcheance } from "@/lib/echeances";
@@ -72,7 +73,11 @@ function DocumentsPage() {
   const [typeChoisi, setTypeChoisi] = useState<DocumentType | null>(null);
 
   const etatDocs = useEtatDocuments();
-  const documents = etatDocs.liste;
+  const signes = useDevisSignes();
+  const documentsListe = etatDocs.liste;
+  const documents = documentsListe;
+  // Affichage : un devis finalisé et signé par le client apparaît « Signé » (les données du document ne changent pas).
+  const documentsAffiches = useMemo(() => documentsListe.map((d) => (d.type === "devis" && d.statut === "Finalisé" && signes[d.id] ? { ...d, statut: "Signé" as const } : d)), [documentsListe, signes]);
   const navigate = useNavigate();
   const statutsDisponibles = type === "tous" ? TOUS_LES_STATUTS : STATUTS_PAR_TYPE[type];
 
@@ -92,7 +97,7 @@ function DocumentsPage() {
 
   const resultats = useMemo(() => {
     const q = recherche.trim().toLowerCase();
-    return documents.filter((d) => {
+    return documentsAffiches.filter((d) => {
       const correspondRecherche =
         q === "" ||
         d.client.toLowerCase().includes(q) ||
@@ -104,7 +109,7 @@ function DocumentsPage() {
       const correspondPaiement = paiement === "tous" || !!suivi && (paiement === "reste" ? suivi.reste > 0n : paiement === "credit" ? suivi.creditClient > 0n : paiement === "retard" ? echeance?.etat === "retard" : paiement === "sans-date" ? echeance?.etat === "absente" : suivi.reste === 0n);
       return correspondRecherche && correspondType && correspondStatut && correspondPaiement && dansPeriode(d.date, periode);
     });
-  }, [documents, recherche, type, statut, paiement, periode]);
+  }, [documentsAffiches, recherche, type, statut, paiement, periode]);
 
   return (
     <AppLayout titre="Documents">

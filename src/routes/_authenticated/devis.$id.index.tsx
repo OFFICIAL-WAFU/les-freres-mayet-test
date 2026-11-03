@@ -1,3 +1,4 @@
+import { useDevisSignes } from "@/data/signature-distante";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { DevisDetail } from "@/components/DevisDetail";
@@ -23,13 +24,14 @@ function Page() {
   const { id } = Route.useParams();
   const etatDocs = useEtatDocuments();
   const doc = etatDocs.brouillons.find((d) => d.id === id && d.type === "devis");
+  const signe = useDevisSignes()[id];
   return (
     <AppLayout titre={doc?.statut === "Finalisé" ? "Devis" : "Brouillon de devis"}>
       {doc?.devis ? (
         <div className="max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>
           <h1 className="text-2xl font-semibold lg:text-3xl">Devis — {doc.devis.objet}</h1>
-          <p className="mt-2 text-xs text-muted-foreground">{doc.statut === "Finalisé" ? "Aucun envoi ni signature n'a été effectué depuis l'application." : "Les brouillons enregistrés sont conservés dans votre espace privé."}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{doc.statut === "Finalisé" ? (signe ? `Signé à distance par ${signe.nom} le ${new Date(signe.signeLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}. Aucun envoi n'a été effectué depuis l'application.` : "Aucun envoi ni signature n'a été effectué depuis l'application.") : "Les brouillons enregistrés sont conservés dans votre espace privé."}</p>
           <div className="mt-6 rounded-2xl border border-border bg-card p-4 lg:p-6">
             <DevisDetail doc={doc} />
           </div>
