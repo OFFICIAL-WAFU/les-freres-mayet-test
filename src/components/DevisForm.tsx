@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { chargerClients, nomClient, useEtatClients, type Client } from "@/data/clients";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   TYPE_ARTICLE_LABELS,
   UNITE_LABELS,
@@ -138,6 +139,13 @@ export function DevisForm({
   const [rechercheClient, setRechercheClient] = useState("");
   const [choixClient, setChoixClient] = useState(!initial?.clientId);
   const [catalogueOuvert, setCatalogueOuvert] = useState(false);
+  // Taux appliqué par défaut aux nouvelles lignes ; pré-rempli si toutes les lignes existantes ont le même taux.
+  const [tauxGlobal, setTauxGlobal] = useState<TauxTVA | null>(() => {
+    const l = (JSON.parse(depart) as DevisBrouillon).lignes;
+    const premier = l[0]?.taux ?? null;
+    return premier !== null && l.every((x) => x.taux === premier) ? premier : null;
+  });
+  const [selection, setSelection] = useState<string[]>([]);
   const [rechercheArticle, setRechercheArticle] = useState("");
   const [typeArticle, setTypeArticle] = useState<ArticleType | "tous">("tous");
   const enregistre = useRef(false);
@@ -234,24 +242,33 @@ export function DevisForm({
       (!qa || [a.reference, a.designation, a.marque].some((t) => t.toLowerCase().includes(qa))),
   );
 
+  function ligneDepuisArticle(a: Article): LigneSaisie {
+    return {
+      cle: nouvelleCle(),
+      articleId: a.id,
+      type: a.type,
+      reference: a.reference,
+      designation: a.designation,
+      description: a.description,
+      unite: a.unite,
+      quantite: "1",
+      prix: a.prixHT.toFixed(2).replace(".", ","),
+      taux: tauxGlobal,
+    };
+  }
   function ajouterDepuisCatalogue(a: Article) {
-    maj({
-      lignes: [
-        ...v.lignes,
-        {
-          cle: nouvelleCle(),
-          articleId: a.id,
-          type: a.type,
-          reference: a.reference,
-          designation: a.designation,
-          description: a.description,
-          unite: a.unite,
-          quantite: "1",
-          prix: a.prixHT.toFixed(2).replace(".", ","),
-          taux: null,
-        },
-      ],
-    });
+    setV((x) => ({ ...x, lignes: [...x.lignes, ligneDepuisArticle(a)] }));
+  }
+  function ajouterSelection() {
+    const choisis = articlesTrouves.filter((a) => selection.includes(a.id));
+    if (choisis.length === 0) return;
+    setV((x) => ({ ...x, lignes: [...x.lignes, ...choisis.map(ligneDepuisArticle)] }));
+    setSelection([]);
+    toast.success(choisis.length === 1 ? "1 ligne ajoutée" : `${choisis.length} lignes ajoutées`);
+  }
+  function appliquerTauxATous(t: TauxTVA) {
+    setTauxGlobal(t);
+    setV((x) => ({ ...x, lignes: x.lignes.map((l) => ({ ...l, taux: t })) }));
   }
   function ajouterLibre() {
     maj({
@@ -267,7 +284,7 @@ export function DevisForm({
           unite: "",
           quantite: "1",
           prix: "",
-          taux: null,
+          taux: tauxGlobal,
         },
       ],
     });
@@ -435,9 +452,20 @@ export function DevisForm({
 
           {/* 3. Lignes */}
           <Section numero={3} titre={facture ? "Lignes de la facture" : "Lignes du devis"}>
-            <p className="text-xs text-muted-foreground">
-              Le taux de TVA est à choisir pour chaque ligne. Ce choix ne constitue pas une validation de l'éligibilité fiscale.
-            </p>
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="d-taux-global" className="whitespace-nowrap">TVA de tout le document</Label>
+                <Select value={tauxGlobal === null ? "" : String(tauxGlobal)} onValueChange={(x) => appliquerTauxATous(Number(x) as TauxTVA)}>
+                  <SelectTrigger id="d-taux-global" className="w-28 bg-card"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                  <SelectContent>
+                    {TAUX_TVA.map((t) => <SelectItem key={t.value} value={String(t.value)}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                S'applique à toutes les lignes, y compris celles que vous ajoutez ensuite ; chaque ligne peut garder un autre taux. Ce choix ne constitue pas une validation de l'éligibilité fiscale.
+              </p>
+            </div>
             {v.lignes.length === 0 && (
               <p id="d-lignes" tabIndex={-1} className="text-sm text-muted-foreground">
                 Aucune ligne pour l'instant.
@@ -496,7 +524,22 @@ export function DevisForm({
                     </SelectContent>
                   </Select>
                 </div>
-                <ul className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto">
+                {etatCatalogue.statut === "pret" && articlesTrouves.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelection(selection.length === articlesTrouves.length ? [] : articlesTrouves.map((a) => a.id))}
+                    >
+                      {selection.length === articlesTrouves.length ? "Tout désélectionner" : "Tout sélectionner"}
+                    </Button>
+                    <Button type="button" size="sm" disabled={selection.length === 0} onClick={ajouterSelection}>
+                      <Plus /> Ajouter la sélection{selection.length > 0 ? ` (${selection.length})` : ""}
+                    </Button>
+                  </div>
+                )}
+                <ul className="mt-2 flex max-h-96 flex-col gap-1 overflow-y-auto">
                   {etatCatalogue.statut === "erreur" && (
                     <li role="alert" className="flex flex-wrap items-center gap-2 p-2 text-sm text-destructive">
                       Le catalogue n'a pas pu être chargé.
@@ -513,7 +556,12 @@ export function DevisForm({
                   )}
                   {articlesTrouves.map((a) => (
                     <li key={a.id} className="flex items-center justify-between gap-3 rounded-lg bg-card p-2 text-sm">
-                      <div className="min-w-0">
+                      <Checkbox
+                        aria-label={`Sélectionner ${a.designation}`}
+                        checked={selection.includes(a.id)}
+                        onCheckedChange={(c) => setSelection((s2) => (c ? [...s2, a.id] : s2.filter((x) => x !== a.id)))}
+                      />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium break-words">{a.designation}</p>
                         <p className="text-xs text-muted-foreground">
                           {a.reference} · {TYPE_ARTICLE_LABELS[a.type]} · {formaterPrix(a.prixHT, a.unite)}
