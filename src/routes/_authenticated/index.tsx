@@ -66,6 +66,7 @@ function DocumentsPage() {
   const [statut, setStatut] = useState<DocumentStatut | "tous">("tous");
   const [paiement, setPaiement] = useState("tous");
   const [periode, setPeriode] = useState<PeriodeDocuments>("toutes");
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
   const [documentOuvert, setDocumentOuvert] = useState<DocumentAvecDevis | null>(null);
   const [creationOuverte, setCreationOuverte] = useState(false);
   const [typeChoisi, setTypeChoisi] = useState<DocumentType | null>(null);
@@ -131,6 +132,10 @@ function DocumentsPage() {
               className="h-12 max-w-sm pl-9"
             />
           </div>
+          <Button type="button" variant="outline" className="h-10 lg:hidden" aria-expanded={filtresOuverts} onClick={() => setFiltresOuverts((o) => !o)}>
+            {filtresOuverts ? "Masquer les filtres" : "Filtres"}
+          </Button>
+          <div className={`${filtresOuverts ? "contents" : "hidden"} lg:contents`}>
           <Select value={type} onValueChange={(v) => changerType(v as DocumentType | "tous")}>
             <SelectTrigger className="h-10 lg:w-56" aria-label="Filtrer par type">
               <SelectValue>
@@ -159,19 +164,19 @@ function DocumentsPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" disabled title="En développement">Expéditeur · En développement</Button>
           <PeriodeDocumentsSelect value={periode} onChange={setPeriode} />
           <Button variant="outline" className="h-10" onClick={reinitialiser}>
             Réinitialiser
           </Button>
+          </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className={`mt-3 ${filtresOuverts ? "flex" : "hidden"} flex-wrap items-center gap-3 lg:flex`}>
           <Select value={paiement} onValueChange={setPaiement}>
             <SelectTrigger className="w-full sm:w-64" aria-label="Filtrer par règlement"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="tous">Tous les règlements</SelectItem><SelectItem value="reste">Reste à régler</SelectItem><SelectItem value="retard">En retard</SelectItem><SelectItem value="sans-date">Échéance non renseignée</SelectItem><SelectItem value="solde">Solde à zéro</SelectItem><SelectItem value="credit">Crédit client à traiter</SelectItem></SelectContent>
           </Select>
 
-          <span className="text-xs text-muted-foreground">Compatible Excel · liste filtrée · export de suivi</span>
+          <span className="text-xs text-muted-foreground">« Exporter » télécharge la liste affichée (fichier ouvrable dans Excel)</span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           {resultats.length} document{resultats.length > 1 ? "s" : ""} affiché
@@ -215,7 +220,6 @@ function DocumentsPage() {
                   <th className="px-4 py-3 font-semibold">Client</th>
                   <th className="px-4 py-3 font-semibold">Document</th>
                   <th className="px-4 py-3 text-right font-semibold">Montant TTC</th>
-                  <th className="px-4 py-3 font-semibold">Expéditeur</th>
                   <th className="px-4 py-3 font-semibold">Statut</th>
                   <th className="px-4 py-3 text-right font-semibold">Action</th>
                 </tr>
@@ -224,13 +228,12 @@ function DocumentsPage() {
                 {resultats.map((d) => (
                   <tr key={d.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 whitespace-nowrap">{d.date}</td>
-                    <td className="px-3 py-3 font-medium break-all">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs">Fictif</span>}</td>
+                    <td className="whitespace-nowrap px-3 py-3 font-medium">{d.numero}{d.fictif && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs">Fictif</span>}</td>
                     <td className="px-4 py-3 font-semibold text-primary">{d.client}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABELS[d.type]}</td>
                     <td className="px-3 py-3 text-right break-words">
                       {formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="block text-xs text-muted-foreground">solde, acompte déduit</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">En développement</td>
                     <td className="px-4 py-3">
                       <StatutDocument document={d} />
                     </td>

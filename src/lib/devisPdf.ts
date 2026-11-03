@@ -62,7 +62,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   const acp = facture?.acompte !== undefined;
   const av = facture?.avoir;
   const titreB = acp ? "FACTURE D'ACOMPTE — BROUILLON — NON ÉMISE" : "FACTURE — BROUILLON — NON ÉMISE";
-  const mention = factB ? (facture?.acompte !== undefined ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : "Brouillon — non émis · Document de démonstration";
+  const mention = factB ? (facture?.acompte !== undefined ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : "Brouillon — non émis";
   const recap = recapituler(d.lignes);
   const c = d.client;
   const villeLigne = [ent.codePostal, ent.ville].filter(Boolean).join(" ");

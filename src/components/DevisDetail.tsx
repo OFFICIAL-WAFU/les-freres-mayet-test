@@ -231,7 +231,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         )}
         <Button asChild variant="outline">
           <Link to="/devis/$id/apercu" params={{ id: doc.id }} onClick={onNavigate}>
-            Aperçu du devis
+            Aperçu et PDF du devis
           </Link>
         </Button>
       </div>

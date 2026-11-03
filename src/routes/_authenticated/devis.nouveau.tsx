@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/devis/nouveau")({
   head: () => ({
     meta: [
       { title: "Nouveau devis — Les Frères Mayet" },
-      { name: "description", content: "Préparer un brouillon de devis de démonstration." },
+      { name: "description", content: "Préparer un brouillon de devis." },
       { property: "og:title", content: "Nouveau devis — Les Frères Mayet" },
-      { property: "og:description", content: "Préparer un brouillon de devis de démonstration." },
+      { property: "og:description", content: "Préparer un brouillon de devis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

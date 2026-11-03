@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Building2, ChevronDown, CircleHelp, FileText, Home, LogOut, Menu, Package, Settings, Users } from "lucide-react";
+import { Building2, Calculator, CalendarDays, ClipboardList, FileText, Home, LogOut, Menu, Package, Settings, StickyNote, Users, Wallet } from "lucide-react";
 
 import { useEtatDocuments } from "@/data/documents";
 import { seDeconnecter } from "@/lib/session";
@@ -8,13 +8,6 @@ import { seDeconnecter } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-const RUBRIQUES = [
-  { to: "/accueil", label: "Accueil", icone: Home },
-  { to: "/", label: "Documents", icone: FileText },
-  { to: "/clients", label: "Clients", icone: Users },
-  { to: "/catalogue", label: "Inventaire", icone: Package },
-  { to: "/entreprise", label: "Entreprise", icone: Building2 },
-] as const;
 
 
 function Marque() {
@@ -30,35 +23,45 @@ function Marque() {
   );
 }
 
+const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground";
+
+const GROUPES = [
+  [
+    { to: "/accueil", label: "Accueil", icone: Home },
+    { to: "/", label: "Documents", icone: FileText },
+    { to: "/clients", label: "Clients", icone: Users },
+    { to: "/catalogue", label: "Inventaire", icone: Package },
+  ],
+  [
+    { to: "/planning", label: "Planning", icone: CalendarDays },
+    { to: "/rapports", label: "Rapports", icone: ClipboardList },
+    { to: "/tresorerie", label: "Trésorerie", icone: Wallet },
+    { to: "/marges", label: "Calcul de marge", icone: Calculator },
+  ],
+  [
+    { to: "/entreprise", label: "Entreprise", icone: Building2 },
+    { to: "/mentions", label: "Mentions", icone: StickyNote },
+    { to: "/reglages", label: "Réglages", icone: Settings },
+  ],
+] as const;
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1">
-      {RUBRIQUES.map((r) => (
-        <Link
-          key={r.to}
-          to={r.to}
-          activeOptions={{ exact: r.to === "/" }}
-          onClick={onNavigate}
-
-          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground ${r.to === "/catalogue" ? "mt-2 border-t border-sidebar-border pt-4" : ""}`}
-        >
-          <r.icone className="size-4 shrink-0" aria-hidden="true" />{r.label}
-        </Link>
+      {GROUPES.map((g, i) => (
+        <div key={i} className={`flex flex-col gap-1 ${i > 0 ? "mt-2 border-t border-sidebar-border pt-3" : ""}`}>
+          {g.map((r) => (
+            <Link key={r.to} to={r.to} activeOptions={{ exact: r.to === "/" }} onClick={onNavigate} className={lienNav}>
+              <r.icone className="size-4 shrink-0" aria-hidden="true" />{r.label}
+            </Link>
+          ))}
+        </div>
       ))}
-      <Link to="/en-developpement/$rubrique" params={{ rubrique: "equipe" }} onClick={onNavigate} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent"><Users className="size-4 shrink-0" aria-hidden="true"/><span>Mon équipe<span className="block text-[10px] font-normal opacity-80">En développement</span></span></Link>
-      <Link to="/mentions" onClick={onNavigate} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"><FileText className="size-4 shrink-0" aria-hidden="true"/>Mentions</Link>
-      <details className="mt-3 border-t border-sidebar-border pt-3">
-        <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground">Outils Les Frères Mayet</summary>
+      <details className="mt-2 border-t border-sidebar-border pt-3">
+        <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground">Autres outils</summary>
         <div className="mt-1 flex flex-col gap-1">
-          <Link to="/imports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Exports & imports</Link>
-          <Link to="/en-developpement/$rubrique" params={{ rubrique: "services" }} onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Services complémentaires · En développement</Link>
-          <Link to="/planning" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Planning</Link>
-          <Link to="/rapports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Rapports d’intervention</Link>
+          <Link to="/imports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Exports et imports</Link>
           <Link to="/historique" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Historique Khosmos</Link>
-          <Link to="/marges" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Calcul de marge</Link>
-          <Link to="/fournisseurs" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Catalogue REXEL · En développement</Link>
-          <Link to="/tresorerie" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Trésorerie</Link>
-          <Link to="/reglages" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Réglages</Link>
         </div>
       </details>
     </nav>
@@ -133,12 +136,8 @@ export function AppLayout({ titre, children }: { titre: string; children: ReactN
           </header>
 
           <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:px-8">
-            <Link to="/entreprise" className="flex min-w-0 items-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold"><Building2 className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">Les Frères Mayet</span><ChevronDown className="size-4 shrink-0" aria-hidden="true" /></Link>
-            <div className="flex shrink-0 items-center gap-1">
-              <Link to="/en-developpement/$rubrique" params={{ rubrique: "aide" }} aria-label="Aide — en développement" className="flex items-center gap-2 rounded-xl bg-secondary px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary/70"><CircleHelp className="size-5" /><span className="hidden sm:inline">Aide</span></Link>
-              <Link to="/en-developpement/$rubrique" params={{ rubrique: "notifications" }} aria-label="Notifications — en développement" className="rounded-xl bg-secondary p-2.5 text-foreground hover:bg-secondary/70"><Bell className="size-5" /></Link>
-              <Link to="/reglages" aria-label="Réglages" className="rounded-xl bg-secondary p-2.5 text-foreground hover:bg-secondary/70"><Settings className="size-5" /></Link>
-            </div>
+            <Link to="/entreprise" className="flex min-w-0 items-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold hover:bg-secondary/70"><Building2 className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">Les Frères Mayet</span></Link>
+            <Link to="/reglages" aria-label="Réglages" className="shrink-0 rounded-xl bg-secondary p-2.5 text-foreground hover:bg-secondary/70"><Settings className="size-5" /></Link>
           </div>
           {import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "azulrjtrntkophlvdaio" && <div className="border-b border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-900">Environnement TEST — utilisez uniquement des données fictives.</div>}
           <main className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-[30px] lg:py-6">{children}</main>
