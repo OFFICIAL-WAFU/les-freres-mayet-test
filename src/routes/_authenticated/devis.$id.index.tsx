@@ -24,7 +24,7 @@ function Page() {
   const etatDocs = useEtatDocuments();
   const doc = etatDocs.brouillons.find((d) => d.id === id && d.type === "devis");
   return (
-    <AppLayout titre="Brouillon de devis">
+    <AppLayout titre={doc?.statut === "Finalisé" ? "Devis" : "Brouillon de devis"}>
       {doc?.devis ? (
         <div className="max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/">← Documents</Link></Button>
