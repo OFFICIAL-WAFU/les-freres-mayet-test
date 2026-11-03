@@ -11,7 +11,7 @@ import {
   validerLigne,
   type DevisBrouillon,
 } from "@/data/devis";
-import { formaterCapital, type Entreprise } from "@/data/entreprise";
+import { formaterCapital, formaterIban, type Entreprise } from "@/data/entreprise";
 
 const fr = (iso: string) => iso.split("-").reverse().join("/");
 
@@ -45,12 +45,15 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
   const c = d.client;
   return (
     <article className="devis-doc mx-auto w-full max-w-[794px] bg-doc-paper px-5 py-6 text-[15px] leading-relaxed text-doc-ink shadow-sm sm:px-12 sm:py-12">
+      {ent.bandeau.trim() && <p className="mb-4 text-center text-xs font-bold uppercase tracking-widest text-doc-gold-ink">{ent.bandeau.trim()}</p>}
       {/* En-tête entreprise */}
       <header className="flex flex-col gap-4 border-b border-doc-line pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-doc-gold text-base font-semibold tracking-wide text-doc-gold">
+          {ent.logo
+            ? <img src={ent.logo} alt="Logo" className="max-h-14 w-auto max-w-[140px] shrink-0 object-contain" />
+            : <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-doc-gold text-base font-semibold tracking-wide text-doc-gold">
             FM
-          </span>
+          </span>}
           <div className="min-w-0">
             <p className="break-words text-lg font-semibold" data-testid="apercu-nom">{ent.nomCommercial || ent.raisonSociale}</p>
             {ent.activite && <p className="text-sm text-doc-muted">{ent.activite}</p>}
@@ -181,6 +184,13 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
         </section>
       )}
 
+      {!avoir && (ent.iban || ent.bic) && (
+        <section className="mt-8" data-testid="apercu-virement">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Paiement par virement</h2>
+          <p className="mt-2 break-words text-sm">{[ent.iban && `IBAN : ${formaterIban(ent.iban)}`, ent.bic && `BIC : ${ent.bic}`].filter(Boolean).join("   ·   ")}</p>
+        </section>
+      )}
+
       {d.remarques.trim() && (
         <section className="mt-8">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Remarques</h2>
@@ -189,8 +199,10 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
       )}
 
       <p className="mt-10 border-t border-doc-line pt-3 text-center text-xs text-doc-faint">
-        {avoir ? "Avoir brouillon — non émis · montants à créditer" : factB ? (acp ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : finalise ? `${nomDoc} ${numero}` : "Brouillon — non émis · Document de démonstration"}
+        {avoir ? "Avoir brouillon — non émis · montants à créditer" : factB ? (acp ? "Facture d'acompte brouillon — non émise" : "Facture brouillon — non émise") : finalise ? `${nomDoc} ${numero}` : "Brouillon — non émis"}
       </p>
+      {(ent.assureur || ent.contratAssurance) && <p className="mt-3 text-center text-[11px] text-doc-faint">Assurance décennale / RC Pro : {[ent.assureur, ent.contratAssurance && `contrat n° ${ent.contratAssurance}`].filter(Boolean).join(" — ")}</p>}
+      {ent.cgv.trim() && <p className="mt-2 text-center text-[11px] text-doc-faint">Les conditions générales de vente figurent en pages jointes du PDF.</p>}
       {legal.length > 0 && (
         <footer className="mt-2 text-center text-[11px] leading-snug text-doc-faint" data-testid="apercu-pied">
           {legal.map((l, i) => <p key={i} className="whitespace-pre-wrap break-words">{l}</p>)}

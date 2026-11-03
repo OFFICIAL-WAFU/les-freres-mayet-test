@@ -130,7 +130,7 @@ function CataloguePage() {
 
   return (
     <AppLayout titre="Inventaire">
-      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit">{([ ["prestation", "Services"], ["materiel", "Matériel"], ["tous", "Tout l’inventaire"] ] as const).map(([value,label]) => <Button key={value} variant={type === value ? "action" : "ghost"} onClick={() => setType(value)}>{label}</Button>)}<Button variant="ghost" asChild><Link to="/fournisseurs">Catalogue fournisseur · En développement</Link></Button></div>
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit">{([ ["prestation", "Services"], ["materiel", "Matériel"], ["tous", "Tout l’inventaire"] ] as const).map(([value,label]) => <Button key={value} variant={type === value ? "action" : "ghost"} onClick={() => setType(value)}>{label}</Button>)}</div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Inventaire</h1>

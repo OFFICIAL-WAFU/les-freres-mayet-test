@@ -57,22 +57,9 @@ function SauvegardeLocale() {
 }
 
 function Page() {
-  const { demo } = useEtatDocuments();
   return (
     <AppLayout titre="Réglages">
       <h1 className="text-2xl font-semibold lg:text-3xl">Réglages</h1>
-      <section className="mt-6 max-w-3xl rounded-2xl border border-border bg-card p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <Label htmlFor="mode-demo" className="text-base">Mode démonstration</Label>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Ajoute à la liste Documents les documents fictifs des premières étapes, marqués « Fictif ». Ils ne sont jamais enregistrés.
-              Désactivé par défaut et à chaque connexion.
-            </p>
-          </div>
-          <Switch id="mode-demo" checked={demo} onCheckedChange={definirModeDemo} />
-        </div>
-      </section>
       <SauvegardeLocale />
     </AppLayout>
   );

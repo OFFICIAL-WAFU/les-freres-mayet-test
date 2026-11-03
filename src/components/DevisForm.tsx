@@ -285,7 +285,6 @@ export function DevisForm({
           </div>
           {numero && <p className="mt-1 text-sm text-muted-foreground">Référence provisoire : {numero}</p>}
           {facture && <p className="mt-1 text-sm text-muted-foreground">{facture.sourceRef ? `Issue du devis ${facture.sourceRef}` : "Facture sans devis d’origine"} — facture non émise.</p>}
-          <p className="mt-2 text-sm text-muted-foreground">Démonstration — aucun document ne sera envoyé.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Les brouillons enregistrés sont conservés dans votre espace privé.
           </p>

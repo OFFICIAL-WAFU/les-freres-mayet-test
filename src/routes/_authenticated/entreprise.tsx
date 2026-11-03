@@ -121,7 +121,7 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
     <div className="flex min-w-0 flex-col gap-1.5">
       <Label htmlFor={`e-${k}`}>
         {label}
-        <span className="ml-1 font-normal text-muted-foreground">{opts.requis ? "(obligatoire)" : "(facultatif)"}</span>
+        <span className="ml-1 font-normal text-muted-foreground">{opts.requis ? "(obligatoire)" : ""}</span>
       </Label>
       {k === "immatriculation" || k === "cgv" ? (
         <Textarea id={`e-${k}`} value={saisie[k]} onChange={(e) => maj(k, e.target.value)} rows={k === "cgv" ? 14 : 2}
@@ -155,7 +155,7 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
 
   return (
     <AppLayout titre="Entreprise">
-      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit"><span className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white">Entreprise</span><Link to="/messages" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Messages par défaut</Link><Link to="/en-developpement/$rubrique" params={{rubrique:"personnalisation"}} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Personnalisation · En développement</Link></div>
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit"><span className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white">Entreprise</span><Link to="/messages" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Messages par défaut</Link></div>
       <h1 className="text-2xl font-semibold lg:text-3xl">Entreprise</h1>
       <p className="mt-1 text-sm text-muted-foreground">Les informations reprises dans l'aperçu de vos devis.</p>
       <p className="mt-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
@@ -192,10 +192,11 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
         {section("En-tête et logo", <>
           <div className="sm:col-span-2">{champ("bandeau", "Ligne libre en haut des documents", { placeholder: "Ex. URGENCE 7J/7", aide: "Facultatif : affichée en haut de chaque devis, facture et acompte." })}</div>
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="e-logo-fichier">Logo <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
+            <Label htmlFor="e-logo-fichier">Logo</Label>
             {saisie.logo && <img src={saisie.logo} alt="Aperçu du logo" className="max-h-20 w-auto max-w-full self-start rounded border border-border bg-white p-2" />}
-            <input id="e-logo-fichier" type="file" accept="image/png,image/jpeg" className="text-sm"
+            <input id="e-logo-fichier" type="file" accept="image/png,image/jpeg" className="sr-only"
               onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) void chargerLogo(f); }} />
+            <label htmlFor="e-logo-fichier" className="inline-flex h-9 w-fit cursor-pointer items-center rounded-md border border-input bg-card px-4 text-sm font-medium shadow-sm hover:bg-secondary focus-within:ring-1">{saisie.logo ? "Changer le logo" : "Choisir une image"}</label>
             <div className="flex gap-2">{saisie.logo && <Button type="button" size="sm" variant="outline" onClick={() => maj("logo", "")}>Retirer le logo</Button>}</div>
             <p className="text-xs text-muted-foreground">PNG ou JPEG, redimensionné automatiquement (700 pixels de large au plus, 200 Ko au plus).</p>
             {erreurs.logo && <p role="alert" className="text-sm font-medium text-destructive">{erreurs.logo}</p>}
@@ -212,8 +213,9 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
         {section("Conditions générales de vente", <>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <p className="text-sm text-muted-foreground">Ajoutées à la fin de vos devis, factures et acomptes (nouvelles pages). Séparez les paragraphes par une ligne vide ; une ligne commençant par « Article » devient un titre. Laissez vide pour ne rien ajouter.</p>
-            <input type="file" accept=".txt,text/plain" className="text-sm" aria-label="Charger un fichier texte de CGV"
+            <input id="e-cgv-fichier" type="file" accept=".txt,text/plain" className="sr-only"
               onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) void f.text().then((t) => maj("cgv", t.replace(/\r\n/g, "\n"))); }} />
+            <label htmlFor="e-cgv-fichier" className="inline-flex h-9 w-fit cursor-pointer items-center rounded-md border border-input bg-card px-4 text-sm font-medium shadow-sm hover:bg-secondary">Charger un fichier .txt</label>
           </div>
           <div className="sm:col-span-2">{champ("cgv", "Texte des CGV")}</div>
         </>)}
