@@ -6,6 +6,7 @@ const CLASSES: Record<string, string> = {
   attente: "bg-warning-soft text-accent border-accent/30",
   valide: "bg-success-soft text-success border-success/30",
   info: "bg-info-soft text-primary border-primary/20",
+  alerte: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
 export function StatutBadge({ statut, libelle }: { statut: DocumentStatut; libelle?: string | undefined }) {

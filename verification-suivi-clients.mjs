@@ -44,9 +44,10 @@ console.log('Suivi client vérifié : acompte + solde, paiements partiels/annul�
 const annuelSource = fs.readFileSync('src/lib/activite-annuelle.ts','utf8').replace('"./suivi-clients"',JSON.stringify(url(helper))).replace('"./echeances"',JSON.stringify(echUrl));
 const {activiteAnnuelle} = await import(url(annuelSource));
 const annuels = [
-  doc('acompte',4323n,{montantHTCentimes:3705n}),
-  doc('solde',30677n,{montantHTCentimes:26295n}),
-  doc('avoir',12000n,{type:'avoir',date:'02/09/2026',montantHTCentimes:10000n}),
+  doc('acompte',4323n,{type:'acompte',montantHTCentimes:3705n}),
+  doc('solde',30677n,{montantHTCentimes:26295n,deduction:{statut:'finalise',ht:3705n,ttc:4323n}}),
+  doc('avoir',12000n,{type:'avoir',date:'02/09/2026',montantHTCentimes:10000n,factureSource:{id:'solde'}}),
+  doc('avoir-acompte',4323n,{type:'avoir',date:'02/09/2026',montantHTCentimes:3705n,factureSource:{id:'acompte'}}),
   doc('autre-annee',100n,{date:'01/01/2025',montantHTCentimes:100n}),
   doc('futur',100n,{date:'08/10/2026',montantHTCentimes:100n}),
   doc('draft',100n,{statut:'Brouillon',montantHTCentimes:100n}),
@@ -54,4 +55,4 @@ const annuels = [
 const annuel = activiteAnnuelle(annuels,'2026-10-07');
 assert.equal(annuel.total,20000n);assert.equal(annuel.mois[8],-10000n);assert.equal(annuel.mois[9],30000n);assert.equal(annuel.incomplets,0);
 assert.equal(activiteAnnuelle([...annuels,doc('ht-manquant',100n)],'2026-10-07').incomplets,1);
-console.log('Graphique annuel vérifié : acompte + solde HT exact, avoir au mois d’émission, mois négatif, exclusion autres années/futurs/brouillons, refus de total incomplet.');
+console.log('Graphique annuel vérifié (calcul Khosmos) : facture de solde au HT complet, acomptes exclus, avoir de facture au mois d’émission, avoir d’acompte ignoré, mois négatif, exclusion autres années/futurs/brouillons, refus de total incomplet.');

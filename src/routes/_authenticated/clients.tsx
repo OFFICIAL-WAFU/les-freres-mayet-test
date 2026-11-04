@@ -2,14 +2,13 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search, RefreshCw, UserRound, Building2 } from "lucide-react";
 import { PeriodeDocumentsSelect } from "@/components/PeriodeDocumentsSelect";
-import { syntheseClient, dansPeriode, correspondSuiviClient, suiviDocumentClient, PERIODES_DOCUMENTS, type PeriodeDocuments, type FiltreSuiviClient } from "@/lib/suivi-clients";
+import { syntheseClient, syntheseDevisClient, acomptesClient, dansPeriode, correspondSuiviClient, suiviDocumentClient, PERIODES_DOCUMENTS, type PeriodeDocuments, type FiltreSuiviClient } from "@/lib/suivi-clients";
+import { StatutDocument } from "@/components/StatutDocument";
 import { formaterCentimes } from "@/data/devis";
 
 import { AppLayout } from "@/components/AppLayout";
 import { ClientForm } from "@/components/ClientForm";
 import { DocumentSheet } from "@/components/DocumentSheet";
-import { HistoriqueImporte } from "@/components/HistoriqueImporte";
-import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -108,7 +107,7 @@ function ClientsPage() {
     const s = syntheseClient(etatDocs.liste, c.id, periode);
     const couleurs = { facture: "text-primary", attente: "text-orange-600", retard: "text-rose-600", paye: "text-teal-600" };
     return <button type="button" className={`rounded px-1 py-1 font-semibold underline-offset-4 hover:underline focus-visible:outline-2 ${couleurs[cle]}`} onClick={() => setPanneau({ mode: "fiche", id: c.id, suivi })} aria-label={`${cle === "facture" ? "Total facturé" : cle === "paye" ? "Payé" : cle === "retard" ? "En retard" : "En attente"} pour ${nomClient(c)}`}>
-      {formaterCentimes(s[cle])}
+      {formaterCentimes(cle === "facture" ? s.facture - s.credite : s[cle])}
     </button>;
   }
 
@@ -395,6 +394,8 @@ function FicheClient({
   const tousDocs = useDocuments().filter((d) => d.clientId === c.id);
   const docs = tousDocs.filter(d => dansPeriode(d.date, periode) && correspondSuiviClient(d, filtreSuivi));
   const synthese = syntheseClient(tousDocs, c.id, periode);
+  const devisClient = syntheseDevisClient(tousDocs, c.id, periode);
+  const acomptes = acomptesClient(tousDocs, c.id).filter(a => dansPeriode(a.doc.date, periode));
   const adresse = [c.adresse, c.complement, [c.codePostal, c.ville].filter(Boolean).join(" "), c.pays]
     .map((s) => s.trim())
     .filter(Boolean);
@@ -450,14 +451,29 @@ function FicheClient({
 
       <section className="mt-6">
         <h3 className="text-sm font-semibold">Suivi financier · {PERIODES_DOCUMENTS[periode]}</h3>
-        {etatDocs.statut === "pret" ? <dl className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-secondary p-3 text-sm">{([ ["Total facturé TTC", synthese.facture], ["Crédité par avoir", synthese.credite], ["En attente", synthese.attente], ["En retard", synthese.retard], ["Règlements actifs", synthese.paye], ["Crédit client à traiter", synthese.creditClient] ] as const).map(([label, montant]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="font-semibold">{formaterCentimes(montant)}</dd></div>)}</dl> : <p role="status" className="mt-2 text-sm">{etatDocs.statut === "erreur" ? "Suivi indisponible" : "Chargement du suivi…"}</p>}
+        {etatDocs.statut === "pret" ? <dl className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-secondary p-3 text-sm">{([ ["Facturé TTC (net des avoirs)", synthese.facture - synthese.credite], ["Déjà payé", synthese.paye], ["Reste à payer", synthese.attente + synthese.retard], ["Dont en retard", synthese.retard], ["Annulé par avoir", synthese.credite], ["Crédit client à traiter", synthese.creditClient] ] as const).map(([label, montant]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className={`font-semibold ${label === "Dont en retard" && montant > 0n ? "text-destructive" : ""}`}>{formaterCentimes(montant)}</dd></div>)}</dl> : <p role="status" className="mt-2 text-sm">{etatDocs.statut === "erreur" ? "Suivi indisponible" : "Chargement du suivi…"}</p>}
       </section>
+      {etatDocs.statut === "pret" && <section className="mt-6">
+        <h3 className="text-sm font-semibold">Devis · {PERIODES_DOCUMENTS[periode]}</h3>
+        <dl className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-secondary p-3 text-sm">{([
+          ["Signés", devisClient.signes, devisClient.signesTTC], ["En attente de signature", devisClient.attente, devisClient.attenteTTC],
+          ["Expirés sans réponse", devisClient.expires, devisClient.expiresTTC], ["Refusés", devisClient.refuses, devisClient.refusesTTC],
+        ] as const).map(([label, nb, ttc]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="font-semibold">{nb} · {formaterCentimes(ttc)}</dd></div>)}</dl>
+      </section>}
+      {etatDocs.statut === "pret" && acomptes.length > 0 && <section className="mt-6">
+        <h3 className="text-sm font-semibold">Suivi des acomptes</h3>
+        <ul className="mt-2 divide-y rounded-xl border text-sm">{acomptes.map(a => <li key={a.doc.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+          <div><p className="font-medium">Acompte {a.doc.numero} · devis {a.doc.devisSource?.reference ?? "—"}</p>
+            <p className="text-xs text-muted-foreground">{a.doc.date} · {formaterCentimes(a.aRegler)} · payé {formaterCentimes(a.regle)}{a.reste > 0n ? ` · reste ${formaterCentimes(a.reste)}` : ""}{a.deduitSur ? ` · déduit sur la facture ${a.deduitSur}` : a.credite > 0n ? "" : " · pas encore déduit"}</p></div>
+          <StatutDocument document={a.doc} />
+        </li>)}</ul>
+      </section>}
       <section className="mt-6">
         <h3 className="text-sm font-semibold">Documents associés</h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Documents sauvegardés dans cet espace, sur la période sélectionnée.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">{([ ["tous", "Tous"], ["attente", "En attente"], ["retard", "En retard"], ["paye", "Avec règlement"] ] as const).map(([cle, label]) => <Button key={cle} variant={filtreSuivi === cle ? "default" : "outline"} size="sm" onClick={() => setFiltreSuivi(cle)}>{label}</Button>)}</div>
+        <div className="mt-3 flex flex-wrap gap-2">{([ ["tous", "Tous"], ["impaye", "Non payés"], ["retard", "En retard"], ["paye", "Avec règlement"], ["devis-non-signes", "Devis non signés"] ] as const).map(([cle, label]) => <Button key={cle} variant={filtreSuivi === cle ? "default" : "outline"} size="sm" onClick={() => setFiltreSuivi(cle)}>{label}</Button>)}</div>
         {etatDocs.statut !== "pret" ? <p role="status" className="mt-2 text-sm">{etatDocs.statut === "erreur" ? "Documents indisponibles" : "Chargement des documents…"}</p> : docs.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">Aucun document pour cette période et ce filtre.</p>
         ) : (
@@ -472,7 +488,7 @@ function FicheClient({
                       {d.montantTTC !== null && ` · ${formaterMontant(d.montantTTC)}`}
                     </p>
                   </div>
-                  <StatutBadge statut={d.statut} />
+                  <StatutDocument document={d} />
                 </div>
                 {d.client !== nom && (
                   <p className="mt-1 text-xs text-muted-foreground">Établi au nom de : {d.client}</p>
@@ -487,11 +503,6 @@ function FicheClient({
         )}
       </section>
 
-      <section className="mt-6">
-        <h3 className="text-sm font-semibold">Historique Khosmos</h3>
-        <p className="mt-1 text-xs text-muted-foreground">Anciens devis, factures et avoirs, avec leur numéro et leurs montants d’origine.</p>
-        <div className="mt-3"><HistoriqueImporte clientId={c.id} /></div>
-      </section>
 
       <Button variant="outline" className="mt-8 w-full" onClick={onFermer}>
         Fermer
