@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useEtatCatalogue } from "@/data/catalogue";
 import type { DevisBrouillon } from "@/data/devis";
-import { catalogueCompact, extraireJson, LIMITES, validerProposition, type PropositionControlee } from "@/lib/devis-ia";
+import { catalogueCompact, extraireJson, LIMITES, validerProposition, type Habitude, type PropositionControlee } from "@/lib/devis-ia";
+import { lireConnaissances } from "@/data/reprise";
+import { connaissancesPourIA } from "@/lib/reprise";
 import { proposerDevisIA, statutDevisIA } from "@/lib/devis-ia-serveur";
 import { dateParis } from "@/lib/echeances";
 
@@ -30,6 +32,9 @@ function Page() {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [prop, setProp] = useState<{ p: PropositionControlee; n: number } | null>(null);
+  const [habitudes, setHabitudes] = useState<Habitude[]>([]);
+  // Savoir-faire validé par l'artisan ; s'il est indisponible, l'assistant fonctionne sans.
+  useEffect(() => { let actif = true; lireConnaissances().then(c => { if (actif) setHabitudes(connaissancesPourIA(c)); }).catch(() => {}); return () => { actif = false; }; }, []);
   useEffect(() => {
     let actif = true;
     statutDevisIA().then((r) => { if (actif) setCle(r.cleDetectee ? "oui" : "non"); }).catch(() => { if (actif) setCle("erreur"); });
@@ -39,7 +44,7 @@ function Page() {
     if (enCours || demande.trim().length < 10) return;
     setEnCours(true); setErreur(null); setProp(null);
     try {
-      const r = await proposerDevisIA({ data: { demande, catalogue: catalogueCompact(catalogue.articles) } });
+      const r = await proposerDevisIA({ data: { demande, catalogue: catalogueCompact(catalogue.articles), habitudes } });
       if (!r.ok) { setErreur(MSG[r.raison] ?? MSG["service"]!); return; }
       const p = validerProposition(extraireJson(r.texte), catalogue.articles);
       if (!p) { setErreur("La proposition reçue est inexploitable. Reformulez ou précisez votre description."); return; }
@@ -72,6 +77,7 @@ function Page() {
               {enCours && <Loader2 className="animate-spin" />}{enCours ? "Analyse en cours…" : prop ? "Proposer à nouveau" : "Préparer une proposition"}
             </Button>
             {catalogue.statut === "pret" && catalogue.articles.length === 0 && <span className="text-xs text-muted-foreground">Votre catalogue est vide : toutes les lignes seront « à chiffrer ».</span>}
+            <span className="text-xs text-muted-foreground">{habitudes.length > 0 ? `L’assistant suit vos ${habitudes.length} fiches de savoir-faire validées.` : "Validez vos fiches dans « Savoir-faire » pour que l’assistant suive vos habitudes."}</span>
           </div>
           {erreur && <p role="alert" className="mt-3 text-sm text-destructive">{erreur}</p>}
         </section>

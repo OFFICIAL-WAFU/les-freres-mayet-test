@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { LIMITES, construirePrompt, type ArticleCompact } from "@/lib/devis-ia";
+import { LIMITES, construirePrompt, type ArticleCompact, type Habitude } from "@/lib/devis-ia";
+import { LIMITES_CONNAISSANCES_IA } from "@/lib/reprise";
 
 /**
  * Devis assisté par IA — partie serveur. La clé ANTHROPIC_API_KEY n'est jamais renvoyée au navigateur ni journalisée ;
@@ -13,7 +14,7 @@ export const statutDevisIA = createServerFn({ method: "GET" })
     return { cleDetectee: typeof cle === "string" && cle.trim().length > 0 };
   });
 
-type Entree = { demande: string; catalogue: ArticleCompact[] };
+type Entree = { demande: string; catalogue: ArticleCompact[]; habitudes?: Habitude[] };
 export type SortieIA = { ok: true; texte: string } | { ok: false; raison: "cle_absente" | "service" | "delai" | "reponse_vide" };
 
 export const proposerDevisIA = createServerFn({ method: "POST" })
@@ -24,12 +25,14 @@ export const proposerDevisIA = createServerFn({ method: "POST" })
     if (demande.length < 10 || demande.length > LIMITES.demande) throw new Error("demande_invalide");
     if (!Array.isArray(d.catalogue) || d.catalogue.length > LIMITES.catalogue) throw new Error("catalogue_invalide");
     const catalogue = d.catalogue.map((a) => ({ id: String(a.id).slice(0, 64), ref: String(a.ref).slice(0, 64), d: String(a.d).slice(0, 120), u: String(a.u).slice(0, 12), p: Number(a.p) || 0, t: String(a.t).slice(0, 12) }));
-    return { demande, catalogue };
+    const brutes = Array.isArray(d.habitudes) ? d.habitudes.slice(0, LIMITES_CONNAISSANCES_IA.nombre) : [];
+    const habitudes = brutes.map((h) => ({ titre: String(h?.titre ?? "").slice(0, 300), contenu: String(h?.contenu ?? "").slice(0, LIMITES_CONNAISSANCES_IA.contenu) })).filter((h) => h.titre && h.contenu);
+    return { demande, catalogue, habitudes };
   })
   .handler(async ({ data }): Promise<SortieIA> => {
     const cle = process.env["ANTHROPIC_API_KEY"]?.trim();
     if (!cle) return { ok: false, raison: "cle_absente" };
-    const { system, user } = construirePrompt(data.demande, data.catalogue);
+    const { system, user } = construirePrompt(data.demande, data.catalogue, data.habitudes ?? []);
     try {
       const rep = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",

@@ -17,6 +17,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
 import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedConnaissancesRouteImport } from './routes/_authenticated/connaissances'
 import { Route as AuthenticatedEntrepriseRouteImport } from './routes/_authenticated/entreprise'
 import { Route as AuthenticatedFournisseursRouteImport } from './routes/_authenticated/fournisseurs'
 import { Route as AuthenticatedHistoriqueRouteImport } from './routes/_authenticated/historique'
@@ -83,6 +84,12 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConnaissancesRoute =
+  AuthenticatedConnaissancesRouteImport.update({
+    id: '/connaissances',
+    path: '/connaissances',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEntrepriseRoute = AuthenticatedEntrepriseRouteImport.update({
   id: '/entreprise',
   path: '/entreprise',
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/accueil': typeof AuthenticatedAccueilRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/connaissances': typeof AuthenticatedConnaissancesRoute
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/historique': typeof AuthenticatedHistoriqueRoute
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/accueil': typeof AuthenticatedAccueilRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/connaissances': typeof AuthenticatedConnaissancesRoute
   '/entreprise': typeof AuthenticatedEntrepriseRoute
   '/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/historique': typeof AuthenticatedHistoriqueRoute
@@ -308,6 +317,7 @@ export interface FileRoutesById {
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
   '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
+  '/_authenticated/connaissances': typeof AuthenticatedConnaissancesRoute
   '/_authenticated/entreprise': typeof AuthenticatedEntrepriseRoute
   '/_authenticated/fournisseurs': typeof AuthenticatedFournisseursRoute
   '/_authenticated/historique': typeof AuthenticatedHistoriqueRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/accueil'
     | '/catalogue'
     | '/clients'
+    | '/connaissances'
     | '/entreprise'
     | '/fournisseurs'
     | '/historique'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/accueil'
     | '/catalogue'
     | '/clients'
+    | '/connaissances'
     | '/entreprise'
     | '/fournisseurs'
     | '/historique'
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
     | '/_authenticated/accueil'
     | '/_authenticated/catalogue'
     | '/_authenticated/clients'
+    | '/_authenticated/connaissances'
     | '/_authenticated/entreprise'
     | '/_authenticated/fournisseurs'
     | '/_authenticated/historique'
@@ -509,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/clients'
       fullPath: '/clients'
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/connaissances': {
+      id: '/_authenticated/connaissances'
+      path: '/connaissances'
+      fullPath: '/connaissances'
+      preLoaderRoute: typeof AuthenticatedConnaissancesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/entreprise': {
@@ -700,6 +720,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccueilRoute: typeof AuthenticatedAccueilRoute
   AuthenticatedCatalogueRoute: typeof AuthenticatedCatalogueRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
+  AuthenticatedConnaissancesRoute: typeof AuthenticatedConnaissancesRoute
   AuthenticatedEntrepriseRoute: typeof AuthenticatedEntrepriseRoute
   AuthenticatedFournisseursRoute: typeof AuthenticatedFournisseursRoute
   AuthenticatedHistoriqueRoute: typeof AuthenticatedHistoriqueRoute
@@ -732,6 +753,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccueilRoute: AuthenticatedAccueilRoute,
   AuthenticatedCatalogueRoute: AuthenticatedCatalogueRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
+  AuthenticatedConnaissancesRoute: AuthenticatedConnaissancesRoute,
   AuthenticatedEntrepriseRoute: AuthenticatedEntrepriseRoute,
   AuthenticatedFournisseursRoute: AuthenticatedFournisseursRoute,
   AuthenticatedHistoriqueRoute: AuthenticatedHistoriqueRoute,

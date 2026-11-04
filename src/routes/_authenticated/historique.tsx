@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { lireEtatHistorique, enregistrerHistorique, transfererHistoriqueTest } from "@/data/historique";
 import { lireArchiveLocale, enregistrerArchiveLocale, type ArchiveLocale } from "@/data/historique";
 import { PdfHistoriqueBouton } from "@/components/PdfHistoriqueBouton";
+import { HistoriqueImporte } from "@/components/HistoriqueImporte";
 import { eurosKhosmos, type AnalyseKhosmos } from "@/lib/khosmos";
 import { historiqueCsv } from "@/lib/export-historique";
 import { telechargerFichier } from "@/lib/csv";
@@ -30,6 +31,12 @@ function Page() {
   return <AppLayout titre="Historique Khosmos">
     <h1 className="text-2xl font-semibold">Historique Khosmos</h1>
     <p className="mt-2 text-muted-foreground">Vos anciens documents, avec leurs références et montants d’origine.</p>
+    <section className="mt-5 rounded-xl border bg-card p-4">
+      <h2 className="font-semibold">Documents repris dans votre espace</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Devis, factures, acomptes et avoirs Khosmos avec leur numéro, leurs lignes et leurs montants d’origine. Figés : ils ne comptent pas dans « À encaisser » et ne créent aucun règlement.</p>
+      <div className="mt-4"><HistoriqueImporte /></div>
+    </section>
+    <h2 className="mt-8 text-lg font-semibold">Analyse de la sauvegarde Khosmos (fichiers)</h2>
     <p className="mt-4 rounded-xl border bg-card p-4 text-sm">{stockage === "cloud" ? "Historique enregistré dans la base de cet environnement, accessible avec votre compte." : "Historique conservé sur ce navigateur, pour ce compte et cet environnement. Effacer les données du navigateur l’efface aussi."} Conservez votre sauvegarde complète. Aucun paiement, client ou nouveau numéro n’est créé ; ces documents ne sont pas inclus dans « À encaisser ».</p>
     {charge && stockage === "local" && <section className="mt-4 rounded-xl border p-4 text-sm"><h2 className="font-semibold">Stockage dans Lovable TEST</h2><p className="mt-2">{disponible ? "Le stockage Cloud est disponible. Votre copie locale sera conservée après transfert." : "Installation de la migration requise : le stockage Cloud n’est pas encore disponible. Votre historique local reste consultable."}</p>{analyse && disponible && <><Button className="mt-3" disabled={transfert} onClick={() => setConfirmer(true)}>Préparer le transfert vers TEST</Button>{confirmer && <div className="mt-3"><p>Transférer les {analyse.documents.length} documents, noms de clients et montants vers la base Lovable TEST de votre compte ? Aucun PDF ni nouvelle facture active n’est créé.</p><div className="mt-3 flex flex-wrap gap-2"><Button disabled={transfert} onClick={async () => { setTransfert(true); setErreur(""); try { setAnalyse(await transfererHistoriqueTest(analyse)); setStockage("cloud"); setConfirmer(false); } catch(e) { setErreur(e instanceof Error ? e.message : "Transfert impossible."); } finally { setTransfert(false); } }}>{transfert ? "Transfert…" : "Confirmer le transfert"}</Button><Button variant="outline" disabled={transfert} onClick={() => setConfirmer(false)}>Annuler</Button></div></div>}</>}</section>}
     <div className="mt-4 flex flex-wrap gap-3"><Button asChild variant="outline"><Link to="/imports">Analyser un dossier</Link></Button><label className="cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium">Charger une analyse sauvegardée<input className="sr-only" aria-label="Charger une analyse sauvegardée" type="file" accept=".json" onChange={e => { void importer(e.target.files?.[0]); e.target.value = ""; }} /></label></div>

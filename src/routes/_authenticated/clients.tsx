@@ -8,6 +8,7 @@ import { formaterCentimes } from "@/data/devis";
 import { AppLayout } from "@/components/AppLayout";
 import { ClientForm } from "@/components/ClientForm";
 import { DocumentSheet } from "@/components/DocumentSheet";
+import { HistoriqueImporte } from "@/components/HistoriqueImporte";
 import { StatutBadge } from "@/components/StatutBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -484,6 +485,12 @@ function FicheClient({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-6">
+        <h3 className="text-sm font-semibold">Historique Khosmos</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Anciens devis, factures et avoirs, avec leur numéro et leurs montants d’origine.</p>
+        <div className="mt-3"><HistoriqueImporte clientId={c.id} /></div>
       </section>
 
       <Button variant="outline" className="mt-8 w-full" onClick={onFermer}>
