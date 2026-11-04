@@ -11,6 +11,7 @@ import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
 import { StatutDocument } from "@/components/StatutDocument";
+import { statutAffiche } from "@/lib/statuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -76,8 +77,8 @@ function DocumentsPage() {
   const signes = useDevisSignes();
   const documentsListe = etatDocs.liste;
   const documents = documentsListe;
-  // Affichage : un devis finalisé et signé par le client apparaît « Signé » (les données du document ne changent pas).
-  const documentsAffiches = useMemo(() => documentsListe.map((d) => (d.type === "devis" && d.statut === "Finalisé" && signes[d.id] ? { ...d, statut: "Signé" as const } : d)), [documentsListe, signes]);
+  // Affichage : le filtre de statut suit le statut affiché (signé, refusé, payée, annulée…) ; les données ne changent pas.
+  const documentsAffiches = documentsListe;
   const navigate = useNavigate();
   const statutsDisponibles = type === "tous" ? TOUS_LES_STATUTS : STATUTS_PAR_TYPE[type];
 
@@ -103,13 +104,13 @@ function DocumentsPage() {
         d.client.toLowerCase().includes(q) ||
         d.numero.toLowerCase().includes(q) || (d.devis?.objet ?? "").toLowerCase().includes(q);
       const correspondType = type === "tous" || d.type === type;
-      const correspondStatut = statut === "tous" || d.statut === statut;
+      const correspondStatut = statut === "tous" || (d.statut === "Brouillon" ? "Brouillon" : statutAffiche(d)) === statut || (d.type === "devis" && statut === "Signé" && !!signes[d.id]);
       const suivi = !d.fictif && d.statut === "Finalisé" && (d.type === "facture" || d.type === "acompte") && d.aRegler !== undefined ? suivre(d.aRegler, d.reglements ?? [], d.credite ?? 0n) : null;
       const echeance = suivi ? suiviEcheance(d.devis?.validite, suivi.reste) : null;
       const correspondPaiement = paiement === "tous" || !!suivi && (paiement === "reste" ? suivi.reste > 0n : paiement === "credit" ? suivi.creditClient > 0n : paiement === "retard" ? echeance?.etat === "retard" : paiement === "sans-date" ? echeance?.etat === "absente" : suivi.reste === 0n);
       return correspondRecherche && correspondType && correspondStatut && correspondPaiement && dansPeriode(d.date, periode);
     });
-  }, [documentsAffiches, recherche, type, statut, paiement, periode]);
+  }, [documentsAffiches, recherche, type, statut, paiement, periode, signes]);
 
   return (
     <AppLayout titre="Documents">

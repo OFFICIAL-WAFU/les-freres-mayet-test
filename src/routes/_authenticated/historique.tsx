@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { lireEtatHistorique, enregistrerHistorique, transfererHistoriqueTest } from "@/data/historique";
 import { lireArchiveLocale, enregistrerArchiveLocale, type ArchiveLocale } from "@/data/historique";
 import { PdfHistoriqueBouton } from "@/components/PdfHistoriqueBouton";
-import { HistoriqueImporte } from "@/components/HistoriqueImporte";
 import { eurosKhosmos, type AnalyseKhosmos } from "@/lib/khosmos";
 import { historiqueCsv } from "@/lib/export-historique";
 import { telechargerFichier } from "@/lib/csv";
@@ -32,9 +31,8 @@ function Page() {
     <h1 className="text-2xl font-semibold">Historique Khosmos</h1>
     <p className="mt-2 text-muted-foreground">Vos anciens documents, avec leurs références et montants d’origine.</p>
     <section className="mt-5 rounded-xl border bg-card p-4">
-      <h2 className="font-semibold">Documents repris dans votre espace</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Devis, factures, acomptes et avoirs Khosmos avec leur numéro, leurs lignes et leurs montants d’origine. Figés : ils ne comptent pas dans « À encaisser » et ne créent aucun règlement.</p>
-      <div className="mt-4"><HistoriqueImporte /></div>
+      <h2 className="font-semibold">Documents Khosmos repris</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Vos devis, factures, acomptes et avoirs Khosmos sont désormais de vrais documents de l’application, avec leur numéro d’origine, leurs règlements et le statut de signature : retrouvez-les dans <a className="underline" href="/">Documents</a>, sur l’accueil et dans chaque fiche client.</p>
     </section>
     <h2 className="mt-8 text-lg font-semibold">Analyse de la sauvegarde Khosmos (fichiers)</h2>
     <p className="mt-4 rounded-xl border bg-card p-4 text-sm">{stockage === "cloud" ? "Historique enregistré dans la base de cet environnement, accessible avec votre compte." : "Historique conservé sur ce navigateur, pour ce compte et cet environnement. Effacer les données du navigateur l’efface aussi."} Conservez votre sauvegarde complète. Aucun paiement, client ou nouveau numéro n’est créé ; ces documents ne sont pas inclus dans « À encaisser ».</p>

@@ -11,3 +11,9 @@ déplacer dans `supabase/migrations/` avec le même nom.
 - `20261103220000_accueil_donnees.sql` : accueil des données reprises de Khosmos (lots d'import, prix d'achat/famille/fournisseur, ouvrages, code client d'origine, documents historiques figés avec leur numéro d'origine, numérotation D/F/A AAAA-NNNNN, modèles de devis, connaissances métier). **Appliquée sur TEST le 03/11/2026** avec l'accord de Baptiste, après 17 contrôles réussis dans une transaction annulée (`verification-accueil-donnees.sql`). **Appliquée en PRODUCTION le 04/11/2026** (structure identique à TEST vérifiée par empreinte). Ne pas rejouer.
 - `20261103233000_numerotation_khosmos.sql` : correctif de la précédente. La vraie numérotation Khosmos (lue dans ses données) est un simple numéro continu par série : Devis n°218, Facture n°111 (acomptes inclus), Avoir n°17. Le nouveau logiciel continue la série (n°219, n°112, n°18), sans remise à zéro annuelle (compteur annee = 0). **Appliquée sur TEST le 03/11/2026 et en PRODUCTION le 04/11/2026**. Après `20261103220000_accueil_donnees.sql`.
 - `20261104100000_habitudes_documents.sql` : pré-remplissage des habitudes (validité 30 j, échéance 7 j, mentions). **Appliquée sur TEST et en PRODUCTION le 04/11/2026**.
+
+## 20261104230000_historique_natif.sql — appliquée (TEST et PRODUCTION)
+L'historique Khosmos devient de vrais documents : colonnes `lot_import` (réservées à l'outil de reprise), réponse du
+client sur les devis (`reponse_client` attente/accepte/refuse, `reponse_le`, `reponse_mode`, RPC `noter_reponse_devis`,
+signature à distance → accepté), unicité devis/nature limitée aux documents de l'application, et recherche de
+« l'acompte du devis » qui ignore les acomptes annulés par avoir (`facture_annulee`).

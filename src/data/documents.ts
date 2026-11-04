@@ -23,7 +23,11 @@ export type DocumentStatut =
   | "Payée"
   | "Payé"
   | "Émis"
-  | "Finalisé";
+  | "Finalisé"
+  | "Refusé"
+  | "Expiré"
+  | "Annulée"
+  | "Annulé";
 
 export interface DemoDocument {
   id: string;
@@ -56,10 +60,10 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 ];
 
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
-  devis: ["Brouillon", "Finalisé", "En attente de signature", "Signé"],
-  facture: ["Brouillon", "Finalisé", "En attente de paiement", "Payée"],
-  acompte: ["Brouillon", "Finalisé", "En attente de paiement", "Payé"],
-  avoir: ["Brouillon", "Finalisé", "Émis"],
+  devis: ["Brouillon", "En attente de signature", "Signé", "Refusé", "Expiré"],
+  facture: ["Brouillon", "En attente de paiement", "Payée", "Annulée"],
+  acompte: ["Brouillon", "En attente de paiement", "Payé", "Annulé"],
+  avoir: ["Brouillon", "Émis"],
   rapport: ["Finalisé"],
 };
 
@@ -71,13 +75,17 @@ export const TOUS_LES_STATUTS: DocumentStatut[] = [
   "Payée",
   "Payé",
   "Émis",
-  "Finalisé",
+  "Refusé",
+  "Expiré",
+  "Annulée",
+  "Annulé",
 ];
 
-export type BadgeTon = "neutre" | "attente" | "valide" | "info";
+export type BadgeTon = "neutre" | "attente" | "valide" | "info" | "alerte";
 
 export function tonDuStatut(statut: DocumentStatut): BadgeTon {
-  if (statut === "Brouillon") return "neutre";
+  if (statut === "Brouillon" || statut === "Expiré" || statut === "Annulée" || statut === "Annulé") return "neutre";
+  if (statut === "Refusé") return "alerte";
   if (statut.startsWith("En attente")) return "attente";
   if (statut === "Signé" || statut === "Payé" || statut === "Payée") return "valide";
   return "info";
@@ -232,7 +240,12 @@ export interface DocumentAvecDevis extends DemoDocument {
   /** Avoir : « total » ou « partiel » ; lignes créditées (avoir partiel ou total). */
   typeAvoir?: "total" | "partiel";
   lignesCreditees?: LigneCrediteeAvoir[];
+  /** Devis finalisé : réponse du client enregistrée en base (signature à distance, Khosmos ou saisie). */
+  reponse?: { etat: ReponseClient; le: string | null; mode: string | null };
+  /** Document repris de Khosmos (numéro et montants d'origine). */
+  repris?: boolean;
 }
+export type ReponseClient = "attente" | "accepte" | "refuse";
 
 export type StatutDocuments = "inactif" | "chargement" | "pret" | "erreur";
 interface EtatDocs { statut: StatutDocuments; brouillons: DocumentAvecDevis[]; demo: boolean; liste: DocumentAvecDevis[] }
@@ -275,6 +288,7 @@ interface DevisBase {
   conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
   total_ttc_centimes: number; total_ht_centimes?: number; version: number; statut: "brouillon" | "finalise";
   reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
+  reponse_client?: ReponseClient; reponse_le?: string | null; reponse_mode?: string | null; lot_import?: string | null;
 }
 
 const echelle = (v: number, dec: number) => {
@@ -310,6 +324,8 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
     type: "devis", montantTTC: d.total_ttc_centimes / 100, statut: d.statut === "finalise" ? "Finalisé" : "Brouillon",
     ...(Number.isSafeInteger(d.total_ht_centimes) ? { montantHTCentimes: BigInt(d.total_ht_centimes!) } : {}),
     devis, version: d.version, referenceProvisoire: d.reference,
+    ...(d.lot_import ? { repris: true } : {}),
+    ...(d.statut === "finalise" && d.reponse_client ? { reponse: { etat: d.reponse_client, le: d.reponse_le ?? null, mode: d.reponse_mode ?? null } } : {}),
     ...(d.statut === "finalise" && d.finalise_le && d.entreprise_copie
       ? { finaliseLe: d.finalise_le, entrepriseFigee: depuisLigneEntreprise(d.entreprise_copie as never) }
       : {}),
@@ -324,7 +340,7 @@ interface FactureBase {
   version: number; devis_source_id: string | null; devis_source_reference: string | null;
   nature?: "facture" | "acompte"; pourcentage?: number | string | null;
   statut?: "brouillon" | "finalise"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null; lignes?: LigneBase[]; factures_lignes?: LigneBase[];
-  deduction?: unknown; deduction_calc?: unknown; reglements?: ReglementBase[];
+  deduction?: unknown; deduction_calc?: unknown; reglements?: ReglementBase[]; lot_import?: string | null;
 }
 const acompte_ou = (f: FactureBase) => f.nature === "acompte";
 function depuisFacture(f: FactureBase): DocumentAvecDevis {
@@ -334,6 +350,7 @@ function depuisFacture(f: FactureBase): DocumentAvecDevis {
     conditions_paiement: f.conditions_paiement, prestation_debut: f.prestation_debut, prestation_fin: f.prestation_fin,
     total_ttc_centimes: f.total_ttc_centimes, version: f.version, statut: f.statut ?? "brouillon",
     reference_definitive: f.reference_definitive ?? null, finalise_le: f.finalise_le ?? null, entreprise_copie: f.entreprise_copie ?? null, lignes: f.lignes ?? f.factures_lignes ?? [],
+    lot_import: f.lot_import ?? null,
   });
   const deduction = acompte_ou(f) ? undefined : lireDeduction(f.deduction_calc ?? f.deduction);
   const acompte = f.nature === "acompte";
@@ -356,12 +373,14 @@ interface AvoirBase {
   client_copie: CoordonneesClient; objet: string; lignes: LigneBase[]; total_ttc_centimes: number; total_ht_centimes?: number; date_avoir: string;
   motif: string; remarques: string; version: number;
   statut?: "brouillon" | "finalise" | "abandonne"; type_avoir?: "total" | "partiel"; reference_definitive?: string | null; finalise_le?: string | null; entreprise_copie?: Record<string, unknown> | null;
+  lot_import?: string | null;
 }
 function depuisAvoir(a: AvoirBase): DocumentAvecDevis {
   const base = depuisBase({
     id: a.id, reference: a.reference, client_id: a.client_id, client_copie: a.client_copie, objet: a.objet,
     date_devis: a.date_avoir, date_validite: null, remarques: a.remarques, notes: "", total_ttc_centimes: a.total_ttc_centimes, ...(a.total_ht_centimes !== undefined ? { total_ht_centimes: a.total_ht_centimes } : {}),
     version: a.version, statut: a.statut === "finalise" ? "finalise" : "brouillon", reference_definitive: a.reference_definitive ?? null, finalise_le: a.finalise_le ?? null, entreprise_copie: a.entreprise_copie ?? null, lignes: a.lignes,
+    lot_import: a.lot_import ?? null,
   });
   return { ...base, type: "avoir", typeAvoir: a.type_avoir ?? "total", factureSource: { id: a.facture_source_id, reference: a.facture_source_reference }, motif: a.motif,
     lignesCreditees: (a.lignes ?? []).filter((l) => typeof l.ht_centimes === "number" && typeof l.tva_centimes === "number").map((l) => ({ id: l.id, quantiteMilliemes: l.quantite_milliemes, htCentimes: l.ht_centimes!, tvaCentimes: l.tva_centimes! })) };
@@ -575,6 +594,17 @@ export async function chargerDocuments(): Promise<void> {
     credits.set(d.factureSource.id, (credits.get(d.factureSource.id) ?? 0n) + BigInt(Math.round(d.montantTTC! * 100)));
   for (const d of tous) if (d.type === "facture" || d.type === "acompte") d.credite = credits.get(d.id) ?? 0n;
   publier({ statut: "pret", brouillons: tous });
+}
+
+/** Note la réponse du client sur un devis finalisé (signé, refusé, ou remis en attente). */
+export async function noterReponseDevis(id: string, reponse: ReponseClient, date?: string): Promise<void> {
+  const { error } = await (supabase as unknown as RpcLibre).rpc("noter_reponse_devis", { p_id: id, p_reponse: reponse, ...(date ? { p_date: date } : {}) });
+  if (error) throw new ErreurDevis(
+    error.code === "PGRST202" ? "La réponse client nécessite l’installation de la migration « Historique natif »."
+    : error.message.includes("devis_signe") ? "Ce devis a été signé : sa réponse ne peut plus être modifiée."
+    : "La réponse n’a pas été enregistrée. Réessayez.");
+  const d = etat.brouillons.find((x) => x.id === id);
+  if (d) conserver({ ...d, reponse: { etat: reponse, le: reponse === "attente" ? null : (date ?? new Date().toISOString().slice(0, 10)), mode: reponse === "attente" ? null : (d.reponse?.mode && d.reponse.mode !== "manuelle" ? d.reponse.mode : "manuelle") } });
 }
 
 export class ConflitDevis extends Error { constructor() { super("Une version plus récente du brouillon existe."); } }
