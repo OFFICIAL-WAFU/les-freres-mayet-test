@@ -5,6 +5,8 @@ import { dateParis } from "@/lib/echeances";
 import { useEtatEntreprise } from "@/data/entreprise";
 import { DeductionBloc } from "@/components/DeductionBloc";
 import type { Deduction } from "@/data/deduction";
+import { lireHabitudes } from "@/data/habitudes";
+import { appliquerHabitudesDevis, type Habitudes } from "@/lib/habitudes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { Plus, Search, X } from "lucide-react";
@@ -106,7 +108,17 @@ function Section({ numero, titre, children }: { numero: number; titre: string; c
   );
 }
 
-export function DevisForm({
+export function DevisForm(props: Parameters<typeof DevisFormBase>[0]) {
+  // Création d'un devis : on attend les habitudes (validité, mentions) pour pré-remplir le brouillon. Rien n'est modifié en édition.
+  const creation = !props.documentId && !props.facture;
+  const [h, setH] = useState<{ pret: boolean; valeur: Habitudes | null }>({ pret: !creation, valeur: null });
+  useEffect(() => { if (!creation) return; let actif = true; lireHabitudes().then(v => { if (actif) setH({ pret: true, valeur: v }); }); return () => { actif = false; }; }, [creation]);
+  const initial = useMemo(() => creation ? appliquerHabitudesDevis(props.initial ?? vide(), h.valeur) : props.initial, [creation, props.initial, h.valeur]);
+  if (!h.pret) return <p role="status" className="text-sm text-muted-foreground">Préparation du devis…</p>;
+  return <DevisFormBase {...props} {...(initial ? { initial } : {})} />;
+}
+
+function DevisFormBase({
   initial,
   documentId,
   numero,

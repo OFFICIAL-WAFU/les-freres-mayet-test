@@ -1,4 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { lireHabitudes, enregistrerHabitudes } from "@/data/habitudes";
+import type { Habitudes } from "@/lib/habitudes";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -56,10 +60,31 @@ function SauvegardeLocale() {
   </section>;
 }
 
+const HABITUDES_VIDES: Habitudes = { validite_devis_jours: 30, echeance_facture_jours: 7, remarques_devis: "", remarques_facture: "" };
+function HabitudesDocuments() {
+  const [h, setH] = useState<Habitudes | null>(null); const [occupe, setOccupe] = useState(false); const [ok, setOk] = useState(false);
+  useEffect(() => { let actif = true; lireHabitudes().then(v => { if (actif) setH(v ?? HABITUDES_VIDES); }); return () => { actif = false; }; }, []);
+  if (!h) return null;
+  const maj = (p: Partial<Habitudes>) => { setOk(false); setH({ ...h, ...p }); };
+  const enregistrer = async () => { setOccupe(true); try { setH(await enregistrerHabitudes(h)); setOk(true); } catch (e) { toast.error(e instanceof Error ? e.message : "Enregistrement impossible."); } finally { setOccupe(false); } };
+  return <section className="mt-6 max-w-3xl rounded-2xl border border-border bg-card p-4 sm:p-6">
+    <h2 className="text-base font-semibold">Habitudes des documents</h2>
+    <p className="mt-1 text-sm text-muted-foreground">Pré-remplies sur chaque nouveau devis, facture et acompte, toujours modifiables avant la finalisation. Un document déjà finalisé n’est jamais modifié.</p>
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-1.5"><Label htmlFor="h-validite">Validité des devis (jours)</Label><Input id="h-validite" type="number" min={0} max={365} value={h.validite_devis_jours} onChange={e => maj({ validite_devis_jours: Number(e.target.value) })} /></div>
+      <div className="grid gap-1.5"><Label htmlFor="h-echeance">Échéance des factures et acomptes (jours)</Label><Input id="h-echeance" type="number" min={0} max={120} value={h.echeance_facture_jours} onChange={e => maj({ echeance_facture_jours: Number(e.target.value) })} /></div>
+    </div>
+    <div className="mt-4 grid gap-1.5"><Label htmlFor="h-rdevis">Mentions des devis (remarques destinées au client)</Label><Textarea id="h-rdevis" rows={5} value={h.remarques_devis} onChange={e => maj({ remarques_devis: e.target.value })} /></div>
+    <div className="mt-4 grid gap-1.5"><Label htmlFor="h-rfacture">Mentions des factures et acomptes</Label><Textarea id="h-rfacture" rows={3} value={h.remarques_facture} onChange={e => maj({ remarques_facture: e.target.value })} /></div>
+    <div className="mt-4 flex items-center gap-3"><Button disabled={occupe} onClick={() => void enregistrer()}>{occupe ? "Enregistrement…" : "Enregistrer les habitudes"}</Button>{ok && <span role="status" className="text-sm">Habitudes enregistrées.</span>}</div>
+  </section>;
+}
+
 function Page() {
   return (
     <AppLayout titre="Réglages">
       <h1 className="text-2xl font-semibold lg:text-3xl">Réglages</h1>
+      <HabitudesDocuments />
       <SauvegardeLocale />
     </AppLayout>
   );

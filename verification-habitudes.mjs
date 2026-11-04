@@ -1,0 +1,11 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/lib/habitudes.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const m=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+assert.equal(m.ajouterJours('2026-11-04',30),'2026-12-04');assert.equal(m.ajouterJours('2026-12-15',30),'2027-01-14');assert.equal(m.ajouterJours('2028-02-28',1),'2028-02-29');
+const h={validite_devis_jours:30,echeance_facture_jours:7,remarques_devis:'Mentions',remarques_facture:'F'};
+const d={clientId:'',client:{nom:'',telephone:'',email:'',adresse:[]},objet:'',date:'2026-11-04',validite:'',remarques:'',notes:'',lignes:[]};
+const r=m.appliquerHabitudesDevis(d,h);assert.equal(r.validite,'2026-12-04');assert.equal(r.remarques,'Mentions');
+const g=m.appliquerHabitudesDevis({...d,validite:'2026-11-20',remarques:'Déjà écrit'},h);assert.equal(g.validite,'2026-11-20');assert.equal(g.remarques,'Déjà écrit','un champ rempli n’est jamais remplacé');
+assert.equal(m.appliquerHabitudesDevis(d,null),d);assert.equal(m.appliquerHabitudesDevis(d,{...h,validite_devis_jours:0}).validite,'');
+assert.throws(()=>m.validerHabitudes({...h,echeance_facture_jours:500}));
+console.log('verification-habitudes : 12 contrôles réussis');
