@@ -374,7 +374,7 @@ export const lignesCrediteesDe = (liste: DocumentAvecDevis[], factureId: string)
   avoirsDeFacture(liste, factureId).filter((a) => a.statut === "Finalisé").flatMap((a) => a.lignesCreditees ?? []);
 /** Avoir possible : facture ordinaire finalisée, sans déduction d'acompte. */
 export const avoirEligible = (d: DocumentAvecDevis) => d.type === "facture" && d.statut === "Finalisé" && !d.deduction;
-export const MSG_AVOIR_ACOMPTE = "Avoir avec acompte : fonctionnalité à venir.";
+export const MSG_AVOIR_ACOMPTE = "Un avoir sur une facture de solde ou sur un acompte n’est pas encore disponible dans l’application.";
 export class AvoirRefuse extends Error {}
 const MSG_AVOIR: Record<string, string> = {
   avoir_acompte_a_venir: MSG_AVOIR_ACOMPTE,

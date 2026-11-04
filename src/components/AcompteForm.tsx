@@ -58,7 +58,7 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
           <Input id="a-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="a-ech">Échéance (facultatif)</Label>
+          <Label htmlFor="a-ech">Échéance </Label>
           <Input id="a-ech" type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
         </div>
       </div>
@@ -66,7 +66,7 @@ export function AcompteForm({ doc }: { doc: DocumentAvecDevis }) {
       {echeanceInvalide && <p role="alert" className="text-sm text-destructive">L'échéance ne peut pas être antérieure à la date.</p>}
       {parts && <div className="rounded-xl border border-border p-3"><p className="mb-2 text-sm text-muted-foreground">Lignes recalculées à l'enregistrement</p><TableauAcompte parts={parts} /></div>}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="a-cond">Conditions de paiement (facultatif)</Label>
+        <Label htmlFor="a-cond">Conditions de paiement </Label>
         <Textarea id="a-cond" value={conditions} onChange={(e) => setConditions(e.target.value)} />
         <MentionsInserer usage="acompte" valeur={conditions} onChange={setConditions}/>
       </div>

@@ -8,9 +8,9 @@ import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
 export const Route = createFileRoute("/_authenticated/factures/$id/")({
   head: () => ({
     meta: [
-      { title: "Facture brouillon — Les Frères Mayet" },
+      { title: "Facture — Les Frères Mayet" },
       { name: "description", content: "Consulter une facture brouillon préparée depuis un devis." },
-      { property: "og:title", content: "Facture brouillon — Les Frères Mayet" },
+      { property: "og:title", content: "Facture — Les Frères Mayet" },
       { property: "og:description", content: "Consulter une facture brouillon préparée depuis un devis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

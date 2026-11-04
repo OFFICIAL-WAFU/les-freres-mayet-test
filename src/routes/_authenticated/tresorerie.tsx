@@ -76,7 +76,7 @@ function Page() {
   const chargesTriees = [...bib.charges].sort((a, b) => a.date.localeCompare(b.date));
   return <AppLayout titre="Trésorerie">
     <h1 className="text-2xl font-semibold lg:text-3xl">Trésorerie</h1>
-    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Une prévision indicative des six prochains mois : vos factures à encaisser (selon leur échéance) moins les charges que vous saisissez ici. Ce n’est pas votre solde bancaire et aucun rapprochement bancaire n’est fait. Les charges et le solde sont conservés sur cet appareil.</p>
+    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Une prévision indicative des six prochains mois : vos factures à encaisser (selon leur échéance) moins les charges que vous saisissez ici. Ce n’est pas votre solde bancaire et aucun rapprochement bancaire n’est fait. Les charges et le solde sont enregistrés dans votre espace.</p>
     {erreur && <p role="alert" className="mt-3 text-sm text-destructive">{erreur}</p>}
     {etat.statut === "erreur" && <p role="alert" className="mt-3 text-sm text-destructive">Impossible de charger les factures : la prévision est incomplète.</p>}
 

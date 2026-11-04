@@ -21,7 +21,7 @@ import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
 import { FriseDossier } from "@/components/FriseDossier";
 import { Button } from "@/components/ui/button";
-import { TYPE_ARTICLE_LABELS, UNITE_LABELS } from "@/data/catalogue";
+import { TYPE_ARTICLE_LABELS, uniteAccordee } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
 import {
   ConflitDevis, DeductionAcompteRequise, FinalisationRefusee, DevisIncomplet, acompteDuDevis, EtatIncertain, chargerDocuments, factureDuDevis, finaliserDevis, finaliserFacture, preparerFacture, relireDevis, relireFacture,
@@ -334,7 +334,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
                 </div>
                 {l.description && <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{l.description}</p>}
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {TYPE_ARTICLE_LABELS[l.type]} · {l.quantite} {l.unite ? UNITE_LABELS[l.unite] : ""} × {l.prix} € HT · TVA {l.taux !== null ? labelTaux(l.taux) : "—"}
+                  {TYPE_ARTICLE_LABELS[l.type]} · {l.quantite} {l.unite ? uniteAccordee(l.unite, l.quantite) : ""} × {l.prix} € HT · TVA {l.taux !== null ? labelTaux(l.taux) : "—"}
                 </p>
               </li>
             );

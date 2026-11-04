@@ -54,11 +54,7 @@ function Champ({
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>
         {label}
-        {facultatif ? (
-          <span className="ml-1 font-normal text-muted-foreground">(facultatif)</span>
-        ) : (
-          <span className="ml-1 font-normal text-muted-foreground">(obligatoire)</span>
-        )}
+        {!facultatif && <span className="ml-1 font-normal text-muted-foreground">(obligatoire)</span>}
       </Label>
       {children}
       {aide && <p className="text-xs text-muted-foreground">{aide}</p>}
