@@ -16,7 +16,7 @@ export function contexteMessageDocument(doc: DocumentAvecDevis): ContexteMessage
     entreprise:doc.entrepriseFigee?.raisonSociale || "Les Frères Mayet",
     montant:formaterCentimes(facture ? doc.aRegler ?? recap.ttc : recap.ttc),
     reste:facture ? formaterCentimes(suivre(doc.aRegler ?? 0n,doc.reglements ?? [],doc.credite ?? 0n).reste) : "Sans objet",
-    echeance:d.validite ? d.validite.split("-").reverse().join("/") : "Non renseignée"};
+    echeance:d.validite ? d.validite.split("-").reverse().join("/") : "Non renseignée", lien_signature:""};
 }
 export function MessageDocument({doc}:{doc:DocumentAvecDevis}) {
   const id=useId();

@@ -10,6 +10,7 @@ import { RelanceDialogue } from "@/components/RelanceDialogue";
 import { telechargerDocumentsCsv } from "@/lib/export-documents";
 import { SyntheseKhosmos } from "@/components/SyntheseKhosmos";
 import { DevisASuivre } from "@/components/DevisASuivre";
+import { RelancesDuJour } from "@/components/RelancesDuJour";
 import { MontantBasculable } from "@/components/BasculeHtTtc";
 import { useModeMontants } from "@/data/mode-montants";
 import { enMode } from "@/lib/montants";
@@ -58,6 +59,7 @@ function Accueil() {
         {([["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", true], ["Paiements attendus", String(enAttente.length), "Documents avec un reste à régler", false], ["Brouillons", String(brouillons.length), "Documents à compléter", false], ["Crédits clients", formaterCentimes(credits), "À traiter séparément, sans remboursement automatique", true]] as const).map(([titre, valeur, aide, montant]) => <section key={titre} className="rounded-2xl border bg-card p-5"><h2 className="text-sm text-muted-foreground">{titre}</h2><p className="mt-2 text-2xl font-semibold">{montant ? <MontantBasculable>{valeur}</MontantBasculable> : valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></section>)}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
+      <RelancesDuJour documents={docs} />
       <section className="mt-6 rounded-2xl border bg-card p-5">
         <h2 className="text-lg font-semibold">Paiements à suivre</h2>
         <p className="mt-2 text-sm text-muted-foreground">{retards.length} document(s) en retard · {sansDate.length} échéance(s) à renseigner. Les échéances les plus anciennes apparaissent en premier.</p>

@@ -10,7 +10,7 @@ import { lireMessages, enregistrerMessage, importerMessages } from "@/data/messa
 import { TYPES_MESSAGES, MODELES_MESSAGES, VARIABLES_MESSAGES, rendreMessage, validerModele, lireSauvegardeMessages, sauvegardeMessages, fusionnerMessages, type BibliothequeMessages, type ModeleMessage, type TypeMessage } from "@/lib/messages";
 
 export const Route=createFileRoute("/_authenticated/messages")({component:Page});
-const EXEMPLE={client:"Client Exemple",numero:"EXEMPLE-001",objet:"Intervention fictive",entreprise:"Entreprise Exemple",montant:"350,00 €",reste:"100,00 €",echeance:"31/10/2026"};
+const EXEMPLE={client:"Client Exemple",numero:"EXEMPLE-001",objet:"Intervention fictive",entreprise:"Entreprise Exemple",montant:"350,00 €",reste:"100,00 €",echeance:"31/10/2026",lien_signature:"https://exemple.fr/signer/…"};
 function Page(){
   const [b,setB]=useState<BibliothequeMessages|null>(null), [type,setType]=useState<TypeMessage>("devis");
   const [v,setV]=useState<ModeleMessage>({...MODELES_MESSAGES.devis}), [origine,setOrigine]=useState(JSON.stringify(MODELES_MESSAGES.devis));

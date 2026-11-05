@@ -302,8 +302,8 @@ function pagesCgv(cgv: string): Content[] {
   return sortie;
 }
 
-/** Génère le PDF et déclenche le téléchargement. Rejette en cas d'échec. */
-export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: Entreprise, finalise = false, facture?: OptionFacture): Promise<void> {
+/** Génère le PDF (même rendu que le téléchargement) et renvoie le fichier. Rejette en cas d'échec. */
+export async function genererDevisPdf(d: DevisPublic, numero: string, ent: Entreprise, finalise = false, facture?: OptionFacture): Promise<Blob> {
   if (deductionExcessive(recapituler(d.lignes), facture?.deduction)) throw new Error(MSG_DEDUCTION_EXCESSIVE);
   const [{ default: pdfMake }, fonts] = await Promise.all([
     import("pdfmake/build/pdfmake"),
@@ -319,6 +319,20 @@ export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: E
     }
   });
   if (!blob || blob.size === 0) throw new Error("PDF vide");
+  return blob;
+}
+
+/** Contenu base64 d'un fichier (pièce jointe d'un e-mail). */
+export async function enBase64(blob: Blob): Promise<string> {
+  const octets = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < octets.length; i += 0x8000) bin += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/** Génère le PDF et déclenche le téléchargement. Rejette en cas d'échec. */
+export async function telechargerDevisPdf(d: DevisPublic, numero: string, ent: Entreprise, finalise = false, facture?: OptionFacture): Promise<void> {
+  const blob = await genererDevisPdf(d, numero, ent, finalise, facture);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

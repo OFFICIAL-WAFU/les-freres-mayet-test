@@ -29,3 +29,11 @@ qu'elle est identique à celle de TEST d'avant migration (md5 daf1b5290ac72962fd
 ## 20261105210000_commande_passee.sql — appliquée (TEST et PRODUCTION)
 Suivi des devis : colonne `commande_passee_le` (seulement sur un devis signé), RPC `noter_commande_devis`, et
 `noter_reponse_devis` qui garde la date de signature et efface la commande si le devis repasse en attente ou refusé.
+
+## 20261106090000_relances_devis.sql — appliquée sur TEST le 05/11/2026, PAS en production
+Relances des devis : `messages_modeles` (modèles de messages en base, identiques sur tous les appareils ; reprise unique
+des modèles de l'appareil quand la base est vide) écrite par `modifier_messages(version, modeles)` (PT409 en conflit) ;
+`envois_devis` (journal envoi / relance1 / relance2, canal gmail / messagerie / aucun = relance écartée) écrit par
+`noter_envoi_devis(...)` (idempotent sur l'identifiant, devis finalisé du propriétaire, relance2 après relance1, une seule
+relance de chaque rang). Aucune ligne modifiée ni supprimée, devis jamais modifiés. Contrôles :
+`verification-relances-sql.mjs` et `verification-relances.mjs`.

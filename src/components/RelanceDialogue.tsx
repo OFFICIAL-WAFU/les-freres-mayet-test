@@ -7,6 +7,7 @@ import { lireMessages } from "@/data/messages";
 import { rendreMessage } from "@/lib/messages";
 import { contexteMessageDocument } from "@/components/MessageDocument";
 import { Button } from "@/components/ui/button";
+import { RelanceDevis } from "@/components/RelanceDevis";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export function RelanceDialogue({ doc, compact = false }: { doc: DocumentAvecDevis; compact?: boolean }) {
@@ -18,6 +19,8 @@ export function RelanceDialogue({ doc, compact = false }: { doc: DocumentAvecDev
   const estDevis = doc.type === "devis";
   const reste = suivre(doc.aRegler ?? 0n, doc.reglements ?? [], doc.credite ?? 0n).reste;
   if (doc.fictif || doc.statut !== "Finalisé" || !doc.devis || (!estDevis && (doc.type !== "facture" && doc.type !== "acompte" || reste <= 0n))) return null;
+  // Devis : envoi et relances avec PDF joint et lien de signature (RelanceDevis) ; ce dialogue reste pour les factures.
+  if (estDevis) return <RelanceDevis doc={doc} compact={compact} />;
   const preparer = async () => {
     setChargement(true);setErreur("");
     try {
