@@ -1,31 +1,36 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import type { DocumentAvecDevis } from "@/data/documents";
 import { formaterCentimes } from "@/data/devis";
 import { GraphiqueActivite } from "@/components/GraphiqueActivite";
 import { synthese } from "@/lib/statuts";
 import { PERIODES_DOCUMENTS, type PeriodeDocuments } from "@/lib/suivi-clients";
+import { BasculeHtTtc, MontantBasculable } from "@/components/BasculeHtTtc";
+import { useModeMontants } from "@/data/mode-montants";
 
 type Pastille = readonly [libelle: string, montant: bigint, couleur: string, aide?: string];
 
 function Colonne({ titre, cases }: { titre: string; cases: Pastille[] }) {
   return <div className="grid content-start gap-2">
     <h3 className="text-lg font-semibold">{titre}</h3>
-    {cases.map(([libelle, montant, couleur, aide]) => <Link key={libelle} to="/" className="rounded-xl bg-white/15 p-3 transition-colors hover:bg-white/25">
+    {cases.map(([libelle, montant, couleur, aide]) => <div key={libelle} className="rounded-xl bg-white/15 p-3">
       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${couleur}`}>{libelle}</span>
-      <p className="mt-1 text-xl font-semibold">{formaterCentimes(montant)}</p>
+      <p className="mt-1 text-xl font-semibold"><MontantBasculable>{formaterCentimes(montant)}</MontantBasculable></p>
       {aide && <p className="text-xs text-white/80">{aide}</p>}
-    </Link>)}
+    </div>)}
   </div>;
 }
 
 export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] }) {
   const [periode, setPeriode] = useState<PeriodeDocuments>("mois");
-  const s = synthese(documents, periode);
+  const mode = useModeMontants();
+  const s = synthese(documents, periode, undefined, mode);
   const n = (k: number) => `${k} devis`;
   return <section className="mt-6 rounded-2xl bg-primary p-4 text-white sm:p-6" aria-label="Synthèse des documents">
-    <h2 className="text-xl font-semibold">Chiffre d’affaires annuel HT</h2>
-    <GraphiqueActivite documents={documents} />
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-xl font-semibold">Chiffre d’affaires annuel {mode === "ttc" ? "TTC" : "HT"}</h2>
+      <BasculeHtTtc clair />
+    </div>
+    <GraphiqueActivite documents={documents} mode={mode} />
     <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
       <h2 className="text-xl font-semibold">Suivi de l’activité</h2>
       <label className="flex items-center gap-2 text-sm">Période
@@ -52,10 +57,10 @@ export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] 
         ["En retard", s.acomptes.retard, "bg-rose-500"],
       ]} />
       <Colonne titre="Autres repères" cases={[
-        ["Devis à facturer", s.aFacturer, "bg-sky-500", "Devis signés pas encore facturés (TTC)"],
+        ["Devis à facturer", s.aFacturer, "bg-sky-500", "Devis signés pas encore facturés"],
         ["Total encaissé", s.encaisse, "bg-teal-600", "Règlements enregistrés"],
       ]} />
     </div>
-    <p className="mt-4 text-xs text-white/80">Montants TTC des documents émis sur la période choisie, mêmes définitions que dans Khosmos. Les factures annulées par avoir sont exclues.</p>
+    <p className="mt-4 text-xs text-white/80">Montants {mode === "ttc" ? "TTC" : "HT"} sur la période choisie, mêmes définitions que dans Khosmos. Cliquez sur un montant pour passer en {mode === "ttc" ? "HT" : "TTC"}. Les factures annulées par avoir sont exclues. En HT, la part hors taxes d’un règlement ou d’un reste à payer suit la proportion HT/TTC de son document.</p>
   </section>;
 }

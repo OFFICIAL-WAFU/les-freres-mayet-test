@@ -1,13 +1,15 @@
 import type { DocumentAvecDevis } from "@/data/documents";
 import { dateDocumentIso } from "./suivi-clients";
 import { dateParis } from "./echeances";
+import { ttcBrut, type ModeMontant } from "./montants";
 
 /**
  * Chiffre d'affaires HT par mois d'émission (même calcul que Khosmos) : factures finalisées pour leur montant HT
  * complet (acompte compris), moins les avoirs émis sur ces factures. Les factures d'acompte n'entrent pas dans
  * le chiffre d'affaires : elles sont comptées avec la facture de solde. Aucun paiement n'est pris en compte.
+ * En mode TTC, mêmes documents à leur montant TTC complet.
  */
-export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = dateParis()) {
+export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = dateParis(), mode: ModeMontant = "ht") {
   const annee = aujourdHui.slice(0, 4);
   const mois = Array<bigint>(12).fill(0n);
   let incomplets = 0;
@@ -20,7 +22,8 @@ export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = da
     if (!date) { incomplets++; continue; }
     if (!date.startsWith(annee) || date > aujourdHui) continue;
     if (d.montantHTCentimes === undefined) { incomplets++; continue; }
-    const ht = d.type === "facture" && d.deduction?.statut === "finalise" ? d.montantHTCentimes + d.deduction.ht : d.montantHTCentimes;
+    const ht = mode === "ttc" ? ttcBrut(d)
+      : d.type === "facture" && d.deduction?.statut === "finalise" ? d.montantHTCentimes + d.deduction.ht : d.montantHTCentimes;
     const index = Number(date.slice(5,7)) - 1;
     mois[index] = mois[index]! + (d.type === "avoir" ? -ht : ht);
   }

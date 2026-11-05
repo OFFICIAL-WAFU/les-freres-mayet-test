@@ -20,6 +20,8 @@ import { AcompteDialogue } from "@/components/AcompteDialogue";
 import { FacturePdfBouton } from "@/components/FacturePdfBouton";
 import { StatutBadge } from "@/components/StatutBadge";
 import { FriseDossier } from "@/components/FriseDossier";
+import { SuiviDevisBloc } from "@/components/SuiviDevisBloc";
+import { StatutDocument } from "@/components/StatutDocument";
 import { Button } from "@/components/ui/button";
 import { TYPE_ARTICLE_LABELS, uniteAccordee } from "@/data/catalogue";
 import { formaterCentimes, labelTaux, recapituler, validerLigne } from "@/data/devis";
@@ -112,6 +114,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       {doc.type==='devis' && <SourceReprise id={doc.id} />}
       <div className="flex flex-wrap items-center gap-2">
         <StatutBadge statut={finalise ? "Finalisé" : "Brouillon"} libelle={estFacture && finalise ? "Finalisée" : undefined} />
+        {finalise && !doc.fictif && <StatutDocument document={doc} />}
         {estAcompte && finalise ? (
           <span className="text-muted-foreground">Facture d'acompte · Finalisée · référence {doc.numero} · {String(doc.pourcentage ?? "").replace(".", ",")} % · finalisée le {doc.finaliseLe ? frDateHeure(doc.finaliseLe) : "—"} · issue du devis {doc.devisSource?.reference}</span>
           ) : estAcompte ? (
@@ -127,6 +130,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         )}
       </div>
       {finalise && !estFacture && <FriseDossier doc={doc} />}
+      {finalise && doc.type === "devis" && !doc.fictif && <SuiviDevisBloc doc={doc} />}
       {finalise && (
         <p className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 p-3 font-medium">
           <Lock className="size-4" /> Document finalisé — contenu verrouillé

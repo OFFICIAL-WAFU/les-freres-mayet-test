@@ -6,7 +6,8 @@ const url = code => 'data:text/javascript;base64,' + Buffer.from(ts.transpileMod
 const reglements = fs.readFileSync('src/data/reglements.ts','utf8').split('const MSG:')[0].replace(/^import .*supabase.*;\r?\n/m,'');
 const regUrl = url(reglements);
 const echUrl = url(fs.readFileSync('src/lib/echeances.ts','utf8'));
-const helper = fs.readFileSync('src/lib/suivi-clients.ts','utf8').replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl));
+const monUrl = url(fs.readFileSync('src/lib/montants.ts','utf8'));
+const helper = fs.readFileSync('src/lib/suivi-clients.ts','utf8').replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl)).replace('"./montants"',JSON.stringify(monUrl));
 const {syntheseClient,dansPeriode,dateDocumentIso,correspondSuiviClient} = await import(url(helper));
 const paiement = (montant,annuleLe=null) => ({montant,annuleLe});
 const doc = (id,montant,extra={}) => ({id,clientId:'client-a',date:'01/10/2026',type:'facture',statut:'Finalisé',aRegler:montant,devis:{validite:'2026-10-20'},reglements:[],...extra});
@@ -41,7 +42,7 @@ assert.equal(correspondSuiviClient(liste[2],'retard','2026-10-07'),true);
 assert.equal(correspondSuiviClient(liste[1],'paye','2026-10-07'),true);
 assert.equal(correspondSuiviClient(liste[5],'paye','2026-10-07'),false);
 console.log('Suivi client vérifié : acompte + solde, paiements partiels/annulés, avoir/crédit, retard, échéance absente, périodes inclusives, années bissextiles, exclusion brouillons/démo/autres clients.');
-const annuelSource = fs.readFileSync('src/lib/activite-annuelle.ts','utf8').replace('"./suivi-clients"',JSON.stringify(url(helper))).replace('"./echeances"',JSON.stringify(echUrl));
+const annuelSource = fs.readFileSync('src/lib/activite-annuelle.ts','utf8').replace('"./suivi-clients"',JSON.stringify(url(helper))).replace('"./echeances"',JSON.stringify(echUrl)).replace('"./montants"',JSON.stringify(monUrl));
 const {activiteAnnuelle} = await import(url(annuelSource));
 const annuels = [
   doc('acompte',4323n,{type:'acompte',montantHTCentimes:3705n}),
