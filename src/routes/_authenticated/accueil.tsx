@@ -10,6 +10,7 @@ import { RelanceDialogue } from "@/components/RelanceDialogue";
 import { telechargerDocumentsCsv } from "@/lib/export-documents";
 import { SyntheseKhosmos } from "@/components/SyntheseKhosmos";
 import { DevisASuivre } from "@/components/DevisASuivre";
+import { RelancesDuJour } from "@/components/RelancesDuJour";
 import { MontantBasculable } from "@/components/BasculeHtTtc";
 import { ListeDocumentsDialog, type ElementListe } from "@/components/ListeDocumentsDialog";
 import { ChevronRight, Wallet } from "lucide-react";
@@ -66,6 +67,7 @@ function Accueil() {
         ] as const).map(([titre, valeur, aide, ouvrir]) => <button type="button" key={titre} onClick={ouvrir} className="group rounded-2xl border bg-card p-5 text-left transition-colors hover:border-primary/50 hover:bg-secondary/40 focus-visible:outline-2"><h2 className="flex items-center justify-between text-sm text-muted-foreground">{titre}<ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></h2><p className="mt-2 text-2xl font-semibold">{valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></button>)}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
+      <RelancesDuJour documents={docs} />
       <section className="mt-6 rounded-2xl border bg-card p-5">
         <h2 className="text-lg font-semibold">Paiements à suivre</h2>
         <p className="mt-2 text-sm text-muted-foreground">{retards.length} document(s) en retard · {sansDate.length} échéance(s) à renseigner. Les échéances les plus anciennes apparaissent en premier.</p>
