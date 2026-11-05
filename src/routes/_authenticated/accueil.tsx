@@ -10,6 +10,9 @@ import { RelanceDialogue } from "@/components/RelanceDialogue";
 import { telechargerDocumentsCsv } from "@/lib/export-documents";
 import { SyntheseKhosmos } from "@/components/SyntheseKhosmos";
 import { DevisASuivre } from "@/components/DevisASuivre";
+import { MontantBasculable } from "@/components/BasculeHtTtc";
+import { useModeMontants } from "@/data/mode-montants";
+import { enMode } from "@/lib/montants";
 
 export const Route = createFileRoute("/_authenticated/accueil")({
   head: () => ({
@@ -27,11 +30,12 @@ function Accueil() {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState("tous");
   const etat = useEtatDocuments();
+  const mode = useModeMontants();
   const docs = etat.liste.filter(d => !d.fictif);
   const factures = docs.filter(d => (d.type === "facture" || d.type === "acompte") && d.statut === "Finalisé" && d.aRegler !== undefined);
   const suivis = factures.map(doc => ({ doc, suivi: suivre(doc.aRegler!, doc.reglements ?? [], doc.credite ?? 0n) }));
-  const reste = suivis.reduce((s, d) => s + d.suivi.reste, 0n);
-  const credits = suivis.reduce((s, d) => s + d.suivi.creditClient, 0n);
+  const reste = suivis.reduce((s, d) => s + enMode(d.doc, d.suivi.reste, mode), 0n);
+  const credits = suivis.reduce((s, d) => s + enMode(d.doc, d.suivi.creditClient, mode), 0n);
   const enAttente = suivis.filter(d => d.suivi.reste > 0n).sort((a,b) => (a.doc.devis?.validite || "9999").localeCompare(b.doc.devis?.validite || "9999"));
   const retards = enAttente.filter(d => suiviEcheance(d.doc.devis?.validite, d.suivi.reste).etat === "retard");
   const sansDate = enAttente.filter(d => suiviEcheance(d.doc.devis?.validite, d.suivi.reste).etat === "absente");
@@ -41,7 +45,7 @@ function Accueil() {
     const echeance = suiviEcheance(doc.devis?.validite, suivi.reste).etat;
     return (filtre === "tous" || echeance === filtre) && normaliser(`${doc.client} ${doc.numero} ${doc.devis?.objet ?? ""}`).includes(normaliser(recherche.trim()));
   });
-  const totalVisible = visibles.reduce((s, d) => s + d.suivi.reste, 0n);
+  const totalVisible = visibles.reduce((s, d) => s + enMode(d.doc, d.suivi.reste, mode), 0n);
   return <AppLayout titre="Accueil">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div><h1 className="text-3xl font-semibold">Ma synthèse</h1><p className="mt-2 text-muted-foreground">Devis, factures et règlements, au même endroit.</p></div>
@@ -51,7 +55,7 @@ function Accueil() {
       : etat.statut !== "pret" ? <p role="status" className="mt-6">Chargement de votre activité…</p> : <>
       <SyntheseKhosmos documents={docs} />
       <div className="khosmos-summary mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements"], ["Paiements attendus", String(enAttente.length), "Documents avec un reste à régler"], ["Brouillons", String(brouillons.length), "Documents à compléter"], ["Crédits clients", formaterCentimes(credits), "À traiter séparément, sans remboursement automatique"]].map(([titre, valeur, aide]) => <section key={titre} className="rounded-2xl border bg-card p-5"><h2 className="text-sm text-muted-foreground">{titre}</h2><p className="mt-2 text-2xl font-semibold">{valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></section>)}
+        {([["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", true], ["Paiements attendus", String(enAttente.length), "Documents avec un reste à régler", false], ["Brouillons", String(brouillons.length), "Documents à compléter", false], ["Crédits clients", formaterCentimes(credits), "À traiter séparément, sans remboursement automatique", true]] as const).map(([titre, valeur, aide, montant]) => <section key={titre} className="rounded-2xl border bg-card p-5"><h2 className="text-sm text-muted-foreground">{titre}</h2><p className="mt-2 text-2xl font-semibold">{montant ? <MontantBasculable>{valeur}</MontantBasculable> : valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></section>)}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
       <section className="mt-6 rounded-2xl border bg-card p-5">
@@ -63,8 +67,8 @@ function Accueil() {
           <Button variant="outline" disabled={!visibles.length} onClick={() => telechargerDocumentsCsv(visibles.map(v => v.doc))}>Exporter les paiements affichés</Button>
           {(recherche || filtre !== "tous") && <Button variant="ghost" onClick={() => { setRecherche(""); setFiltre("tous"); }}>Réinitialiser</Button>}
         </div>
-        <p aria-live="polite" className="mt-3 text-sm font-medium">{visibles.length} paiement(s) affiché(s) · reste à encaisser : {formaterCentimes(totalVisible)}</p>
-        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold">{formaterCentimes(suivi.reste)}</span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
+        <p aria-live="polite" className="mt-3 text-sm font-medium">{visibles.length} paiement(s) affiché(s) · reste à encaisser : <MontantBasculable>{formaterCentimes(totalVisible)}</MontantBasculable></p>
+        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold"><MontantBasculable>{formaterCentimes(enMode(doc, suivi.reste, mode))}</MontantBasculable></span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
         <p className="mt-3 text-xs text-muted-foreground">Les rappels sont des messages à relire et envoyer vous-même. L’export reprend uniquement les paiements affichés ; aucun email n’est envoyé automatiquement.</p>
       </section>
       <DevisASuivre documents={docs} />

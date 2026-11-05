@@ -4,29 +4,34 @@ import ts from 'typescript';
 const url = code => 'data:text/javascript;base64,' + Buffer.from(ts.transpileModule(code, {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
 const regUrl = url(fs.readFileSync('src/data/reglements.ts','utf8').split('const MSG:')[0].replace(/^import .*supabase.*;\r?\n/m,''));
 const echUrl = url(fs.readFileSync('src/lib/echeances.ts','utf8'));
-const scUrl = url(fs.readFileSync('src/lib/suivi-clients.ts','utf8').replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl)));
-const src = fs.readFileSync('src/lib/statuts.ts','utf8').replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl)).replace('"./suivi-clients"',JSON.stringify(scUrl));
+const monUrl = url(fs.readFileSync('src/lib/montants.ts','utf8'));
+const scUrl = url(fs.readFileSync('src/lib/suivi-clients.ts','utf8').replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl)).replace('"./montants"',JSON.stringify(monUrl)));
+const src = fs.readFileSync('src/lib/statuts.ts','utf8').replace('"./montants"',JSON.stringify(monUrl)).replace('"@/data/reglements"',JSON.stringify(regUrl)).replace('"./echeances"',JSON.stringify(echUrl)).replace('"./suivi-clients"',JSON.stringify(scUrl));
 const {statutAffiche, synthese, etatDevis} = await import(url(src));
+const {enMode, ttcBrut} = await import(monUrl);
 const J = '2026-11-04';
 const R = (montant, date, annuleLe=null) => ({montant, date, annuleLe});
-const devis = (id, ttc, extra={}) => ({id, type:'devis', statut:'Finalisé', date:'10/10/2026', montantTTC:ttc/100, devis:{validite:'2026-12-01'}, ...extra});
-const fac = (id, ttc, extra={}) => ({id, type:'facture', statut:'Finalisé', date:'15/10/2026', aRegler:ttc, reglements:[], credite:0n, devis:{validite:'2026-11-30'}, ...extra});
+// HT = TTC / 1,25 sur ces exemples (montants ronds), sauf mention.
+const devis = (id, ttc, extra={}) => ({id, type:'devis', statut:'Finalisé', date:'10/10/2026', montantTTC:ttc/100, montantHTCentimes:BigInt(ttc)*4n/5n, devis:{validite:'2026-12-01'}, ...extra});
+const fac = (id, ttc, extra={}) => ({id, type:'facture', statut:'Finalisé', date:'15/10/2026', aRegler:ttc, montantTTC:Number(ttc)/100, montantHTCentimes:ttc*4n/5n, reglements:[], credite:0n, devis:{validite:'2026-11-30'}, ...extra});
 const docs = [
   devis('d-attente', 10000),
   devis('d-expire', 20000, {devis:{validite:'2026-10-20'}}),
   devis('d-refuse', 30000, {reponse:{etat:'refuse',le:'2026-10-12',mode:'manuelle'}}),
   devis('d-signe', 50000, {reponse:{etat:'accepte',le:'2026-11-02',mode:'signature_khosmos'}}),
-  fac('acompte', 15000, {type:'acompte', devisSource:{id:'d-signe'}, reglements:[R(15000n,'2026-10-16')]}),
-  fac('solde', 50000n - 15000n, {devisSource:{id:'d-signe'}, deduction:{statut:'finalise',ht:12500n,ttc:15000n}, reglements:[R(35000n,'2026-11-03')]}),
+  fac('acompte', 15000n, {type:'acompte', devisSource:{id:'d-signe'}, reglements:[R(15000n,'2026-10-16')]}),
+  fac('solde', 50000n - 15000n, {devisSource:{id:'d-signe'}, montantHTCentimes:40000n-12000n, deduction:{statut:'finalise',ht:12000n,ttc:15000n}, reglements:[R(35000n,'2026-11-03')]}),
   fac('retard', 8000n, {devis:{validite:'2026-10-30'}}),
   fac('annulee', 9000n, {credite:9000n, reglements:[R(9000n,'2026-10-15','2026-10-20')]}),
   fac('partielle', 10000n, {reglements:[R(4000n,'2026-10-20')]}),
 ];
-docs[4].aRegler = 15000n;
+docs[4].aRegler = 15000n; docs[4].montantHTCentimes = 12000n;
 assert.equal(statutAffiche(docs[0], J), 'En attente de signature');
 assert.equal(statutAffiche(docs[1], J), 'Expiré');
 assert.equal(statutAffiche(docs[2], J), 'Refusé');
 assert.equal(statutAffiche(docs[3], J), 'Signé');
+assert.equal(statutAffiche({...docs[3], reponse:{...docs[3].reponse, commandeLe:'2026-11-03'}}, J), 'Commande passée');
+assert.equal(etatDevis({...docs[3], reponse:{...docs[3].reponse, commandeLe:'2026-11-03'}}, J), 'signe');   // reste compté parmi les signés
 assert.equal(statutAffiche(docs[4], J), 'Payé');
 assert.equal(statutAffiche(docs[7], J), 'Annulée');
 assert.equal(statutAffiche(docs[8], J), 'En attente de paiement');
@@ -43,4 +48,15 @@ const oct = synthese(docs, 'mois', '2026-10-31');
 assert.equal(oct.factures.paye, 4000n);                  // solde réglé en novembre : compté en novembre
 assert.equal(oct.devis.signe, 0n);                       // signé le 02/11 : compté en novembre
 assert.equal(oct.encaisse, 15000n + 4000n);
-console.log('Statuts et synthèse vérifiés : signé/refusé/expiré/en attente, payé/annulé, payé à la date du règlement, devis à facturer, encaissé hors règlements annulés.');
+// Mode HT : chaque montant suit la proportion HT/TTC de son document.
+assert.equal(ttcBrut(docs[5]), 50000n);
+assert.equal(enMode(docs[5], 35000n, 'ht'), 28000n);     // net à payer de la facture de solde : HT exact enregistré
+assert.equal(enMode(docs[8], 4000n, 'ht'), 3200n);
+assert.equal(enMode(docs[8], 3333n, 'ht'), 2666n);       // 2666,4 → 2666
+assert.equal(enMode(docs[8], 4000n, 'ttc'), 4000n);
+const ht = synthese(docs, 'toutes', J, 'ht');
+assert.equal(ht.devis.signe, 40000n); assert.equal(ht.devis.attente, 8000n); assert.equal(ht.devis.refuse, 24000n); assert.equal(ht.devis.expire, 16000n);
+assert.equal(ht.factures.paye, 40000n + 3200n); assert.equal(ht.acomptes.paye, 12000n);
+assert.equal(ht.factures.retard, 6400n); assert.equal(ht.factures.attente, 4800n);
+assert.equal(ht.encaisse, 12000n + 28000n + 3200n); assert.equal(ht.aFacturer, 0n);
+console.log('Statuts et synthèse vérifiés : signé/commande passée/refusé/expiré/en attente, payé/annulé, payé à la date du règlement, devis à facturer, encaissé hors règlements annulés.');

@@ -26,3 +26,6 @@ enregistrer_brouillon recopiée à l'identique avec ces colonnes en plus. Montan
 signature inchangés. Contrôles : `verification-rentabilite-sql.mjs` (9) et `verification-rentabilite.mjs`. Avant
 installation en production : relire la définition de enregistrer_brouillon en production (pg_get_functiondef) et vérifier
 qu'elle est identique à celle de TEST d'avant migration (md5 daf1b5290ac72962fdd7bd25974dfaca).
+## 20261105210000_commande_passee.sql — appliquée (TEST et PRODUCTION)
+Suivi des devis : colonne `commande_passee_le` (seulement sur un devis signé), RPC `noter_commande_devis`, et
+`noter_reponse_devis` qui garde la date de signature et efface la commande si le devis repasse en attente ou refusé.

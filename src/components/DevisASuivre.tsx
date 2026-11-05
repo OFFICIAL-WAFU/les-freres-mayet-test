@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { chargerDocuments, noterReponseDevis, type DocumentAvecDevis, type ReponseClient } from "@/data/documents";
+import { chargerDocuments, noterCommandeDevis, noterReponseDevis, type DocumentAvecDevis, type ReponseClient } from "@/data/documents";
 import { lireDevisSignes } from "@/data/signature-distante";
 import { lireSuivisDevis, modifierSuiviDevis } from "@/data/suivi-devis";
 import { dateParis } from "@/lib/echeances";
@@ -42,11 +42,17 @@ export function DevisASuivre({ documents }: { documents: DocumentAvecDevis[] }) 
   const etat = (d: DocumentAvecDevis) => !d.devis!.validite ? "sans-date" : d.devis!.validite < aujourdHui ? "expire" : "valide";
   const dateFr = (iso: string | null | undefined) => iso ? iso.slice(0, 10).split("-").reverse().join("/") : "";
   const suiviDe = (d: DocumentAvecDevis): { etat: EtatSuiviDevis; libelle: string } => {
-    if (signes[d.id]) return { etat: "accepte", libelle: `Signé à distance par ${signes[d.id]!.nom} le ${new Date(signes[d.id]!.signeLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · à facturer` };
-    if (d.reponse?.etat === "accepte") return { etat: "accepte", libelle: `Signé${d.reponse.le ? ` le ${dateFr(d.reponse.le)}` : ""} · à facturer` };
+    if (signes[d.id]) return { etat: "accepte", libelle: `Signé à distance par ${signes[d.id]!.nom} le ${new Date(signes[d.id]!.signeLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · ${d.reponse?.commandeLe ? `commande passée le ${dateFr(d.reponse.commandeLe)}` : "commande à passer"} · à facturer` };
+    if (d.reponse?.etat === "accepte") return { etat: "accepte", libelle: `Signé${d.reponse.le ? ` le ${dateFr(d.reponse.le)}` : ""} · ${d.reponse.commandeLe ? `commande passée le ${dateFr(d.reponse.commandeLe)}` : "commande à passer"} · à facturer` };
     if (d.reponse?.etat === "refuse") return { etat: "refuse", libelle: `Refusé${d.reponse.le ? ` le ${dateFr(d.reponse.le)}` : ""}` };
     const local = bib.suivis[d.id];
     return etatSuiviDevis(local ? { ...local, reponse: "attente" } : undefined, aujourdHui, delai);
+  };
+  const commander = async (d: DocumentAvecDevis) => {
+    setOccupe(true);
+    try { await noterCommandeDevis(d.id, aujourdHui); toast.success("Commande notée comme passée"); void chargerDocuments(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Enregistrement impossible."); }
+    finally { setOccupe(false); }
   };
   const repondre = async (d: DocumentAvecDevis, r: ReponseClient) => {
     setOccupe(true);
@@ -73,14 +79,14 @@ export function DevisASuivre({ documents }: { documents: DocumentAvecDevis[] }) 
     </div>
     <p className="mt-3 text-sm" aria-live="polite">{visibles.length} devis affiché(s) sur {candidats.length} à suivre</p>
     {!visibles.length && <p className="mt-3 text-sm text-muted-foreground">Aucun devis ne correspond à cette sélection.</p>}
-    <div className="mt-3 divide-y">{visibles.map(doc => <LigneDevis key={doc.id} doc={doc} suivi={bib.suivis[doc.id]} etat={suiviDe(doc)} validite={etat(doc)} aujourdHui={aujourdHui} occupe={occupe} agir={agir} repondre={repondre} signeDistance={!!signes[doc.id] || doc.reponse?.mode === "signature_distante" || doc.reponse?.mode === "signature_khosmos"} />)}</div>
+    <div className="mt-3 divide-y">{visibles.map(doc => <LigneDevis key={doc.id} doc={doc} suivi={bib.suivis[doc.id]} etat={suiviDe(doc)} validite={etat(doc)} aujourdHui={aujourdHui} occupe={occupe} agir={agir} repondre={repondre} commander={commander} signeDistance={!!signes[doc.id] || doc.reponse?.mode === "signature_distante" || doc.reponse?.mode === "signature_khosmos"} />)}</div>
   </section>;
 }
 
-function LigneDevis({ doc, suivi, etat, validite, aujourdHui, occupe, agir, repondre, signeDistance }: {
+function LigneDevis({ doc, suivi, etat, validite, aujourdHui, occupe, agir, repondre, commander, signeDistance }: {
   doc: DocumentAvecDevis; suivi: SuiviDevis | undefined; etat: { etat: EtatSuiviDevis; libelle: string }; validite: string; aujourdHui: string; occupe: boolean;
   agir: (id: string, appliquer: (a: SuiviDevis | undefined, j: string) => SuiviDevis, message: string) => Promise<void>;
-  repondre: (d: DocumentAvecDevis, r: ReponseClient) => Promise<void>; signeDistance: boolean;
+  repondre: (d: DocumentAvecDevis, r: ReponseClient) => Promise<void>; commander: (d: DocumentAvecDevis) => Promise<void>; signeDistance: boolean;
 }) {
   const [dateEnvoi, setDateEnvoi] = useState(aujourdHui);
   const relancer = etat.etat === "a-relancer";
@@ -98,6 +104,7 @@ function LigneDevis({ doc, suivi, etat, validite, aujourdHui, occupe, agir, repo
           <Button size="sm" variant="outline" disabled={occupe || !dateEnvoi} onClick={() => void agir(doc.id, (a, j) => marquerEnvoye(a, dateEnvoi, j), "Envoi noté")}>Noter l’envoi</Button>
         </>}
         {suivi?.envoyeLe && (doc.reponse?.etat ?? "attente") === "attente" && <Button size="sm" variant="outline" disabled={occupe} onClick={() => void agir(doc.id, (a, j) => marquerRelance(a, j, j), "Relance notée")}>Relance faite aujourd’hui</Button>}
+        {doc.reponse?.etat === "accepte" && !doc.reponse.commandeLe && <Button size="sm" disabled={occupe} onClick={() => void commander(doc)}>Commande passée aujourd’hui</Button>}
         <label className="flex items-center gap-2 text-sm">Réponse du client<select className="rounded-md border bg-background p-1.5" disabled={occupe || signeDistance} value={doc.reponse?.etat ?? "attente"} onChange={e => void repondre(doc, e.target.value as ReponseClient)}><option value="attente">En attente</option><option value="accepte">Signé</option><option value="refuse">Refusé</option></select></label>
       </div>
       <div className="flex flex-wrap gap-2"><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="outline"><Link to="/devis/$id" params={{ id: doc.id }}>Ouvrir le devis</Link></Button></div>

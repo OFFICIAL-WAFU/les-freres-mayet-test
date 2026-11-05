@@ -1,6 +1,7 @@
 import type { DocumentAvecDevis } from "@/data/documents";
 import { suivre } from "@/data/reglements";
 import { dateParis, suiviEcheance } from "./echeances";
+import { enMode, ttcBrut, type ModeMontant } from "./montants";
 
 export type PeriodeDocuments = "toutes" | "annee" | "mois" | "30jours";
 export const PERIODES_DOCUMENTS: Record<PeriodeDocuments, string> = {
@@ -39,28 +40,29 @@ export function correspondSuiviClient(d: DocumentAvecDevis, filtre: FiltreSuiviC
   return filtre === "retard" ? s.retard : filtre === "attente" ? s.reste > 0n && !s.retard : filtre === "impaye" ? s.reste > 0n : s.regle > 0n;
 }
 /** TTC émis : acompte + solde uniquement. Les avoirs sont séparés des encaissements. */
-export function syntheseClient(documents: DocumentAvecDevis[], clientId: string, periode: PeriodeDocuments, aujourdHui = dateParis()) {
+export function syntheseClient(documents: DocumentAvecDevis[], clientId: string, periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc") {
   const total = { facture: 0n, credite: 0n, attente: 0n, retard: 0n, paye: 0n, creditClient: 0n };
   for (const d of documents) {
     if (d.clientId !== clientId || !dansPeriode(d.date, periode, aujourdHui)) continue;
     const s = suiviDocumentClient(d, aujourdHui);
     if (!s) continue;
-    total.facture += s.aRegler;
-    total.credite += s.credite;
-    total.paye += s.regle;
-    total.creditClient += s.creditClient;
-    if (s.retard) total.retard += s.reste;
-    else total.attente += s.reste;
+    const m = (x: bigint) => enMode(d, x, mode);
+    total.facture += m(s.aRegler);
+    total.credite += m(s.credite);
+    total.paye += m(s.regle);
+    total.creditClient += m(s.creditClient);
+    if (s.retard) total.retard += m(s.reste);
+    else total.attente += m(s.reste);
   }
   return total;
 }
 
 /** Devis du client par réponse : nombre et TTC (en attente = sans réponse, validité en cours ou dépassée). */
-export function syntheseDevisClient(documents: DocumentAvecDevis[], clientId: string, periode: PeriodeDocuments, aujourdHui = dateParis()) {
+export function syntheseDevisClient(documents: DocumentAvecDevis[], clientId: string, periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc") {
   const t = { signes: 0, signesTTC: 0n, attente: 0, attenteTTC: 0n, expires: 0, expiresTTC: 0n, refuses: 0, refusesTTC: 0n };
   for (const d of documents) {
     if (d.fictif || d.type !== "devis" || d.statut !== "Finalisé" || d.clientId !== clientId || !dansPeriode(d.date, periode, aujourdHui)) continue;
-    const ttc = BigInt(Math.round((d.montantTTC ?? 0) * 100));
+    const ttc = enMode(d, ttcBrut(d), mode);
     const v = d.devis?.validite;
     if (d.reponse?.etat === "accepte") { t.signes++; t.signesTTC += ttc; }
     else if (d.reponse?.etat === "refuse") { t.refuses++; t.refusesTTC += ttc; }

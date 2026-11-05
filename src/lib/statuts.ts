@@ -2,6 +2,7 @@ import type { DocumentAvecDevis, DocumentStatut } from "@/data/documents";
 import { suivre } from "@/data/reglements";
 import { dateParis, suiviEcheance } from "./echeances";
 import { dansPeriode, type PeriodeDocuments } from "./suivi-clients";
+import { enMode, ttcBrut, type ModeMontant } from "./montants";
 
 /** Devis finalisé : signé, refusé, expiré (validité dépassée sans réponse) ou en attente de signature. */
 export function etatDevis(d: DocumentAvecDevis, aujourdHui = dateParis()): "brouillon" | "signe" | "refuse" | "expire" | "attente" {
@@ -24,6 +25,7 @@ export function statutAffiche(d: DocumentAvecDevis, aujourdHui = dateParis()): D
   if (d.fictif || d.statut === "Brouillon") return d.statut;
   if (d.type === "devis") {
     const e = etatDevis(d, aujourdHui);
+    if (e === "signe" && d.reponse?.commandeLe) return "Commande passée";
     return e === "signe" ? "Signé" : e === "refuse" ? "Refusé" : e === "expire" ? "Expiré" : "En attente de signature";
   }
   if (d.type === "avoir") return "Émis";
@@ -36,8 +38,6 @@ export function statutAffiche(d: DocumentAvecDevis, aujourdHui = dateParis()): D
   return d.statut;
 }
 
-/** TTC facturé avant déduction d'acompte (montant du document). */
-const ttcBrut = (d: DocumentAvecDevis) => (d.aRegler ?? 0n) + (d.deduction?.statut === "finalise" ? d.deduction.ttc : 0n);
 
 export interface Synthese {
   devis: { attente: bigint; signe: bigint; refuse: bigint; expire: bigint; nbAttente: number; nbSigne: number; nbRefuse: number; nbExpire: number };
@@ -56,8 +56,10 @@ export interface Synthese {
  *   du dernier règlement, plus les règlements partiels de la période ; les documents annulés par avoir sont exclus ;
  * - devis à facturer : TTC des devis signés, émis sur la période, non encore couvert par leurs factures et acomptes ;
  * - encaissé : règlements enregistrés (non annulés) datés de la période.
+ * En mode HT, chaque montant est converti document par document (proportion HT/TTC du document, voir enMode).
  */
-export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocuments, aujourdHui = dateParis()): Synthese {
+export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc"): Synthese {
+  const m = (d: DocumentAvecDevis, ttc: bigint) => enMode(d, ttc, mode);
   const r: Synthese = {
     devis: { attente: 0n, signe: 0n, refuse: 0n, expire: 0n, nbAttente: 0, nbSigne: 0, nbRefuse: 0, nbExpire: 0 },
     factures: { attente: 0n, paye: 0n, retard: 0n }, acomptes: { attente: 0n, paye: 0n, retard: 0n }, aFacturer: 0n, encaisse: 0n,
@@ -67,13 +69,13 @@ export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocumen
   for (const d of documents) {
     if (d.fictif || d.statut !== "Finalisé" || (d.type !== "facture" && d.type !== "acompte") || !d.devisSource) continue;
     if (d.type === "acompte" && estAnnulee(d)) continue;
-    factureParDevis.set(d.devisSource.id, (factureParDevis.get(d.devisSource.id) ?? 0n) + ttcBrut(d));
+    factureParDevis.set(d.devisSource.id, (factureParDevis.get(d.devisSource.id) ?? 0n) + m(d, ttcBrut(d)));
   }
   const dans = (date: string) => dansPeriode(date, periode, aujourdHui);
   for (const d of documents) {
     if (d.fictif || d.statut !== "Finalisé") continue;
     if (d.type === "devis") {
-      const ttc = BigInt(Math.round((d.montantTTC ?? 0) * 100));
+      const ttc = m(d, ttcBrut(d));
       const e = etatDevis(d, aujourdHui);
       if (e === "signe") {
         if (dans(d.reponse?.le ?? d.date)) { r.devis.signe += ttc; r.devis.nbSigne++; }
@@ -92,15 +94,15 @@ export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocumen
     const cible = d.type === "facture" ? r.factures : r.acomptes;
     const actifs = (d.reglements ?? []).filter((x) => !x.annuleLe);
     const dansPer = actifs.filter((x) => dans(x.date)).reduce((t, x) => t + x.montant, 0n);
-    r.encaisse += dansPer;
+    r.encaisse += m(d, dansPer);
     if (s.reste === 0n) {
-      const dernier = actifs.reduce((m, x) => (x.date > m ? x.date : m), "");
-      if (dans(dernier || d.date)) cible.paye += ttcBrut(d) - s.credite;
+      const dernier = actifs.reduce((mx, x) => (x.date > mx ? x.date : mx), "");
+      if (dans(dernier || d.date)) cible.paye += m(d, ttcBrut(d) - s.credite);
     } else {
-      cible.paye += dansPer;
+      cible.paye += m(d, dansPer);
       if (!dans(d.date)) continue;
-      if (suiviEcheance(d.devis?.validite, s.reste, aujourdHui).etat === "retard") cible.retard += s.reste;
-      else cible.attente += s.reste;
+      if (suiviEcheance(d.devis?.validite, s.reste, aujourdHui).etat === "retard") cible.retard += m(d, s.reste);
+      else cible.attente += m(d, s.reste);
     }
   }
   return r;

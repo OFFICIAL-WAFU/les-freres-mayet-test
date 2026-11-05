@@ -27,6 +27,7 @@ export type DocumentStatut =
   | "Finalisé"
   | "Refusé"
   | "Expiré"
+  | "Commande passée"
   | "Annulée"
   | "Annulé";
 
@@ -61,7 +62,7 @@ export const TYPE_FILTERS: { value: DocumentType | "tous"; label: string }[] = [
 ];
 
 export const STATUTS_PAR_TYPE: Record<DocumentType, DocumentStatut[]> = {
-  devis: ["Brouillon", "En attente de signature", "Signé", "Refusé", "Expiré"],
+  devis: ["Brouillon", "En attente de signature", "Signé", "Commande passée", "Refusé", "Expiré"],
   facture: ["Brouillon", "En attente de paiement", "Payée", "Annulée"],
   acompte: ["Brouillon", "En attente de paiement", "Payé", "Annulé"],
   avoir: ["Brouillon", "Émis"],
@@ -78,6 +79,7 @@ export const TOUS_LES_STATUTS: DocumentStatut[] = [
   "Émis",
   "Refusé",
   "Expiré",
+  "Commande passée",
   "Annulée",
   "Annulé",
 ];
@@ -242,7 +244,7 @@ export interface DocumentAvecDevis extends DemoDocument {
   typeAvoir?: "total" | "partiel";
   lignesCreditees?: LigneCrediteeAvoir[];
   /** Devis finalisé : réponse du client enregistrée en base (signature à distance, Khosmos ou saisie). */
-  reponse?: { etat: ReponseClient; le: string | null; mode: string | null };
+  reponse?: { etat: ReponseClient; le: string | null; mode: string | null; commandeLe?: string | null };
   /** Document repris de Khosmos (numéro et montants d'origine). */
   repris?: boolean;
 }
@@ -289,7 +291,7 @@ interface DevisBase {
   conditions_paiement?: string | undefined; prestation_debut?: string | null | undefined; prestation_fin?: string | null | undefined;
   total_ttc_centimes: number; total_ht_centimes?: number; version: number; statut: "brouillon" | "finalise";
   reference_definitive: string | null; finalise_le: string | null; entreprise_copie: Record<string, unknown> | null; lignes?: LigneBase[]; devis_lignes?: LigneBase[];
-  reponse_client?: ReponseClient; reponse_le?: string | null; reponse_mode?: string | null; lot_import?: string | null;
+  reponse_client?: ReponseClient; reponse_le?: string | null; reponse_mode?: string | null; lot_import?: string | null; commande_passee_le?: string | null;
 }
 
 const echelle = (v: number, dec: number) => {
@@ -327,7 +329,7 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
     ...(Number.isSafeInteger(d.total_ht_centimes) ? { montantHTCentimes: BigInt(d.total_ht_centimes!) } : {}),
     devis, version: d.version, referenceProvisoire: d.reference,
     ...(d.lot_import ? { repris: true } : {}),
-    ...(d.statut === "finalise" && d.reponse_client ? { reponse: { etat: d.reponse_client, le: d.reponse_le ?? null, mode: d.reponse_mode ?? null } } : {}),
+    ...(d.statut === "finalise" && d.reponse_client ? { reponse: { etat: d.reponse_client, le: d.reponse_le ?? null, mode: d.reponse_mode ?? null, commandeLe: d.commande_passee_le ?? null } } : {}),
     ...(d.statut === "finalise" && d.finalise_le && d.entreprise_copie
       ? { finaliseLe: d.finalise_le, entrepriseFigee: depuisLigneEntreprise(d.entreprise_copie as never) }
       : {}),
@@ -606,7 +608,23 @@ export async function noterReponseDevis(id: string, reponse: ReponseClient, date
     : error.message.includes("devis_signe") ? "Ce devis a été signé : sa réponse ne peut plus être modifiée."
     : "La réponse n’a pas été enregistrée. Réessayez.");
   const d = etat.brouillons.find((x) => x.id === id);
-  if (d) conserver({ ...d, reponse: { etat: reponse, le: reponse === "attente" ? null : (date ?? new Date().toISOString().slice(0, 10)), mode: reponse === "attente" ? null : (d.reponse?.mode && d.reponse.mode !== "manuelle" ? d.reponse.mode : "manuelle") } });
+  if (d) conserver({ ...d, reponse: {
+    etat: reponse,
+    le: reponse === "attente" ? null : (date ?? (reponse === d.reponse?.etat ? d.reponse?.le : null) ?? new Date().toISOString().slice(0, 10)),
+    mode: reponse === "attente" ? null : (d.reponse?.mode && d.reponse.mode !== "manuelle" ? d.reponse.mode : "manuelle"),
+    commandeLe: reponse === "accepte" ? (d.reponse?.commandeLe ?? null) : null,
+  } });
+}
+
+/** Note la date à laquelle la commande (matériel) a été passée pour un devis signé ; null l'efface. */
+export async function noterCommandeDevis(id: string, date: string | null): Promise<void> {
+  const { error } = await (supabase as unknown as RpcLibre).rpc("noter_commande_devis", { p_id: id, p_date: date });
+  if (error) throw new ErreurDevis(
+    error.code === "PGRST202" ? "Le suivi « Commande passée » nécessite l’installation de sa migration."
+    : error.message.includes("devis_non_signe") ? "Marquez d’abord le devis comme signé."
+    : "La commande n’a pas été enregistrée. Réessayez.");
+  const d = etat.brouillons.find((x) => x.id === id);
+  if (d?.reponse) conserver({ ...d, reponse: { ...d.reponse, commandeLe: date } });
 }
 
 export class ConflitDevis extends Error { constructor() { super("Une version plus récente du brouillon existe."); } }
