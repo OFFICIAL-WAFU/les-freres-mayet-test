@@ -6,6 +6,7 @@ import { useEtatDocuments } from "@/data/documents";
 import { EtatBrouillon } from "@/routes/_authenticated/devis.$id.modifier";
 
 export const Route = createFileRoute("/_authenticated/factures/$id/")({
+  validateSearch: (s: Record<string, unknown>): { encaisser?: boolean } => (s["encaisser"] === true || s["encaisser"] === "true" || s["encaisser"] === 1 ? { encaisser: true } : {}),
   head: () => ({
     meta: [
       { title: "Facture — Les Frères Mayet" },
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/factures/$id/")({
 
 function Page() {
   const { id } = Route.useParams();
+  const { encaisser } = Route.useSearch();
   const etat = useEtatDocuments();
   const doc = etat.brouillons.find((d) => d.id === id && (d.type === "facture" || d.type === "acompte"));
   return (
@@ -31,7 +33,7 @@ function Page() {
           <h1 className="text-2xl font-semibold lg:text-3xl">{doc.type === "acompte" ? (doc.statut === "Finalisé" ? `Facture d'acompte ${doc.numero}` : "Facture d'acompte brouillon") : doc.statut === "Finalisé" ? `Facture ${doc.numero}` : "Facture brouillon"} — {doc.devis.objet}</h1>
           <p className="mt-2 text-xs text-muted-foreground">Aucune facture n'a été envoyée depuis l'application.</p>
           <div className="mt-6 rounded-2xl border border-border bg-card p-4 lg:p-6">
-            <DevisDetail doc={doc} />
+            <DevisDetail doc={doc} encaisser={!!encaisser} />
           </div>
         </div>
       ) : (

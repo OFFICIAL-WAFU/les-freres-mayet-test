@@ -6,7 +6,7 @@ import { formaterCentimes } from "@/data/devis";
 import { PeriodeDocumentsSelect } from "@/components/PeriodeDocumentsSelect";
 import { dansPeriode, type PeriodeDocuments } from "@/lib/suivi-clients";
 import { useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -244,9 +244,12 @@ function DocumentsPage() {
                       <StatutDocument document={d} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="outline" size="sm" onClick={() => setDocumentOuvert(d)}>
-                        Voir
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        {aEncaisser(d) && <Button asChild size="sm" variant="action"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
+                        <Button variant="outline" size="sm" onClick={() => setDocumentOuvert(d)}>
+                          Voir
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -279,13 +282,12 @@ function DocumentsPage() {
                     <dd>{formaterMontant(d.montantTTC)}{d.deduction?.statut === "finalise" && <span className="ml-1 text-xs text-muted-foreground">(solde, acompte déduit)</span>}<SuiviLigne d={d} /></dd>
                   </div>
                 </dl>
-                <Button
-                  variant="outline"
-                  className="mt-3 w-full"
-                  onClick={() => setDocumentOuvert(d)}
-                >
-                  Voir
-                </Button>
+                <div className="mt-3 flex gap-2">
+                  {aEncaisser(d) && <Button asChild variant="action" className="flex-1"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
+                  <Button variant="outline" className="flex-1" onClick={() => setDocumentOuvert(d)}>
+                    Voir
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -352,4 +354,10 @@ function SuiviLigne({ d }: { d: DocumentAvecDevis }) {
       {s.reste > 0n && <span className={suiviEcheance(d.devis?.validite, s.reste).etat === "retard" ? "block font-medium text-destructive" : "block"}>{suiviEcheance(d.devis?.validite, s.reste).libelle}</span>}
     </span>
   );
+}
+
+/** Facture ou acompte finalisé avec un reste à régler : bouton « Encaisser » dans les listes. */
+function aEncaisser(d: DocumentAvecDevis): boolean {
+  if (d.fictif || d.statut !== "Finalisé" || (d.type !== "facture" && d.type !== "acompte") || d.aRegler === undefined) return false;
+  return suivre(d.aRegler, d.reglements ?? [], d.credite ?? 0n).reste > 0n;
 }

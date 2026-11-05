@@ -58,12 +58,20 @@ export interface Synthese {
  * - encaissé : règlements enregistrés (non annulés) datés de la période.
  * En mode HT, chaque montant est converti document par document (proportion HT/TTC du document, voir enMode).
  */
-export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc"): Synthese {
+/** Case de la synthèse : chaque montant affiché est la somme de ses documents (voir detailSynthese). */
+export type CaseSynthese =
+  | "devis.attente" | "devis.signe" | "devis.refuse" | "devis.expire"
+  | "factures.attente" | "factures.paye" | "factures.retard"
+  | "acomptes.attente" | "acomptes.paye" | "acomptes.retard"
+  | "aFacturer" | "encaisse";
+export interface ElementSynthese { doc: DocumentAvecDevis; montant: bigint }
+
+/** Documents de chaque case de la synthèse, avec le montant qu'ils y apportent (mêmes règles que synthese). */
+export function detailSynthese(documents: DocumentAvecDevis[], periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc"): Record<CaseSynthese, ElementSynthese[]> {
   const m = (d: DocumentAvecDevis, ttc: bigint) => enMode(d, ttc, mode);
-  const r: Synthese = {
-    devis: { attente: 0n, signe: 0n, refuse: 0n, expire: 0n, nbAttente: 0, nbSigne: 0, nbRefuse: 0, nbExpire: 0 },
-    factures: { attente: 0n, paye: 0n, retard: 0n }, acomptes: { attente: 0n, paye: 0n, retard: 0n }, aFacturer: 0n, encaisse: 0n,
-  };
+  const r = Object.fromEntries((["devis.attente", "devis.signe", "devis.refuse", "devis.expire", "factures.attente", "factures.paye", "factures.retard",
+    "acomptes.attente", "acomptes.paye", "acomptes.retard", "aFacturer", "encaisse"] as const).map((k) => [k, [] as ElementSynthese[]])) as Record<CaseSynthese, ElementSynthese[]>;
+  const ajouter = (k: CaseSynthese, doc: DocumentAvecDevis, montant: bigint) => { if (montant !== 0n) r[k].push({ doc, montant }); };
   // Comme Khosmos : une facture émise sur un devis le couvre, même annulée ensuite ; un acompte annulé ne compte pas.
   const factureParDevis = new Map<string, bigint>();
   for (const d of documents) {
@@ -78,32 +86,42 @@ export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocumen
       const ttc = m(d, ttcBrut(d));
       const e = etatDevis(d, aujourdHui);
       if (e === "signe") {
-        if (dans(d.reponse?.le ?? d.date)) { r.devis.signe += ttc; r.devis.nbSigne++; }
+        if (dans(d.reponse?.le ?? d.date)) r["devis.signe"].push({ doc: d, montant: ttc });
         const reste = ttc - (factureParDevis.get(d.id) ?? 0n);
-        if (reste > 0n && dans(d.date)) r.aFacturer += reste;
+        if (reste > 0n && dans(d.date)) ajouter("aFacturer", d, reste);
         continue;
       }
       if (!dans(d.date)) continue;
-      if (e === "refuse") { r.devis.refuse += ttc; r.devis.nbRefuse++; }
-      else if (e === "expire") { r.devis.expire += ttc; r.devis.nbExpire++; }
-      else if (e === "attente") { r.devis.attente += ttc; r.devis.nbAttente++; }
+      if (e === "refuse" || e === "expire" || e === "attente") r[`devis.${e}`].push({ doc: d, montant: ttc });
       continue;
     }
     if ((d.type !== "facture" && d.type !== "acompte") || d.aRegler === undefined || estAnnulee(d)) continue;
     const s = suivre(d.aRegler, d.reglements ?? [], d.credite ?? 0n);
-    const cible = d.type === "facture" ? r.factures : r.acomptes;
+    const cible = d.type === "facture" ? "factures" : "acomptes";
     const actifs = (d.reglements ?? []).filter((x) => !x.annuleLe);
     const dansPer = actifs.filter((x) => dans(x.date)).reduce((t, x) => t + x.montant, 0n);
-    r.encaisse += m(d, dansPer);
+    ajouter("encaisse", d, m(d, dansPer));
     if (s.reste === 0n) {
       const dernier = actifs.reduce((mx, x) => (x.date > mx ? x.date : mx), "");
-      if (dans(dernier || d.date)) cible.paye += m(d, ttcBrut(d) - s.credite);
+      if (dans(dernier || d.date)) ajouter(`${cible}.paye`, d, m(d, ttcBrut(d) - s.credite));
     } else {
-      cible.paye += m(d, dansPer);
+      ajouter(`${cible}.paye`, d, m(d, dansPer));
       if (!dans(d.date)) continue;
-      if (suiviEcheance(d.devis?.validite, s.reste, aujourdHui).etat === "retard") cible.retard += m(d, s.reste);
-      else cible.attente += m(d, s.reste);
+      if (suiviEcheance(d.devis?.validite, s.reste, aujourdHui).etat === "retard") ajouter(`${cible}.retard`, d, m(d, s.reste));
+      else ajouter(`${cible}.attente`, d, m(d, s.reste));
     }
   }
   return r;
+}
+
+export function synthese(documents: DocumentAvecDevis[], periode: PeriodeDocuments, aujourdHui = dateParis(), mode: ModeMontant = "ttc"): Synthese {
+  const d = detailSynthese(documents, periode, aujourdHui, mode);
+  const t = (k: CaseSynthese) => d[k].reduce((s, e) => s + e.montant, 0n);
+  return {
+    devis: { attente: t("devis.attente"), signe: t("devis.signe"), refuse: t("devis.refuse"), expire: t("devis.expire"),
+      nbAttente: d["devis.attente"].length, nbSigne: d["devis.signe"].length, nbRefuse: d["devis.refuse"].length, nbExpire: d["devis.expire"].length },
+    factures: { attente: t("factures.attente"), paye: t("factures.paye"), retard: t("factures.retard") },
+    acomptes: { attente: t("acomptes.attente"), paye: t("acomptes.paye"), retard: t("acomptes.retard") },
+    aFacturer: t("aFacturer"), encaisse: t("encaisse"),
+  };
 }

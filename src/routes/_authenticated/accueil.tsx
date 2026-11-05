@@ -11,6 +11,8 @@ import { telechargerDocumentsCsv } from "@/lib/export-documents";
 import { SyntheseKhosmos } from "@/components/SyntheseKhosmos";
 import { DevisASuivre } from "@/components/DevisASuivre";
 import { MontantBasculable } from "@/components/BasculeHtTtc";
+import { ListeDocumentsDialog, type ElementListe } from "@/components/ListeDocumentsDialog";
+import { ChevronRight, Wallet } from "lucide-react";
 import { useModeMontants } from "@/data/mode-montants";
 import { enMode } from "@/lib/montants";
 
@@ -31,6 +33,7 @@ function Accueil() {
   const [filtre, setFiltre] = useState("tous");
   const etat = useEtatDocuments();
   const mode = useModeMontants();
+  const [liste, setListe] = useState<{ titre: string; elements: ElementListe[]; encaisser?: boolean; description?: string } | null>(null);
   const docs = etat.liste.filter(d => !d.fictif);
   const factures = docs.filter(d => (d.type === "facture" || d.type === "acompte") && d.statut === "Finalisé" && d.aRegler !== undefined);
   const suivis = factures.map(doc => ({ doc, suivi: suivre(doc.aRegler!, doc.reglements ?? [], doc.credite ?? 0n) }));
@@ -55,7 +58,12 @@ function Accueil() {
       : etat.statut !== "pret" ? <p role="status" className="mt-6">Chargement de votre activité…</p> : <>
       <SyntheseKhosmos documents={docs} />
       <div className="khosmos-summary mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {([["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", true], ["Paiements attendus", String(enAttente.length), "Documents avec un reste à régler", false], ["Brouillons", String(brouillons.length), "Documents à compléter", false], ["Crédits clients", formaterCentimes(credits), "À traiter séparément, sans remboursement automatique", true]] as const).map(([titre, valeur, aide, montant]) => <section key={titre} className="rounded-2xl border bg-card p-5"><h2 className="text-sm text-muted-foreground">{titre}</h2><p className="mt-2 text-2xl font-semibold">{montant ? <MontantBasculable>{valeur}</MontantBasculable> : valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></section>)}
+        {([
+          ["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", () => setListe({ titre: "À encaisser", elements: enAttente.map(d => ({ doc: d.doc, montant: enMode(d.doc, d.suivi.reste, mode) })), encaisser: true, description: "Reste à régler de chaque document." })],
+          ["Paiements attendus", String(enAttente.length), "Documents avec un reste à régler", () => setListe({ titre: "Paiements attendus", elements: enAttente.map(d => ({ doc: d.doc, montant: enMode(d.doc, d.suivi.reste, mode) })), encaisser: true })],
+          ["Brouillons", String(brouillons.length), "Documents à compléter", () => setListe({ titre: "Brouillons", elements: brouillons.map(doc => ({ doc })) })],
+          ["Crédits clients", formaterCentimes(credits), "À traiter séparément, sans remboursement automatique", () => setListe({ titre: "Crédits clients", elements: suivis.filter(d => d.suivi.creditClient > 0n).map(d => ({ doc: d.doc, montant: enMode(d.doc, d.suivi.creditClient, mode) })), description: "Trop-perçu ou avoir supérieur au reste dû." })],
+        ] as const).map(([titre, valeur, aide, ouvrir]) => <button type="button" key={titre} onClick={ouvrir} className="group rounded-2xl border bg-card p-5 text-left transition-colors hover:border-primary/50 hover:bg-secondary/40 focus-visible:outline-2"><h2 className="flex items-center justify-between text-sm text-muted-foreground">{titre}<ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></h2><p className="mt-2 text-2xl font-semibold">{valeur}</p><p className="mt-2 text-xs text-muted-foreground">{aide}</p></button>)}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
       <section className="mt-6 rounded-2xl border bg-card p-5">
@@ -68,10 +76,11 @@ function Accueil() {
           {(recherche || filtre !== "tous") && <Button variant="ghost" onClick={() => { setRecherche(""); setFiltre("tous"); }}>Réinitialiser</Button>}
         </div>
         <p aria-live="polite" className="mt-3 text-sm font-medium">{visibles.length} paiement(s) affiché(s) · reste à encaisser : <MontantBasculable>{formaterCentimes(totalVisible)}</MontantBasculable></p>
-        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold"><MontantBasculable>{formaterCentimes(enMode(doc, suivi.reste, mode))}</MontantBasculable></span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
+        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold"><MontantBasculable>{formaterCentimes(enMode(doc, suivi.reste, mode))}</MontantBasculable></span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="action"><Link to="/factures/$id" params={{id:doc.id}} search={{ encaisser: true }}><Wallet className="size-4" /> Encaisser</Link></Button><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
         <p className="mt-3 text-xs text-muted-foreground">Les rappels sont des messages à relire et envoyer vous-même. L’export reprend uniquement les paiements affichés ; aucun email n’est envoyé automatiquement.</p>
       </section>
       <DevisASuivre documents={docs} />
+      <ListeDocumentsDialog ouvert={!!liste} onFermer={() => setListe(null)} titre={liste?.titre ?? ""} elements={liste?.elements ?? []} mode={mode} encaisser={liste?.encaisser} description={liste?.description} />
     </>}
     <section className="mt-6 rounded-2xl border bg-card p-5"><h2 className="text-lg font-semibold">Vos raccourcis</h2><div className="mt-4 flex flex-wrap gap-3"><Button asChild variant="outline"><Link to="/">Tous les documents</Link></Button><Button asChild variant="outline"><Link to="/clients">Clients</Link></Button><Button asChild variant="outline"><Link to="/catalogue">Catalogue</Link></Button><Button asChild variant="outline"><Link to="/entreprise">Fiche entreprise</Link></Button></div><p className="mt-4 text-sm text-muted-foreground">Préparez une facture ou un acompte depuis un devis finalisé. Préparez un avoir depuis sa facture.</p></section>
   </AppLayout>;

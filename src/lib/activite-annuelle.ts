@@ -12,6 +12,7 @@ import { ttcBrut, type ModeMontant } from "./montants";
 export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = dateParis(), mode: ModeMontant = "ht") {
   const annee = aujourdHui.slice(0, 4);
   const mois = Array<bigint>(12).fill(0n);
+  const detail: { doc: DocumentAvecDevis; montant: bigint }[][] = Array.from({ length: 12 }, () => []);
   let incomplets = 0;
   const natureSource = new Map(documents.filter(d => d.type === "facture" || d.type === "acompte").map(d => [d.id, d.type]));
   for (const d of documents) {
@@ -26,6 +27,7 @@ export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = da
       : d.type === "facture" && d.deduction?.statut === "finalise" ? d.montantHTCentimes + d.deduction.ht : d.montantHTCentimes;
     const index = Number(date.slice(5,7)) - 1;
     mois[index] = mois[index]! + (d.type === "avoir" ? -ht : ht);
+    detail[index]!.push({ doc: d, montant: d.type === "avoir" ? -ht : ht });
   }
-  return { annee, mois, total: mois.reduce((s,v) => s+v,0n), incomplets };
+  return { annee, mois, detail, total: mois.reduce((s,v) => s+v,0n), incomplets };
 }
