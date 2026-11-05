@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { coutDepuisBase, coutVersBase, REGLAGES_DEFAUT, type ColonnesCout } from "@/lib/rentabilite";
 import { lireReglement, type Reglement, type ReglementBase } from "@/data/reglements";
 import { explicationRefus, lireDeduction, type Deduction } from "@/data/deduction";
 
@@ -277,11 +278,11 @@ export function definirModeDemo(actif: boolean) { publier({ demo: actif }); }
 
 // --- Conversion base <-> application ---------------------------------------
 
-interface LigneBase {
+type LigneBase = {
   id: string; position: number; type: "materiel" | "prestation"; article_id: string | null;
   reference: string; designation: string; description: string; unite: string;
   quantite_milliemes: number; prix_ht_centimes: number; taux_tva_milliemes: number; ht_centimes?: number; tva_centimes?: number;
-}
+} & ColonnesCout
 interface DevisBase {
   id: string; reference: string; client_id: string; client_copie: CoordonneesClient;
   objet: string; date_devis: string; date_validite: string | null; remarques: string; notes: string;
@@ -316,6 +317,7 @@ function depuisBase(d: DevisBase): DocumentAvecDevis {
       designation: l.designation, description: l.description, unite: l.unite as DevisBrouillon["lignes"][number]["unite"],
       quantite: echelle(l.quantite_milliemes, 3), prix: prixTexte(l.prix_ht_centimes),
       taux: l.taux_tva_milliemes as TauxTVA,
+      ...(coutDepuisBase(l) ? { cout: coutDepuisBase(l)! } : {}),
     })),
   };
   const [a, m, j] = d.date_devis.split("-");
@@ -627,7 +629,8 @@ function versLignes(v: DevisBrouillon) {
 }
 
 export async function enregistrerBrouillon(id: string, v: DevisBrouillon, version: number | null): Promise<DocumentAvecDevis> {
-  const lignes = versLignes(v);
+  // Devis uniquement : les coûts internes de chaque ligne (migration 20261105200000) ; les factures ne les reçoivent pas.
+  const lignes = versLignes(v).map((x, i) => ({ ...x, ...coutVersBase(v.lignes[i]!.cout, REGLAGES_DEFAUT) }));
   const charge = {
     client_id: v.clientId, client_copie: v.client, objet: v.objet.trim(), date_devis: v.date,
     date_validite: v.validite, remarques: v.remarques, notes: v.notes, conditions_paiement: v.conditions ?? "", lignes,

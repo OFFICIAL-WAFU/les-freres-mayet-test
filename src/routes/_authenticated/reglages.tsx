@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { lireHabitudes, enregistrerHabitudes } from "@/data/habitudes";
+import { lireHabitudes, enregistrerHabitudes, lireReglagesChiffrage, enregistrerReglagesChiffrage } from "@/data/habitudes";
+import { analyserCout, coutVide, formaterDecimal } from "@/lib/rentabilite";
 import type { Habitudes } from "@/lib/habitudes";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,11 +81,39 @@ function HabitudesDocuments() {
   </section>;
 }
 
+function ReglagesChiffrageBloc() {
+  const [f, setF] = useState<{ coef: string; cout: string; taux: string } | null>(null); const [occupe, setOccupe] = useState(false); const [ok, setOk] = useState(false);
+  const versTexte = (r: Awaited<ReturnType<typeof lireReglagesChiffrage>>) => ({ coef: formaterDecimal(r.coefMilliemes, 3, 1), cout: formaterDecimal(r.coutHoraireCentimes, 2, 2), taux: formaterDecimal(r.tauxHoraireCentimes, 2, 2) });
+  useEffect(() => { let actif = true; lireReglagesChiffrage().then(r => { if (actif) setF(versTexte(r)); }); return () => { actif = false; }; }, []);
+  if (!f) return null;
+  const maj = (p: Partial<typeof f>) => { setOk(false); setF({ ...f, ...p }); };
+  const enregistrer = async () => {
+    // Même analyse que sur les lignes de devis : le coût horaire suit la règle du taux horaire.
+    const a = analyserCout({ ...coutVide({ coefMilliemes: 0, coutHoraireCentimes: 0, tauxHoraireCentimes: 0 }), coef: f.coef, taux: f.taux });
+    const c = analyserCout({ ...coutVide({ coefMilliemes: 0, coutHoraireCentimes: 0, tauxHoraireCentimes: 0 }), coef: "1", taux: f.cout });
+    if (!a.valeur || !c.valeur) { toast.error(a.erreurs.coef ?? a.erreurs.taux ?? "Coût horaire : un nombre, ex. 25."); return; }
+    setOccupe(true);
+    try { setF(versTexte(await enregistrerReglagesChiffrage({ coefMilliemes: Number(a.valeur.coefMilliemes), coutHoraireCentimes: Number(c.valeur.tauxCentimes), tauxHoraireCentimes: Number(a.valeur.tauxCentimes) }))); setOk(true); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Enregistrement impossible."); } finally { setOccupe(false); }
+  };
+  return <section className="mt-6 max-w-3xl rounded-2xl border border-border bg-card p-4 sm:p-6">
+    <h2 className="text-base font-semibold">Chiffrage et marge</h2>
+    <p className="mt-1 text-sm text-muted-foreground">Valeurs proposées sur chaque nouvelle ligne de devis. Prix de vente = prix d’achat × coefficient + temps de pose × taux horaire vendu. Ces informations ne sont jamais visibles par le client.</p>
+    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-1.5"><Label htmlFor="c-coef">Coefficient matériel</Label><Input id="c-coef" inputMode="decimal" value={f.coef} onChange={e => maj({ coef: e.target.value })} /></div>
+      <div className="grid gap-1.5"><Label htmlFor="c-cout">Coût horaire réel (€)</Label><Input id="c-cout" inputMode="decimal" value={f.cout} onChange={e => maj({ cout: e.target.value })} /></div>
+      <div className="grid gap-1.5"><Label htmlFor="c-taux">Taux horaire vendu (€)</Label><Input id="c-taux" inputMode="decimal" value={f.taux} onChange={e => maj({ taux: e.target.value })} /></div>
+    </div>
+    <div className="mt-4 flex items-center gap-3"><Button disabled={occupe} onClick={() => void enregistrer()}>{occupe ? "Enregistrement…" : "Enregistrer le chiffrage"}</Button>{ok && <span role="status" className="text-sm">Chiffrage enregistré.</span>}</div>
+  </section>;
+}
+
 function Page() {
   return (
     <AppLayout titre="Réglages">
       <h1 className="text-2xl font-semibold lg:text-3xl">Réglages</h1>
       <HabitudesDocuments />
+      <ReglagesChiffrageBloc />
       <SauvegardeLocale />
     </AppLayout>
   );
