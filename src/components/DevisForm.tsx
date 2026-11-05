@@ -5,11 +5,14 @@ import { dateParis } from "@/lib/echeances";
 import { useEtatEntreprise } from "@/data/entreprise";
 import { DeductionBloc } from "@/components/DeductionBloc";
 import type { Deduction } from "@/data/deduction";
-import { lireHabitudes } from "@/data/habitudes";
+import { lireHabitudes, lireReglagesChiffrage } from "@/data/habitudes";
+import { REGLAGES_DEFAUT, coutVide, erreursCout, type ReglagesChiffrage } from "@/lib/rentabilite";
+import { CoutBloc, PastilleMarge, RentabiliteBloc, TableauDetaille } from "@/components/LignesChiffrage";
+import { Switch } from "@/components/ui/switch";
 import { appliquerHabitudesDevis, type Habitudes } from "@/lib/habitudes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
-import { Plus, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { StatutBadge } from "@/components/StatutBadge";
@@ -161,6 +164,14 @@ function DevisFormBase({
   const [rechercheArticle, setRechercheArticle] = useState("");
   const [typeArticle, setTypeArticle] = useState<ArticleType | "tous">("tous");
   const enregistre = useRef(false);
+  // Chiffrage interne (devis seulement) : réglages 1,6 / 25 € / 50 € par défaut, lignes dépliées, mode détaillé.
+  const chiffrage = !facture;
+  const [reglages, setReglages] = useState<ReglagesChiffrage>(REGLAGES_DEFAUT);
+  useEffect(() => { if (!chiffrage) return; let actif = true; lireReglagesChiffrage().then((r) => { if (actif) setReglages(r); }); return () => { actif = false; }; }, [chiffrage]);
+  const [detaille, setDetailleEtat] = useState<boolean>(() => { try { return localStorage.getItem("mayet-devis-detaille") === "1"; } catch { return false; } });
+  const setDetaille = (x: boolean) => { setDetailleEtat(x); try { localStorage.setItem("mayet-devis-detaille", x ? "1" : "0"); } catch { /* préférence non conservée */ } };
+  const [ouvertes, setOuvertes] = useState<string[]>(() => ((JSON.parse(depart) as DevisBrouillon).lignes.length <= 1 ? (JSON.parse(depart) as DevisBrouillon).lignes.map((l) => l.cle) : []));
+  const basculer = (cle: string) => setOuvertes((o) => (o.includes(cle) ? o.filter((x) => x !== cle) : [...o, cle]));
 
   // Un panneau fermé pendant la navigation peut laisser la page non cliquable : on rétablit.
   useEffect(() => {
@@ -198,6 +209,7 @@ function DevisFormBase({
   for (const { l, erreurs: e } of validations)
     for (const k of ["designation", "unite", "quantite", "prix", "taux"] as const)
       if (e[k]) erreurs[`l-${l.cle}-${k}`] = e[k]!;
+  if (chiffrage) for (const l of v.lignes) for (const [k, m] of Object.entries(erreursCout(l))) erreurs[`l-${l.cle}-${k}`] = m;
   if (v.lignes.length === 0) erreurs["d-lignes"] = "Ajoutez au moins une ligne.";
   const recap = recapituler(v.lignes);
   const err = (id: string) => (tentative ? erreurs[id] : undefined);
@@ -207,6 +219,8 @@ function DevisFormBase({
     setTentative(true);
     const premier = Object.keys(erreurs)[0];
     if (premier) {
+      const enErreur = v.lignes.filter((l) => Object.keys(erreurs).some((k) => k.startsWith(`l-${l.cle}-`))).map((l) => l.cle);
+      if (enErreur.length) { setDetaille(false); setOuvertes((o) => [...new Set([...o, ...enErreur])]); await new Promise((r) => setTimeout(r, 0)); }
       const el = document.getElementById(premier);
       el?.scrollIntoView({ behavior: "auto", block: "center" });
       el?.focus();
@@ -266,6 +280,8 @@ function DevisFormBase({
       quantite: "1",
       prix: a.prixHT.toFixed(2).replace(".", ","),
       taux: tauxGlobal,
+      // Le prix du catalogue est conservé tant qu'aucun prix d'achat ni temps de pose n'est saisi.
+      ...(chiffrage ? { cout: coutVide(reglages) } : {}),
     };
   }
   function ajouterDepuisCatalogue(a: Article) {
@@ -283,11 +299,13 @@ function DevisFormBase({
     setV((x) => ({ ...x, lignes: x.lignes.map((l) => ({ ...l, taux: t })) }));
   }
   function ajouterLibre() {
+    const cle = nouvelleCle();
+    setOuvertes((o) => [...o, cle]);
     maj({
       lignes: [
         ...v.lignes,
         {
-          cle: nouvelleCle(),
+          cle,
           articleId: null,
           type: "prestation",
           reference: "",
@@ -297,6 +315,7 @@ function DevisFormBase({
           quantite: "1",
           prix: "",
           taux: tauxGlobal,
+          ...(chiffrage ? { cout: coutVide(reglages) } : {}),
         },
       ],
     });
@@ -484,21 +503,59 @@ function DevisFormBase({
               </p>
             )}
             <Erreur id="d-lignes" texte={err("d-lignes")} />
-            {validations.map(({ l, calcul, ht }, i) => (
-              <LigneBloc
-                key={l.cle}
-                index={i}
-                ligne={l}
-                htTexte={ht !== null ? formaterCentimes(ht) : "—"}
-                ttcOk={!!calcul}
-                err={(k) => err(`l-${l.cle}-${k}`)}
-                onChange={(p) => majLigne(l.cle, p)}
-                onRetirer={() => maj({ lignes: v.lignes.filter((x) => x.cle !== l.cle) })}
-                onDupliquer={() => maj({lignes:dupliquerLigne(v.lignes,l.cle,nouvelleCle())})}
-                onMonter={i>0?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,-1)}):undefined}
-                onDescendre={i<v.lignes.length-1?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,1)}):undefined}
-              />
-            ))}
+            {chiffrage && v.lignes.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">{detaille ? "Toutes les colonnes de chiffrage, modifiables directement. Cliquez sur une désignation pour la ligne complète." : "Cliquez sur une ligne pour la modifier et voir son coût."}</p>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="d-detaille" className="text-sm">Mode détaillé</Label>
+                  <Switch id="d-detaille" checked={detaille} onCheckedChange={setDetaille} />
+                </div>
+              </div>
+            )}
+            {chiffrage && detaille && (
+              <TableauDetaille lignes={v.lignes} reglages={reglages} err={(cle, k) => err(`l-${cle}-${k}`)}
+                onChange={(l) => majLigne(l.cle, l)} onOuvrir={(cle) => { setDetaille(false); setOuvertes((o) => (o.includes(cle) ? o : [...o, cle])); }} />
+            )}
+            {!(chiffrage && detaille) && validations.map(({ l, calcul, ht }, i) => {
+              const htTexte = ht !== null ? formaterCentimes(ht) : "—";
+              if (chiffrage && !ouvertes.includes(l.cle)) {
+                return (
+                  <button key={l.cle} type="button" data-ligne={i + 1} onClick={() => basculer(l.cle)} aria-expanded={false}
+                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/50 sm:grid-cols-[minmax(0,1fr)_4rem_7rem_7rem_auto_1.25rem]">
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{l.designation || "Ligne sans désignation"}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {l.type === "materiel" ? "Matériel" : "Prestation"}{l.cout && analyserTempsTexte(l.cout.temps)}{l.taux !== null ? ` · TVA ${labelTaux(l.taux)}` : ""}
+                      </span>
+                    </span>
+                    <span className="hidden text-right sm:block">{l.quantite}</span>
+                    <span className="hidden text-right sm:block">{l.prix ? `${l.prix} €` : "—"}</span>
+                    <span className="text-right font-semibold">{htTexte}</span>
+                    <span className="col-span-2 sm:col-span-1 sm:justify-self-end"><PastilleMarge ligne={l} reglages={reglages} /></span>
+                    <ChevronDown aria-hidden="true" className="hidden size-4 text-muted-foreground sm:block" />
+                  </button>
+                );
+              }
+              return (
+                <LigneBloc
+                  key={l.cle}
+                  index={i}
+                  ligne={l}
+                  htTexte={htTexte}
+                  ttcOk={!!calcul}
+                  err={(k) => err(`l-${l.cle}-${k}`)}
+                  onChange={(p) => majLigne(l.cle, "prix" in p && l.cout?.auto ? { ...p, cout: { ...l.cout, auto: false } } : p)}
+                  onRetirer={() => maj({ lignes: v.lignes.filter((x) => x.cle !== l.cle) })}
+                  onDupliquer={() => maj({lignes:dupliquerLigne(v.lignes,l.cle,nouvelleCle())})}
+                  onMonter={i>0?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,-1)}):undefined}
+                  onDescendre={i<v.lignes.length-1?()=>maj({lignes:deplacerLigne(v.lignes,l.cle,1)}):undefined}
+                  {...(chiffrage ? {
+                    onReplier: () => basculer(l.cle),
+                    chiffrage: <CoutBloc ligne={l} reglages={reglages} err={(k) => err(`l-${l.cle}-${k}`)} onChange={(n) => majLigne(l.cle, n)} />,
+                  } : {})}
+                />
+              );
+            })}
 
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button type="button" variant="outline" onClick={() => setCatalogueOuvert((o) => !o)} aria-expanded={catalogueOuvert}>
@@ -597,6 +654,7 @@ function DevisFormBase({
             <Recap recap={recap} vide={v.lignes.length === 0} />
             {facture?.deduction && <DeductionBloc recap={recap} deduction={facture.deduction} />}
           </div>
+          {chiffrage && <RentabiliteBloc lignes={v.lignes} reglages={reglages} />}
           <div className="flex flex-col gap-2">
             {tentative && Object.keys(erreurs).length > 0 && (
               <p className="text-sm font-medium text-destructive">Certains champs sont à corriger avant d'enregistrer.</p>
@@ -709,7 +767,7 @@ function LigneBloc({
   err,
   onChange,
   onRetirer,
-  onDupliquer, onMonter, onDescendre,
+  onDupliquer, onMonter, onDescendre, onReplier, chiffrage,
 }: {
   index: number;
   ligne: LigneSaisie;
@@ -721,6 +779,8 @@ function LigneBloc({
   onDupliquer: () => void;
   onMonter?: (() => void) | undefined;
   onDescendre?: (() => void) | undefined;
+  onReplier?: (() => void) | undefined;
+  chiffrage?: React.ReactNode;
 }) {
   const id = (k: string) => `l-${l.cle}-${k}`;
   const lot=lireLot(l.description);
@@ -736,6 +796,7 @@ function LigneBloc({
           <Button type="button" variant="ghost" size="sm" disabled={!onDescendre} onClick={onDescendre} aria-label={`Descendre la ligne ${index+1}`}>↓</Button>
           <Button type="button" variant="outline" size="sm" onClick={onDupliquer} aria-label={`Dupliquer la ligne ${index+1}`}>Dupliquer</Button>
           <Button type="button" variant="ghost" size="sm" onClick={onRetirer}>Retirer</Button>
+          {onReplier && <Button type="button" variant="ghost" size="sm" onClick={onReplier} aria-label={`Replier la ligne ${index + 1}`}><ChevronUp /></Button>}
         </div>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-12">
@@ -799,6 +860,13 @@ function LigneBloc({
           <span className="flex h-9 items-center font-semibold" data-testid="total-ligne">{htTexte}</span>
         </div>
       </div>
+      {chiffrage}
     </div>
   );
+}
+
+/** « · 1,5 h de pose » pour le résumé d'une ligne repliée. */
+function analyserTempsTexte(temps: string): string {
+  const t = temps.trim();
+  return t && t !== "0" ? ` · ${t} h de pose` : "";
 }

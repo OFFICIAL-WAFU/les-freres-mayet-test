@@ -17,3 +17,12 @@ L'historique Khosmos devient de vrais documents : colonnes `lot_import` (réserv
 client sur les devis (`reponse_client` attente/accepte/refuse, `reponse_le`, `reponse_mode`, RPC `noter_reponse_devis`,
 signature à distance → accepté), unicité devis/nature limitée aux documents de l'application, et recherche de
 « l'acompte du devis » qui ignore les acomptes annulés par avoir (`facture_annulee`).
+
+## 20261105200000_rentabilite_devis.sql — appliquée sur TEST le 05/11/2026, PAS en production
+Rentabilité des devis : sur chaque ligne de devis, prix d'achat, coefficient matériel, temps de pose, taux horaire vendu,
+coût horaire figé et « prix calculé » (colonnes facultatives, informations internes) ; réglages par défaut dans
+habitudes_documents (coefficient 1,6, coût réel 25 €/h, taux vendu 50 €/h — décision de Baptiste du 05/11/2026) ;
+enregistrer_brouillon recopiée à l'identique avec ces colonnes en plus. Montants, verrous, factures et projection de
+signature inchangés. Contrôles : `verification-rentabilite-sql.mjs` (9) et `verification-rentabilite.mjs`. Avant
+installation en production : relire la définition de enregistrer_brouillon en production (pg_get_functiondef) et vérifier
+qu'elle est identique à celle de TEST d'avant migration (md5 daf1b5290ac72962fdd7bd25974dfaca).

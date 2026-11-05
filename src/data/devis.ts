@@ -1,4 +1,5 @@
 import type { ArticleType, Unite } from "@/data/catalogue";
+import type { CoutSaisie } from "@/lib/rentabilite";
 
 /** Taux en millièmes : 0, 55 (5,5 %), 100 (10 %), 200 (20 %). */
 export type TauxTVA = 0 | 55 | 100 | 200;
@@ -22,6 +23,8 @@ export interface LigneSaisie {
   quantite: string;
   prix: string;
   taux: TauxTVA | null;
+  /** Coût interne (prix d'achat, coefficient, temps de pose) — jamais visible par le client. */
+  cout?: CoutSaisie;
 }
 
 export interface CoordonneesClient {
