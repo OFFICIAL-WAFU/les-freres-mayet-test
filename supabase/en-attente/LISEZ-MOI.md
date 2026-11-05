@@ -18,7 +18,7 @@ client sur les devis (`reponse_client` attente/accepte/refuse, `reponse_le`, `re
 signature à distance → accepté), unicité devis/nature limitée aux documents de l'application, et recherche de
 « l'acompte du devis » qui ignore les acomptes annulés par avoir (`facture_annulee`).
 
-## 20261105200000_rentabilite_devis.sql — appliquée sur TEST le 05/11/2026, PAS en production
+## 20261105200000_rentabilite_devis.sql — appliquée (TEST et PRODUCTION, 05/11/2026, ne pas rejouer)
 Rentabilité des devis : sur chaque ligne de devis, prix d'achat, coefficient matériel, temps de pose, taux horaire vendu,
 coût horaire figé et « prix calculé » (colonnes facultatives, informations internes) ; réglages par défaut dans
 habitudes_documents (coefficient 1,6, coût réel 25 €/h, taux vendu 50 €/h — décision de Baptiste du 05/11/2026) ;
