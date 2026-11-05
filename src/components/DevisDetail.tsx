@@ -47,7 +47,7 @@ const frDateHeure = (iso: string) =>
 const fr = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—");
 
 /** Détail d'un brouillon de devis créé avec le formulaire. */
-export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNavigate?: () => void }) {
+export function DevisDetail({ doc, onNavigate, encaisser = false }: { doc: DocumentAvecDevis; onNavigate?: () => void; encaisser?: boolean }) {
   const d = doc.devis!;
   const recap = recapituler(d.lignes);
   const finalise = doc.statut === "Finalisé";
@@ -131,6 +131,7 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
       </div>
       {finalise && !estFacture && <FriseDossier doc={doc} />}
       {finalise && doc.type === "devis" && !doc.fictif && <SuiviDevisBloc doc={doc} />}
+      {estFacture && finalise && <ReglementsBloc doc={doc} ouvrirAuDemarrage={encaisser} />}
       {finalise && (
         <p className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 p-3 font-medium">
           <Lock className="size-4" /> Document finalisé — contenu verrouillé
@@ -351,7 +352,6 @@ export function DevisDetail({ doc, onNavigate }: { doc: DocumentAvecDevis; onNav
         <Recap recap={recap} vide={d.lignes.length === 0} />
         {doc.type === "facture" && doc.deduction && <DeductionBloc recap={recap} deduction={doc.deduction} />}
       </section>
-      {estFacture && finalise && <ReglementsBloc doc={doc} />}
       {estFacture && finalise && <RelanceDialogue doc={doc} />}
       {!estFacture && doc.type === "devis" && finalise && !factureLiee && !acompteLie && <RelanceDialogue doc={doc} />}
       {!estFacture && doc.type === "devis" && finalise && !doc.fictif && <SignatureDistanteBloc devisId={doc.id} reference={doc.numero} clientNom={doc.client} clientEmail={doc.devis?.client.email ?? ""} />}

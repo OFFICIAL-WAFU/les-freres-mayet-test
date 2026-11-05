@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Loader2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -20,7 +20,7 @@ const auj = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" })
 const euros = (c: bigint) => `${c / 100n},${String(c % 100n).padStart(2, "0")}`;
 
 /** Suivi des règlements d'une facture finalisée (ordinaire ou d'acompte). */
-export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
+export function ReglementsBloc({ doc, ouvrirAuDemarrage = false }: { doc: DocumentAvecDevis; ouvrirAuDemarrage?: boolean }) {
   const reglements = doc.reglements ?? [];
   const s = suivre(doc.aRegler ?? 0n, reglements, doc.credite ?? 0n);
   const [form, setForm] = useState(false);
@@ -38,10 +38,18 @@ export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
   const centimes = analyserMontant(montant);
   const valide = centimes !== null && centimes <= s.reste && !!date;
 
+  const bloc = useRef<HTMLElement>(null);
   function ouvrir() {
     setMontant(euros(s.reste)); setDate(auj()); setMode("virement"); setCommentaire(""); setErreur(null);
     tentative.current = null; setForm(true);
   }
+  // Arrivée depuis un bouton « Encaisser » : formulaire ouvert et bloc mis en vue.
+  useEffect(() => {
+    if (!ouvrirAuDemarrage) return;
+    if (s.reste > 0n) ouvrir();
+    bloc.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ouvrirAuDemarrage]);
   async function enregistrer() {
     if (enCours || centimes === null) return;
     setEnCours(true); setErreur(null);
@@ -69,9 +77,15 @@ export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
   }
 
   return (
-    <section className="rounded-xl border border-border p-3">
-      <h3 className="font-semibold">Règlements</h3>
-      <p className="mt-1 font-medium">État du paiement : {s.etat}</p>
+    <section ref={bloc} aria-label="Règlements" className={`scroll-mt-4 rounded-xl border-2 p-4 ${s.reste > 0n ? "border-orange-300 bg-orange-50/60" : "border-teal-300 bg-teal-50/60"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="flex items-center gap-2 text-base font-semibold"><Wallet className="size-5" /> Règlements</h3>
+          <p className="mt-1 font-medium">{s.reste > 0n ? <>Reste à régler : <span className="text-lg font-semibold">{formaterCentimes(s.reste)}</span></> : <span className="inline-flex items-center gap-1 text-teal-700"><CheckCircle2 className="size-4" /> {s.etat}</span>}</p>
+        </div>
+        {s.reste > 0n && !form && <Button size="lg" variant="action" onClick={ouvrir}><Wallet className="size-4" /> Enregistrer un règlement</Button>}
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">État du paiement : {s.etat}</p>
       <dl className="mt-2 grid gap-2 sm:grid-cols-3">
         <div><dt className="text-muted-foreground">Montant facturé{doc.deduction ? " (solde)" : ""}</dt><dd className="font-medium">{formaterCentimes(s.aRegler)}</dd></div>
         {s.credite > 0n && <div><dt className="text-muted-foreground">Montant crédité par avoir</dt><dd className="font-medium">{formaterCentimes(s.credite)}</dd></div>}
@@ -83,9 +97,9 @@ export function ReglementsBloc({ doc }: { doc: DocumentAvecDevis }) {
       {doc.type === "acompte" && <p className="mt-2 text-xs text-muted-foreground">Les règlements de l'acompte sont affectés uniquement à cette facture d'acompte.</p>}
       {erreur && <p role="alert" className="mt-2 rounded-xl border border-destructive/40 bg-card p-2">{erreur}</p>}
 
-      {s.reste > 0n && !form && <Button className="mt-3" variant="outline" onClick={ouvrir}>Enregistrer un règlement</Button>}
       {form && (
-        <div className="mt-3 grid gap-3 rounded-xl border border-border bg-secondary/40 p-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 rounded-xl border border-border bg-card p-3 sm:grid-cols-2">
+          <p className="text-sm font-medium sm:col-span-2">Nouveau règlement — le montant proposé est le reste à régler ; modifiez-le pour un paiement partiel.</p>
           <label className="flex flex-col gap-1">Montant (€)
             <Input inputMode="decimal" value={montant} onChange={(e) => setMontant(e.target.value)} aria-invalid={!valide} />
             {montant && centimes === null && <span className="text-xs text-destructive">Montant positif, deux décimales au plus.</span>}
