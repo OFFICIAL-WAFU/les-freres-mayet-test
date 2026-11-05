@@ -155,7 +155,7 @@ function Formulaire({ enregistree, version }: { enregistree: Entreprise; version
 
   return (
     <AppLayout titre="Entreprise">
-      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit"><span className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white">Entreprise</span><Link to="/messages" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Messages par défaut</Link></div>
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit"><span className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Entreprise</span><Link to="/messages" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary">Messages par défaut</Link></div>
       <h1 className="text-2xl font-semibold lg:text-3xl">Entreprise</h1>
       <p className="mt-1 text-sm text-muted-foreground">Les informations reprises dans l'aperçu de vos devis.</p>
       <p className="mt-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
