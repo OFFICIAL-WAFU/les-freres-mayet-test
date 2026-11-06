@@ -17,14 +17,19 @@ export type Database = {
       articles: {
         Row: {
           archive: boolean
+          code_source: string
           created_at: string
           description: string
           designation: string
+          famille: string
+          fournisseur: string
           id: string
+          lot_import: string | null
           marque: string
           metier: string
           notes: string
           owner_id: string
+          prix_achat_centimes: number | null
           prix_ht_centimes: number
           reference: string
           reference_fabricant: string
@@ -35,14 +40,19 @@ export type Database = {
         }
         Insert: {
           archive?: boolean
+          code_source?: string
           created_at?: string
           description?: string
           designation: string
+          famille?: string
+          fournisseur?: string
           id?: string
+          lot_import?: string | null
           marque?: string
           metier: string
           notes?: string
           owner_id?: string
+          prix_achat_centimes?: number | null
           prix_ht_centimes: number
           reference: string
           reference_fabricant?: string
@@ -53,14 +63,19 @@ export type Database = {
         }
         Update: {
           archive?: boolean
+          code_source?: string
           created_at?: string
           description?: string
           designation?: string
+          famille?: string
+          fournisseur?: string
           id?: string
+          lot_import?: string | null
           marque?: string
           metier?: string
           notes?: string
           owner_id?: string
+          prix_achat_centimes?: number | null
           prix_ht_centimes?: number
           reference?: string
           reference_fabricant?: string
@@ -69,7 +84,15 @@ export type Database = {
           unite?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "articles_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       avoirs: {
         Row: {
@@ -84,6 +107,7 @@ export type Database = {
           finalise_par: string | null
           id: string
           lignes: Json
+          lot_import: string | null
           motif: string
           objet: string
           owner_id: string
@@ -94,6 +118,7 @@ export type Database = {
           total_ht_centimes: number
           total_ttc_centimes: number
           total_tva_centimes: number
+          type_avoir: string
           updated_at: string
           ventilation_tva: Json
           version: number
@@ -110,6 +135,7 @@ export type Database = {
           finalise_par?: string | null
           id?: string
           lignes: Json
+          lot_import?: string | null
           motif: string
           objet: string
           owner_id: string
@@ -120,6 +146,7 @@ export type Database = {
           total_ht_centimes: number
           total_ttc_centimes: number
           total_tva_centimes: number
+          type_avoir?: string
           updated_at?: string
           ventilation_tva: Json
           version?: number
@@ -136,6 +163,7 @@ export type Database = {
           finalise_par?: string | null
           id?: string
           lignes?: Json
+          lot_import?: string | null
           motif?: string
           objet?: string
           owner_id?: string
@@ -146,6 +174,7 @@ export type Database = {
           total_ht_centimes?: number
           total_ttc_centimes?: number
           total_tva_centimes?: number
+          type_avoir?: string
           updated_at?: string
           ventilation_tva?: Json
           version?: number
@@ -154,8 +183,15 @@ export type Database = {
           {
             foreignKeyName: "avoirs_facture_source_id_fkey"
             columns: ["facture_source_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avoirs_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
             referencedColumns: ["id"]
           },
         ]
@@ -164,10 +200,12 @@ export type Database = {
         Row: {
           adresse: string
           code_postal: string
+          code_source: string
           complement: string
           created_at: string
           email: string
           id: string
+          lot_import: string | null
           nom: string
           nom_contact: string
           notes: string
@@ -185,10 +223,12 @@ export type Database = {
         Insert: {
           adresse?: string
           code_postal?: string
+          code_source?: string
           complement?: string
           created_at?: string
           email?: string
           id?: string
+          lot_import?: string | null
           nom?: string
           nom_contact?: string
           notes?: string
@@ -206,10 +246,12 @@ export type Database = {
         Update: {
           adresse?: string
           code_postal?: string
+          code_source?: string
           complement?: string
           created_at?: string
           email?: string
           id?: string
+          lot_import?: string | null
           nom?: string
           nom_contact?: string
           notes?: string
@@ -224,7 +266,15 @@ export type Database = {
           updated_at?: string
           ville?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compteurs_devis: {
         Row: {
@@ -283,10 +333,64 @@ export type Database = {
         }
         Relationships: []
       }
+      connaissances_metier: {
+        Row: {
+          categorie: string
+          contenu: string
+          created_at: string
+          donnees: Json
+          id: string
+          lot_import: string | null
+          metier: string
+          owner_id: string
+          source: string
+          statut: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          categorie: string
+          contenu: string
+          created_at?: string
+          donnees?: Json
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          owner_id: string
+          source?: string
+          statut?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          categorie?: string
+          contenu?: string
+          created_at?: string
+          donnees?: Json
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          owner_id?: string
+          source?: string
+          statut?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connaissances_metier_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devis: {
         Row: {
           client_copie: Json
           client_id: string
+          commande_passee_le: string | null
           conditions_paiement: string
           created_at: string
           date_devis: string
@@ -295,12 +399,16 @@ export type Database = {
           finalise_le: string | null
           finalise_par: string | null
           id: string
+          lot_import: string | null
           notes: string
           objet: string
           owner_id: string
           reference: string
           reference_definitive: string | null
           remarques: string
+          reponse_client: string
+          reponse_le: string | null
+          reponse_mode: string | null
           statut: string
           total_ht_centimes: number
           total_ttc_centimes: number
@@ -312,6 +420,7 @@ export type Database = {
         Insert: {
           client_copie: Json
           client_id: string
+          commande_passee_le?: string | null
           conditions_paiement?: string
           created_at?: string
           date_devis: string
@@ -320,12 +429,16 @@ export type Database = {
           finalise_le?: string | null
           finalise_par?: string | null
           id: string
+          lot_import?: string | null
           notes?: string
           objet: string
           owner_id?: string
           reference: string
           reference_definitive?: string | null
           remarques?: string
+          reponse_client?: string
+          reponse_le?: string | null
+          reponse_mode?: string | null
           statut?: string
           total_ht_centimes?: number
           total_ttc_centimes?: number
@@ -337,6 +450,7 @@ export type Database = {
         Update: {
           client_copie?: Json
           client_id?: string
+          commande_passee_le?: string | null
           conditions_paiement?: string
           created_at?: string
           date_devis?: string
@@ -345,12 +459,16 @@ export type Database = {
           finalise_le?: string | null
           finalise_par?: string | null
           id?: string
+          lot_import?: string | null
           notes?: string
           objet?: string
           owner_id?: string
           reference?: string
           reference_definitive?: string | null
           remarques?: string
+          reponse_client?: string
+          reponse_le?: string | null
+          reponse_mode?: string | null
           statut?: string
           total_ht_centimes?: number
           total_ttc_centimes?: number
@@ -367,11 +485,20 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "devis_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
         ]
       }
       devis_lignes: {
         Row: {
           article_id: string | null
+          coef_materiel_milliemes: number | null
+          cout_horaire_centimes: number | null
           description: string
           designation: string
           devis_id: string
@@ -379,10 +506,14 @@ export type Database = {
           id: string
           owner_id: string
           position: number
+          prix_achat_centimes: number | null
+          prix_calcule: boolean
           prix_ht_centimes: number
           quantite_milliemes: number
           reference: string
+          taux_horaire_centimes: number | null
           taux_tva_milliemes: number
+          temps_pose_minutes: number | null
           ttc_centimes: number
           tva_centimes: number
           type: string
@@ -390,6 +521,8 @@ export type Database = {
         }
         Insert: {
           article_id?: string | null
+          coef_materiel_milliemes?: number | null
+          cout_horaire_centimes?: number | null
           description?: string
           designation: string
           devis_id: string
@@ -397,10 +530,14 @@ export type Database = {
           id: string
           owner_id?: string
           position: number
+          prix_achat_centimes?: number | null
+          prix_calcule?: boolean
           prix_ht_centimes: number
           quantite_milliemes: number
           reference?: string
+          taux_horaire_centimes?: number | null
           taux_tva_milliemes: number
+          temps_pose_minutes?: number | null
           ttc_centimes: number
           tva_centimes: number
           type: string
@@ -408,6 +545,8 @@ export type Database = {
         }
         Update: {
           article_id?: string | null
+          coef_materiel_milliemes?: number | null
+          cout_horaire_centimes?: number | null
           description?: string
           designation?: string
           devis_id?: string
@@ -415,10 +554,14 @@ export type Database = {
           id?: string
           owner_id?: string
           position?: number
+          prix_achat_centimes?: number | null
+          prix_calcule?: boolean
           prix_ht_centimes?: number
           quantite_milliemes?: number
           reference?: string
+          taux_horaire_centimes?: number | null
           taux_tva_milliemes?: number
+          temps_pose_minutes?: number | null
           ttc_centimes?: number
           tva_centimes?: number
           type?: string
@@ -441,101 +584,235 @@ export type Database = {
           },
         ]
       }
+      documents_importes: {
+        Row: {
+          client_copie: Json
+          client_id: string | null
+          client_nom: string
+          cree_le: string
+          date_document: string
+          date_echeance: string | null
+          deja_regle_centimes: number | null
+          id: string
+          lignes: Json
+          lot_import: string
+          objet: string
+          owner_id: string
+          reference: string
+          reference_liee: string
+          source: Json
+          statut_source: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          type: string
+          ventilation_tva: Json
+        }
+        Insert: {
+          client_copie?: Json
+          client_id?: string | null
+          client_nom?: string
+          cree_le?: string
+          date_document: string
+          date_echeance?: string | null
+          deja_regle_centimes?: number | null
+          id?: string
+          lignes?: Json
+          lot_import: string
+          objet?: string
+          owner_id: string
+          reference: string
+          reference_liee?: string
+          source?: Json
+          statut_source?: string
+          total_ht_centimes: number
+          total_ttc_centimes: number
+          total_tva_centimes: number
+          type: string
+          ventilation_tva?: Json
+        }
+        Update: {
+          client_copie?: Json
+          client_id?: string | null
+          client_nom?: string
+          cree_le?: string
+          date_document?: string
+          date_echeance?: string | null
+          deja_regle_centimes?: number | null
+          id?: string
+          lignes?: Json
+          lot_import?: string
+          objet?: string
+          owner_id?: string
+          reference?: string
+          reference_liee?: string
+          source?: Json
+          statut_source?: string
+          total_ht_centimes?: number
+          total_ttc_centimes?: number
+          total_tva_centimes?: number
+          type?: string
+          ventilation_tva?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_importes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_importes_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entreprises: {
         Row: {
           activite: string
           adresse: string
+          assureur: string
+          bandeau: string
+          bic: string
           capital: number | null
+          cgv: string
+          code_naf: string
           code_postal: string
           complement: string
+          contrat_assurance: string
           created_at: string
           email: string
           forme_juridique: string
+          iban: string
           id: string
           immatriculation: string
+          logo: string
           nom_commercial: string
           owner_id: string
           pays: string
           raison_sociale: string
+          regime_tva: string
           siret: string
           site: string
           telephone: string
           tva: string
           updated_at: string
           ville: string
-          iban: string
-          bic: string
-          assureur: string
-          contrat_assurance: string
-          code_naf: string
-          regime_tva: string
-          bandeau: string
-          logo: string
-          cgv: string
         }
         Insert: {
           activite?: string
           adresse?: string
+          assureur?: string
+          bandeau?: string
+          bic?: string
           capital?: number | null
+          cgv?: string
+          code_naf?: string
           code_postal?: string
           complement?: string
+          contrat_assurance?: string
           created_at?: string
           email?: string
           forme_juridique?: string
+          iban?: string
           id?: string
           immatriculation?: string
+          logo?: string
           nom_commercial?: string
           owner_id?: string
           pays?: string
           raison_sociale: string
+          regime_tva?: string
           siret?: string
           site?: string
           telephone?: string
           tva?: string
           updated_at?: string
           ville?: string
-          iban?: string
-          bic?: string
-          assureur?: string
-          contrat_assurance?: string
-          code_naf?: string
-          regime_tva?: string
-          bandeau?: string
-          logo?: string
-          cgv?: string
         }
         Update: {
           activite?: string
           adresse?: string
+          assureur?: string
+          bandeau?: string
+          bic?: string
           capital?: number | null
+          cgv?: string
+          code_naf?: string
           code_postal?: string
           complement?: string
+          contrat_assurance?: string
           created_at?: string
           email?: string
           forme_juridique?: string
+          iban?: string
           id?: string
           immatriculation?: string
+          logo?: string
           nom_commercial?: string
           owner_id?: string
           pays?: string
           raison_sociale?: string
+          regime_tva?: string
           siret?: string
           site?: string
           telephone?: string
           tva?: string
           updated_at?: string
           ville?: string
-          iban?: string
-          bic?: string
-          assureur?: string
-          contrat_assurance?: string
-          code_naf?: string
-          regime_tva?: string
-          bandeau?: string
-          logo?: string
-          cgv?: string
         }
         Relationships: []
+      }
+      envois_devis: {
+        Row: {
+          avec_lien: boolean
+          avec_pdf: boolean
+          canal: string
+          destinataire: string
+          devis_id: string
+          id: string
+          le: string
+          nature: string
+          owner_id: string
+          sujet: string
+        }
+        Insert: {
+          avec_lien?: boolean
+          avec_pdf?: boolean
+          canal: string
+          destinataire?: string
+          devis_id: string
+          id: string
+          le?: string
+          nature: string
+          owner_id?: string
+          sujet?: string
+        }
+        Update: {
+          avec_lien?: boolean
+          avec_pdf?: boolean
+          canal?: string
+          destinataire?: string
+          devis_id?: string
+          id?: string
+          le?: string
+          nature?: string
+          owner_id?: string
+          sujet?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envois_devis_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       factures: {
         Row: {
@@ -547,12 +824,13 @@ export type Database = {
           date_echeance: string | null
           date_facture: string
           deduction: Json | null
-          devis_source_id: string
-          devis_source_reference: string
+          devis_source_id: string | null
+          devis_source_reference: string | null
           entreprise_copie: Json | null
           finalise_le: string | null
           finalise_par: string | null
           id: string
+          lot_import: string | null
           nature: string
           notes: string
           objet: string
@@ -580,12 +858,13 @@ export type Database = {
           date_echeance?: string | null
           date_facture: string
           deduction?: Json | null
-          devis_source_id: string
-          devis_source_reference: string
+          devis_source_id?: string | null
+          devis_source_reference?: string | null
           entreprise_copie?: Json | null
           finalise_le?: string | null
           finalise_par?: string | null
           id?: string
+          lot_import?: string | null
           nature?: string
           notes?: string
           objet: string
@@ -613,12 +892,13 @@ export type Database = {
           date_echeance?: string | null
           date_facture?: string
           deduction?: Json | null
-          devis_source_id?: string
-          devis_source_reference?: string
+          devis_source_id?: string | null
+          devis_source_reference?: string | null
           entreprise_copie?: Json | null
           finalise_le?: string | null
           finalise_par?: string | null
           id?: string
+          lot_import?: string | null
           nature?: string
           notes?: string
           objet?: string
@@ -657,6 +937,13 @@ export type Database = {
             columns: ["devis_source_id"]
             isOneToOne: false
             referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
             referencedColumns: ["id"]
           },
         ]
@@ -733,6 +1020,286 @@ export type Database = {
           },
         ]
       }
+      habitudes_documents: {
+        Row: {
+          coef_materiel_milliemes: number
+          cout_horaire_centimes: number
+          echeance_facture_jours: number
+          owner_id: string
+          remarques_devis: string
+          remarques_facture: string
+          taux_horaire_centimes: number
+          updated_at: string
+          validite_devis_jours: number
+        }
+        Insert: {
+          coef_materiel_milliemes?: number
+          cout_horaire_centimes?: number
+          echeance_facture_jours?: number
+          owner_id?: string
+          remarques_devis?: string
+          remarques_facture?: string
+          taux_horaire_centimes?: number
+          updated_at?: string
+          validite_devis_jours?: number
+        }
+        Update: {
+          coef_materiel_milliemes?: number
+          cout_horaire_centimes?: number
+          echeance_facture_jours?: number
+          owner_id?: string
+          remarques_devis?: string
+          remarques_facture?: string
+          taux_horaire_centimes?: number
+          updated_at?: string
+          validite_devis_jours?: number
+        }
+        Relationships: []
+      }
+      historiques_khosmos: {
+        Row: {
+          contenu: Json
+          created_at: string
+          owner_id: string
+        }
+        Insert: {
+          contenu: Json
+          created_at?: string
+          owner_id: string
+        }
+        Update: {
+          contenu?: Json
+          created_at?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      lots_import: {
+        Row: {
+          cree_le: string
+          description: string
+          id: string
+          nature: string
+          owner_id: string
+          source: string
+        }
+        Insert: {
+          cree_le?: string
+          description?: string
+          id?: string
+          nature: string
+          owner_id: string
+          source?: string
+        }
+        Update: {
+          cree_le?: string
+          description?: string
+          id?: string
+          nature?: string
+          owner_id?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      messages_modeles: {
+        Row: {
+          modeles: Json
+          owner_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          modeles: Json
+          owner_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          modeles?: Json
+          owner_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      modeles_devis: {
+        Row: {
+          archive: boolean
+          conditions_paiement: string
+          created_at: string
+          id: string
+          lignes: Json
+          lot_import: string | null
+          metier: string
+          nom: string
+          notes_usage: string
+          objet: string
+          owner_id: string
+          remarques: string
+          type_travaux: string
+          updated_at: string
+        }
+        Insert: {
+          archive?: boolean
+          conditions_paiement?: string
+          created_at?: string
+          id?: string
+          lignes?: Json
+          lot_import?: string | null
+          metier?: string
+          nom: string
+          notes_usage?: string
+          objet?: string
+          owner_id: string
+          remarques?: string
+          type_travaux?: string
+          updated_at?: string
+        }
+        Update: {
+          archive?: boolean
+          conditions_paiement?: string
+          created_at?: string
+          id?: string
+          lignes?: Json
+          lot_import?: string | null
+          metier?: string
+          nom?: string
+          notes_usage?: string
+          objet?: string
+          owner_id?: string
+          remarques?: string
+          type_travaux?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modeles_devis_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ouvrages: {
+        Row: {
+          archive: boolean
+          code_source: string
+          created_at: string
+          description: string
+          designation: string
+          famille: string
+          id: string
+          lot_import: string | null
+          metier: string
+          owner_id: string
+          prix_ht_centimes: number | null
+          reference: string
+          unite: string
+          updated_at: string
+        }
+        Insert: {
+          archive?: boolean
+          code_source?: string
+          created_at?: string
+          description?: string
+          designation: string
+          famille?: string
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          owner_id: string
+          prix_ht_centimes?: number | null
+          reference: string
+          unite?: string
+          updated_at?: string
+        }
+        Update: {
+          archive?: boolean
+          code_source?: string
+          created_at?: string
+          description?: string
+          designation?: string
+          famille?: string
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          owner_id?: string
+          prix_ht_centimes?: number | null
+          reference?: string
+          unite?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ouvrages_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ouvrages_composants: {
+        Row: {
+          article_id: string | null
+          designation: string
+          id: string
+          ouvrage_id: string
+          owner_id: string
+          position: number
+          prix_achat_centimes: number | null
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference: string
+          type: string
+          unite: string
+        }
+        Insert: {
+          article_id?: string | null
+          designation: string
+          id?: string
+          ouvrage_id: string
+          owner_id: string
+          position: number
+          prix_achat_centimes?: number | null
+          prix_ht_centimes: number
+          quantite_milliemes: number
+          reference?: string
+          type: string
+          unite: string
+        }
+        Update: {
+          article_id?: string | null
+          designation?: string
+          id?: string
+          ouvrage_id?: string
+          owner_id?: string
+          position?: number
+          prix_achat_centimes?: number | null
+          prix_ht_centimes?: number
+          quantite_milliemes?: number
+          reference?: string
+          type?: string
+          unite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ouvrages_composants_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ouvrages_composants_ouvrage_id_fkey"
+            columns: ["ouvrage_id"]
+            isOneToOne: false
+            referencedRelation: "ouvrages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reglements: {
         Row: {
           annule_le: string | null
@@ -743,6 +1310,7 @@ export type Database = {
           date_reglement: string
           facture_id: string
           id: string
+          lot_import: string | null
           mode: string
           montant_centimes: number
           motif_annulation: string | null
@@ -757,6 +1325,7 @@ export type Database = {
           date_reglement: string
           facture_id: string
           id: string
+          lot_import?: string | null
           mode: string
           montant_centimes: number
           motif_annulation?: string | null
@@ -771,6 +1340,7 @@ export type Database = {
           date_reglement?: string
           facture_id?: string
           id?: string
+          lot_import?: string | null
           mode?: string
           montant_centimes?: number
           motif_annulation?: string | null
@@ -784,13 +1354,98 @@ export type Database = {
             referencedRelation: "factures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reglements_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      signatures_devis: {
+        Row: {
+          agent_utilisateur: string | null
+          cree_le: string
+          devis_id: string
+          empreinte_document: string | null
+          expire_le: string
+          id: string
+          jeton_hash: string
+          owner_id: string
+          revoque_le: string | null
+          signataire_nom: string | null
+          signature_image: string | null
+          signe_le: string | null
+        }
+        Insert: {
+          agent_utilisateur?: string | null
+          cree_le?: string
+          devis_id: string
+          empreinte_document?: string | null
+          expire_le: string
+          id?: string
+          jeton_hash: string
+          owner_id: string
+          revoque_le?: string | null
+          signataire_nom?: string | null
+          signature_image?: string | null
+          signe_le?: string | null
+        }
+        Update: {
+          agent_utilisateur?: string | null
+          cree_le?: string
+          devis_id?: string
+          empreinte_document?: string | null
+          expire_le?: string
+          id?: string
+          jeton_hash?: string
+          owner_id?: string
+          revoque_le?: string | null
+          signataire_nom?: string | null
+          signature_image?: string | null
+          signe_le?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatures_devis_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tresorerie_bibliotheques: {
+        Row: {
+          donnees: Json
+          maj_le: string
+          owner_id: string
+          version: number
+        }
+        Insert: {
+          donnees: Json
+          maj_le?: string
+          owner_id: string
+          version: number
+        }
+        Update: {
+          donnees?: Json
+          maj_le?: string
+          owner_id?: string
+          version?: number
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      abandonner_avoir: {
+        Args: { p_id: string; p_version: number }
+        Returns: Json
+      }
       acompte_calcul: {
         Args: { p_devis_id: string; p_pourcentage: number }
         Returns: Json
@@ -806,6 +1461,15 @@ export type Database = {
       }
       annuler_reglement: {
         Args: { p_id: string; p_motif: string }
+        Returns: Json
+      }
+      avoir_calculer_lignes: {
+        Args: { p_facture_id: string; p_lignes: Json }
+        Returns: Json
+      }
+      caler_compteurs_historique: { Args: { p_owner: string }; Returns: Json }
+      creer_lien_signature: {
+        Args: { p_devis_id: string; p_jeton: string; p_validite_jours?: number }
         Returns: Json
       }
       deduction_live: {
@@ -828,6 +1492,14 @@ export type Database = {
         Args: { p: Json; p_id: string; p_version: number }
         Returns: Json
       }
+      enregistrer_facture_directe: {
+        Args: { p: Json; p_id: string }
+        Returns: Json
+      }
+      enregistrer_historique_khosmos: {
+        Args: { p_analyse: Json }
+        Returns: Json
+      }
       enregistrer_reglement: {
         Args: {
           p_commentaire: string
@@ -843,7 +1515,9 @@ export type Database = {
         Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
         Returns: number
       }
+      facture_annulee: { Args: { p_id: string }; Returns: boolean }
       facture_credite: { Args: { p_facture_id: string }; Returns: number }
+      facture_directe_disponible: { Args: never; Returns: boolean }
       facture_recalculer: { Args: { p_id: string }; Returns: undefined }
       finaliser_avoir: {
         Args: { p_id: string; p_version: number }
@@ -858,7 +1532,39 @@ export type Database = {
         Returns: Json
       }
       lire_devis: { Args: { p_id: string }; Returns: Json }
+      lire_devis_pour_signature: { Args: { p_jeton: string }; Returns: Json }
       lire_facture: { Args: { p_id: string }; Returns: Json }
+      lire_historique_khosmos: { Args: never; Returns: Json }
+      lire_tresorerie: { Args: never; Returns: Json }
+      modifier_messages: {
+        Args: { p_modeles: Json; p_version: number }
+        Returns: Json
+      }
+      modifier_tresorerie: {
+        Args: { p_donnees: Json; p_version: number }
+        Returns: Json
+      }
+      noter_commande_devis: {
+        Args: { p_date: string; p_id: string }
+        Returns: Json
+      }
+      noter_envoi_devis: {
+        Args: {
+          p_avec_lien: boolean
+          p_avec_pdf: boolean
+          p_canal: string
+          p_destinataire: string
+          p_devis_id: string
+          p_id: string
+          p_nature: string
+          p_sujet: string
+        }
+        Returns: Json
+      }
+      noter_reponse_devis: {
+        Args: { p_date?: string; p_id: string; p_reponse: string }
+        Returns: Json
+      }
       preparer_acompte: {
         Args: { p_devis_id: string; p_pourcentage: number }
         Returns: Json
@@ -867,7 +1573,29 @@ export type Database = {
         Args: { p_facture_id: string; p_motif: string }
         Returns: Json
       }
+      preparer_avoir_partiel: {
+        Args: { p_facture_id: string; p_lignes: Json; p_motif: string }
+        Returns: Json
+      }
       preparer_facture: { Args: { p_devis_id: string }; Returns: Json }
+      reference_document: {
+        Args: { p_annee: number; p_numero: number; p_prefixe: string }
+        Returns: string
+      }
+      revoquer_lien_signature: { Args: { p_id: string }; Returns: undefined }
+      serie_document: { Args: { p_type: string }; Returns: string }
+      signature_empreinte: { Args: { p: Json }; Returns: string }
+      signature_projection: { Args: { p_devis_id: string }; Returns: Json }
+      signer_devis_distant: {
+        Args: {
+          p_accord: boolean
+          p_agent?: string
+          p_image: string
+          p_jeton: string
+          p_nom: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
