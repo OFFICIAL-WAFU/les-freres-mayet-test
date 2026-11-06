@@ -16,14 +16,14 @@ function Marque() {
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
         FM
       </span>
-      <span className="text-base font-semibold leading-tight text-foreground">
+      <span className="text-base font-extrabold leading-tight tracking-tight text-sidebar-foreground">
         Les Frères Mayet
       </span>
     </div>
   );
 }
 
-const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground";
+const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground data-[status=active]:bg-primary data-[status=active]:font-semibold data-[status=active]:text-primary-foreground data-[status=active]:shadow-[0_6px_16px_-6px_hsl(40_44%_60%/0.7)]";
 
 const GROUPES = [
   [
@@ -59,10 +59,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       ))}
       <details className="mt-2 border-t border-sidebar-border pt-3">
-        <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground">Autres outils</summary>
+        <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70">Autres outils</summary>
         <div className="mt-1 flex flex-col gap-1">
-          <Link to="/imports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Exports et imports</Link>
-          <Link to="/historique" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent">Historique Khosmos</Link>
+          <Link to="/imports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground">Exports et imports</Link>
+          <Link to="/historique" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground">Historique Khosmos</Link>
         </div>
       </details>
     </nav>
@@ -76,7 +76,7 @@ function BadgeDemo() {
   const [enCours, setEnCours] = useState(false);
   return (
     <div className="flex flex-col gap-3">
-      <Button variant="outline" size="sm" className="justify-start" disabled={enCours}
+      <Button variant="outline" size="sm" className="justify-start border-white/20 bg-white/5 text-sidebar-foreground hover:bg-white/10 hover:text-sidebar-foreground" disabled={enCours}
         onClick={async () => {
           setEnCours(true);
           await seDeconnecter();
@@ -84,10 +84,10 @@ function BadgeDemo() {
         }}>
         <LogOut /> {enCours ? "Déconnexion…" : "Se déconnecter"}
       </Button>
-      <span className="inline-flex items-center self-start rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center self-start rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-sidebar-foreground">
         {test ? "Environnement TEST" : demo ? "Exemples fictifs affichés" : "Espace privé"}
       </span>
-      <p className="text-xs text-muted-foreground">Documents et règlements sauvegardés dans votre espace.</p>
+      <p className="text-xs text-sidebar-foreground/60">Documents et règlements sauvegardés dans votre espace.</p>
     </div>
   );
 }

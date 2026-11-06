@@ -21,7 +21,7 @@ function Colonne({ titre, cases, montant, nombre, ouvrir }: { titre: string; cas
         <ChevronRight className="size-4 opacity-60 transition-transform group-hover:translate-x-0.5" />
       </span>
       <p className="mt-1 text-xl font-semibold">{formaterCentimes(montant(cle))}</p>
-      <p className="text-xs text-primary-foreground/80">{nombre(cle)} document{nombre(cle) > 1 ? "s" : ""}{aide ? ` · ${aide}` : ""}</p>
+      <p className="text-xs text-sidebar-foreground/80">{nombre(cle)} document{nombre(cle) > 1 ? "s" : ""}{aide ? ` · ${aide}` : ""}</p>
     </button>)}
   </div>;
 }
@@ -38,7 +38,7 @@ export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] 
     setOuverte({ cle, titre: `${groupe ? `${groupe} — ` : ""}${libelle} · ${PERIODES_DOCUMENTS[periode]}` });
   };
   const col = { montant, nombre, ouvrir };
-  return <section className="mt-6 rounded-2xl bg-primary p-4 text-primary-foreground sm:p-6" aria-label="Synthèse des documents">
+  return <section className="mt-6 rounded-3xl bg-sidebar p-4 text-sidebar-foreground sm:p-6" aria-label="Synthèse des documents">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="text-xl font-semibold">Chiffre d’affaires annuel {mode === "ttc" ? "TTC" : "HT"}</h2>
       <BasculeHtTtc clair />
@@ -47,7 +47,7 @@ export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] 
     <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
       <h2 className="text-xl font-semibold">Suivi de l’activité</h2>
       <label className="flex items-center gap-2 text-sm">Période
-        <select className="rounded-md border border-primary-foreground/30 bg-primary-foreground/10 p-1.5 text-primary-foreground [&>option]:text-foreground" value={periode} onChange={e => setPeriode(e.target.value as PeriodeDocuments)}>
+        <select className="rounded-md border border-sidebar-foreground/30 bg-sidebar-foreground/10 p-1.5 text-sidebar-foreground [&>option]:text-foreground" value={periode} onChange={e => setPeriode(e.target.value as PeriodeDocuments)}>
           {(["mois", "30jours", "annee", "toutes"] as const).map(p => <option key={p} value={p}>{PERIODES_DOCUMENTS[p]}</option>)}
         </select>
       </label>
@@ -74,7 +74,7 @@ export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] 
         ["encaisse", "Total encaissé", "bg-teal-600", "règlements enregistrés"],
       ]} />
     </div>
-    <p className="mt-4 text-xs text-primary-foreground/80">Montants {mode === "ttc" ? "TTC" : "HT"} sur la période choisie, mêmes définitions que dans Khosmos. Cliquez sur une case pour voir ses documents ; l’interrupteur en haut passe tous les montants en {mode === "ttc" ? "HT" : "TTC"}. Les factures annulées par avoir sont exclues. En HT, la part hors taxes d’un règlement ou d’un reste à payer suit la proportion HT/TTC de son document.</p>
+    <p className="mt-4 text-xs text-sidebar-foreground/80">Montants {mode === "ttc" ? "TTC" : "HT"} sur la période choisie, mêmes définitions que dans Khosmos. Cliquez sur une case pour voir ses documents ; l’interrupteur en haut passe tous les montants en {mode === "ttc" ? "HT" : "TTC"}. Les factures annulées par avoir sont exclues. En HT, la part hors taxes d’un règlement ou d’un reste à payer suit la proportion HT/TTC de son document.</p>
     <ListeDocumentsDialog ouvert={!!ouverte} onFermer={() => setOuverte(null)} titre={ouverte?.titre ?? ""} mode={mode}
       elements={ouverte ? detail[ouverte.cle] : []}
       encaisser={!!ouverte && /attente|retard/.test(ouverte.cle) && !ouverte.cle.startsWith("devis")}

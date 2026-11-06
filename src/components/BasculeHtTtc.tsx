@@ -7,7 +7,7 @@ export function BasculeHtTtc({ clair = false, className }: { clair?: boolean; cl
   const mode = useModeMontants();
   return <div role="group" aria-label="Afficher les montants" className={cn("inline-flex rounded-full p-0.5 text-xs font-semibold", clair ? "bg-white/15" : "bg-secondary", className)}>
     {(["ttc", "ht"] as const).map((m) => <button key={m} type="button" aria-pressed={mode === m} onClick={() => definirModeMontants(m)}
-      className={cn("rounded-full px-3 py-1 transition-colors", mode === m ? (clair ? "bg-white text-primary" : "bg-primary text-primary-foreground") : (clair ? "text-primary-foreground/85 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"))}>
+      className={cn("rounded-full px-3 py-1 transition-colors", mode === m ? (clair ? "bg-primary text-primary-foreground" : "bg-primary text-primary-foreground") : (clair ? "text-sidebar-foreground/85 hover:text-sidebar-foreground" : "text-muted-foreground hover:text-foreground"))}>
       {m === "ttc" ? "TTC" : "HT"}
     </button>)}
   </div>;

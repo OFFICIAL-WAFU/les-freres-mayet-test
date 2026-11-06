@@ -80,7 +80,7 @@
 
 :root {
   /* Charte Les Frères Mayet, reprise du site lesfreresmayet.fr */
-  --radius: 0.625rem;
+  --radius: 0.875rem;
   --background: hsl(40 20% 98%);
   --foreground: hsl(0 0% 20%);
   --card: hsl(0 0% 100%);
@@ -114,13 +114,13 @@
   --chart-3: hsl(230 100% 66%);
   --chart-4: oklch(0.6 0.118 184.704);
   --chart-5: hsl(0 0% 35%);
-  --sidebar: hsl(0 0% 100%);
-  --sidebar-foreground: hsl(0 0% 20%);
+  --sidebar: hsl(30 12% 10%);
+  --sidebar-foreground: hsl(40 25% 93%);
   --sidebar-primary: hsl(40 44% 60%);
   --sidebar-primary-foreground: hsl(0 0% 15%);
-  --sidebar-accent: hsl(40 44% 94%);
-  --sidebar-accent-foreground: hsl(0 0% 15%);
-  --sidebar-border: hsl(40 15% 90%);
+  --sidebar-accent: hsl(30 10% 18%);
+  --sidebar-accent-foreground: hsl(40 25% 93%);
+  --sidebar-border: hsl(0 0% 100% / 0.1);
   --sidebar-ring: hsl(40 44% 50%);
   /* Habillage du document de devis (indépendant de l'interface) */
   --doc-paper: oklch(1 0 0);
@@ -130,8 +130,8 @@
   --doc-gold: oklch(0.65 0.1 80);
   --doc-gold-ink: oklch(0.52 0.09 78);
   --doc-line: oklch(0.93 0.012 85);
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Sora", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
 
@@ -186,18 +186,18 @@
 .khosmos-ui {
   --background: hsl(40 20% 98%);
 }
-h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0.01em; }
+h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0.02em; font-weight: 800; }
 .khosmos-page-heading, .khosmos-page-filters {
-  background: var(--primary);
+  background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%));
   color: var(--primary-foreground);
   border: 0;
-  border-radius: 0;
-  margin-left: -16px;
-  margin-right: -16px;
-  padding: 24px 16px;
+  margin: 0;
+  padding: 26px 28px;
 }
-.khosmos-page-heading { margin-top: -24px; padding-bottom: 16px; }
-.khosmos-page-filters { margin-top: 0; padding-top: 8px; }
+.khosmos-page-heading { background: linear-gradient(180deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 26px 26px 0 0; margin-bottom: 0; padding-bottom: 14px; position: relative; overflow: hidden; }
+.khosmos-page-heading > * { position: relative; z-index: 1; }
+.khosmos-page-filters { border-radius: 0 0 26px 26px; padding-top: 6px; margin-bottom: 20px; background: hsl(36 60% 60%); }
+.khosmos-page-heading:not(:has(+ .khosmos-page-filters)) { background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 26px; margin-bottom: 20px; padding-bottom: 26px; }
 .khosmos-page-heading h1, .khosmos-page-heading p,
 .khosmos-page-filters > p, .khosmos-page-filters span.text-muted-foreground { color: var(--primary-foreground); }
 .khosmos-page-filters input { background: white; color: var(--foreground); border-radius: 999px; }
@@ -215,14 +215,12 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
 .khosmos-summary { background: var(--primary); padding: 24px; border-radius: 16px; }
 .khosmos-summary section { background: oklch(0.52 0.2 264); border: 0; color: white; }
 .khosmos-summary section h2, .khosmos-summary section p { color: white; }
-@media (min-width: 1024px) {
-  .khosmos-page-heading, .khosmos-page-filters { margin-left: -30px; margin-right: -30px; padding-left: 30px; padding-right: 30px; }
-}
+
 
 .khosmos-list th { font-size: 12px; }
 .khosmos-list th::first-line { background: white; }
 .khosmos-list td { padding: 12px 10px; }
-.khosmos-ui nav > a { border-radius: 10px; }
+.khosmos-ui nav > a { border-radius: 14px; }
 .khosmos-ui nav > a[href="/catalogue"] { border-radius: 0; }
 
 .saisie-apercu .devis-doc { padding: 20px; font-size: 12px; }
@@ -232,3 +230,20 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
 .saisie-apercu .devis-doc col:nth-child(1) { width: 40%; }
 .saisie-apercu .devis-doc col:nth-child(2), .saisie-apercu .devis-doc col:nth-child(3), .saisie-apercu .devis-doc col:nth-child(5) { width: 10%; }
 .saisie-apercu .devis-doc col:nth-child(4), .saisie-apercu .devis-doc col:nth-child(6) { width: 15%; }
+
+/* ---- Style « Atelier » : barre latérale sombre, cartes en relief doux, boutons en pilule ---- */
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.khosmos-ui { background: hsl(38 28% 96%); }
+.khosmos-ui .rounded-xl.border, .khosmos-ui .rounded-lg.border.bg-card, .khosmos-ui [class*="rounded-"].border.bg-card {
+  border-color: hsl(36 20% 90%);
+  box-shadow: 0 1px 2px hsl(30 20% 20% / 0.04), 0 12px 28px -14px hsl(30 30% 25% / 0.18);
+}
+.khosmos-ui input, .khosmos-ui textarea, .khosmos-ui [role="combobox"] { border-radius: 14px; border-color: hsl(36 18% 84%); background: white; }
+.khosmos-ui input:focus-visible, .khosmos-ui textarea:focus-visible { outline: none; box-shadow: 0 0 0 3px hsl(40 44% 60% / 0.35); border-color: hsl(40 44% 50%); }
+.khosmos-ui > div > aside { background: linear-gradient(180deg, hsl(30 12% 12%), hsl(30 12% 8%)); }
+.khosmos-ui aside nav a svg { opacity: .9; }
+.khosmos-ui table th { letter-spacing: .04em; text-transform: uppercase; font-size: 11px; font-weight: 700; color: hsl(30 8% 40%); }
+.khosmos-ui [class*="rounded-full"][class*="bg-"] { font-weight: 600; }
+.khosmos-summary { border-radius: 26px; background: transparent; padding: 0; }
+.khosmos-summary section { background: hsl(30 12% 12%); color: hsl(40 25% 93%); box-shadow: 0 18px 30px -18px hsl(30 40% 10% / .7); }
+.khosmos-summary section h2, .khosmos-summary section p { color: hsl(40 25% 93%); }
