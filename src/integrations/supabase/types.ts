@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      achats_lignes: {
+        Row: {
+          chantier_texte: string
+          client_id: string | null
+          created_at: string
+          date_achat: string
+          designation: string
+          facture_id: string | null
+          fournisseur: string
+          id: string
+          lot_import: string | null
+          metier: string
+          num_facture: string
+          owner_id: string
+          prix_unitaire_ht_centimes: number
+          quantite: number
+          reference: string
+          statut_affectation: string
+          total_ht_centimes: number
+          unite: string
+        }
+        Insert: {
+          chantier_texte?: string
+          client_id?: string | null
+          created_at?: string
+          date_achat: string
+          designation?: string
+          facture_id?: string | null
+          fournisseur?: string
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          num_facture?: string
+          owner_id?: string
+          prix_unitaire_ht_centimes?: number
+          quantite?: number
+          reference?: string
+          statut_affectation?: string
+          total_ht_centimes?: number
+          unite?: string
+        }
+        Update: {
+          chantier_texte?: string
+          client_id?: string | null
+          created_at?: string
+          date_achat?: string
+          designation?: string
+          facture_id?: string | null
+          fournisseur?: string
+          id?: string
+          lot_import?: string | null
+          metier?: string
+          num_facture?: string
+          owner_id?: string
+          prix_unitaire_ht_centimes?: number
+          quantite?: number
+          reference?: string
+          statut_affectation?: string
+          total_ht_centimes?: number
+          unite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achats_lignes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achats_lignes_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achats_lignes_lot_import_fkey"
+            columns: ["lot_import"]
+            isOneToOne: false
+            referencedRelation: "lots_import"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           archive: boolean
@@ -1439,7 +1524,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      marge_mensuelle: {
+        Row: {
+          achats_ht_centimes: number | null
+          ca_ht_centimes: number | null
+          marge_centimes: number | null
+          mois: string | null
+          owner_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       abandonner_avoir: {

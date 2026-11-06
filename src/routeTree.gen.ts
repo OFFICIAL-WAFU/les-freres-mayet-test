@@ -15,6 +15,7 @@ import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oubl
 import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
+import { Route as AuthenticatedAchatsRouteImport } from './routes/_authenticated/achats'
 import { Route as AuthenticatedCatalogueRouteImport } from './routes/_authenticated/catalogue'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedConnaissancesRouteImport } from './routes/_authenticated/connaissances'
@@ -72,6 +73,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedAccueilRoute = AuthenticatedAccueilRouteImport.update({
   id: '/accueil',
   path: '/accueil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAchatsRoute = AuthenticatedAchatsRouteImport.update({
+  id: '/achats',
+  path: '/achats',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCatalogueRoute = AuthenticatedCatalogueRouteImport.update({
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/accueil': typeof AuthenticatedAccueilRoute
+  '/achats': typeof AuthenticatedAchatsRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/connaissances': typeof AuthenticatedConnaissancesRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/accueil': typeof AuthenticatedAccueilRoute
+  '/achats': typeof AuthenticatedAchatsRoute
   '/catalogue': typeof AuthenticatedCatalogueRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/connaissances': typeof AuthenticatedConnaissancesRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
+  '/_authenticated/achats': typeof AuthenticatedAchatsRoute
   '/_authenticated/catalogue': typeof AuthenticatedCatalogueRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/connaissances': typeof AuthenticatedConnaissancesRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/accueil'
+    | '/achats'
     | '/catalogue'
     | '/clients'
     | '/connaissances'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/accueil'
+    | '/achats'
     | '/catalogue'
     | '/clients'
     | '/connaissances'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/_authenticated/accueil'
+    | '/_authenticated/achats'
     | '/_authenticated/catalogue'
     | '/_authenticated/clients'
     | '/_authenticated/connaissances'
@@ -508,6 +520,13 @@ declare module '@tanstack/react-router' {
       path: '/accueil'
       fullPath: '/accueil'
       preLoaderRoute: typeof AuthenticatedAccueilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/achats': {
+      id: '/_authenticated/achats'
+      path: '/achats'
+      fullPath: '/achats'
+      preLoaderRoute: typeof AuthenticatedAchatsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/catalogue': {
@@ -718,6 +737,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccueilRoute: typeof AuthenticatedAccueilRoute
+  AuthenticatedAchatsRoute: typeof AuthenticatedAchatsRoute
   AuthenticatedCatalogueRoute: typeof AuthenticatedCatalogueRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedConnaissancesRoute: typeof AuthenticatedConnaissancesRoute
@@ -751,6 +771,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccueilRoute: AuthenticatedAccueilRoute,
+  AuthenticatedAchatsRoute: AuthenticatedAchatsRoute,
   AuthenticatedCatalogueRoute: AuthenticatedCatalogueRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedConnaissancesRoute: AuthenticatedConnaissancesRoute,

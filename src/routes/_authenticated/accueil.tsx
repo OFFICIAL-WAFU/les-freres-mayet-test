@@ -16,20 +16,32 @@ import { ListeDocumentsDialog, type ElementListe } from "@/components/ListeDocum
 import { ChevronRight, Wallet } from "lucide-react";
 import { useModeMontants } from "@/data/mode-montants";
 import { enMode } from "@/lib/montants";
+import { MargeAccueil } from "@/components/MargeAccueil";
+import { margeQueryOptions } from "@/data/achats";
+import type { PeriodeMarge } from "@/lib/achats-marge";
 
 export const Route = createFileRoute("/_authenticated/accueil")({
+  validateSearch: (s: Record<string, unknown>): { periodeMarge: PeriodeMarge } => ({ periodeMarge: s["periodeMarge"] === "annee" || s["periodeMarge"] === "mois" ? s["periodeMarge"] : "depuis-avril" }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(margeQueryOptions(context.user.id)),
+  errorComponent: () => <AppLayout titre="Accueil"><p role="alert">La marge n’a pas pu être chargée.</p><Button variant="outline" onClick={() => window.location.reload()}>Réessayer</Button></AppLayout>,
+  notFoundComponent: () => <AppLayout titre="Accueil"><p>Page introuvable.</p></AppLayout>,
   head: () => ({
     meta: [
       { title: "Accueil — Les Frères Mayet" },
       { name: "description", content: "Accueil de la gestion Les Frères Mayet." },
       { property: "og:title", content: "Accueil — Les Frères Mayet" },
       { property: "og:description", content: "Accueil de la gestion Les Frères Mayet." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Accueil,
 });
 
 function Accueil() {
+  const { user } = Route.useRouteContext();
+  const { periodeMarge } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState("tous");
   const etat = useEtatDocuments();
@@ -55,6 +67,7 @@ function Accueil() {
       <div><h1 className="text-3xl font-semibold">Ma synthèse</h1><p className="mt-2 text-muted-foreground">Devis, factures et règlements, au même endroit.</p></div>
       <Button asChild variant="action"><Link to="/devis/nouveau">Créer un devis</Link></Button>
     </div>
+    <MargeAccueil ownerId={user.id} periode={periodeMarge} onPeriode={p => void navigate({ search: prev => ({ ...prev, periodeMarge: p }), replace: true })} />
     {etat.statut === "erreur" ? <div role="alert" className="mt-6 rounded-xl border p-4">Impossible de charger les documents. <Button variant="outline" onClick={() => void chargerDocuments()}>Réessayer</Button></div>
       : etat.statut !== "pret" ? <p role="status" className="mt-6">Chargement de votre activité…</p> : <>
       <SyntheseKhosmos documents={docs} />

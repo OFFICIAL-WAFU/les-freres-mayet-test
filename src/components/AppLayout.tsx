@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpenCheck, Building2, Calculator, CalendarDays, ClipboardList, FileText, Home, LogOut, Menu, Package, Settings, StickyNote, Users, Wallet } from "lucide-react";
+import { BookOpenCheck, Building2, Calculator, CalendarDays, ClipboardList, FileText, Home, LogOut, Menu, Package, Settings, ShoppingCart, StickyNote, Users, Wallet } from "lucide-react";
 
 import { useEtatDocuments } from "@/data/documents";
 import { seDeconnecter } from "@/lib/session";
@@ -31,6 +31,7 @@ const GROUPES = [
     { to: "/", label: "Documents", icone: FileText },
     { to: "/clients", label: "Clients", icone: Users },
     { to: "/catalogue", label: "Inventaire", icone: Package },
+    { to: "/achats", label: "Achats", icone: ShoppingCart },
   ],
   [
     { to: "/planning", label: "Planning", icone: CalendarDays },
