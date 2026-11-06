@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'vite';
 import { PGlite } from '@electric-sql/pglite';
-const srv = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error', configFile: 'vite.config.ts' });
+const srv = await createServer({ cacheDir: '/tmp/verification-achats-marge-vite', server: { middlewareMode: true }, appType: 'custom', logLevel: 'error', configFile: 'vite.config.ts' });
 const { selectionMarge, totalMarge, tauxMarge, filtrerAchats, totalAchats } = await srv.ssrLoadModule('/src/lib/achats-marge.ts');
 const mois = [{mois:'2026-03',ca:999n,achats:0n,marge:999n},{mois:'2026-04',ca:10000n,achats:3000n,marge:7000n},{mois:'2026-11',ca:2000n,achats:4000n,marge:-2000n},{mois:'2027-01',ca:999n,achats:0n,marge:999n}];
 assert.deepEqual(totalMarge(selectionMarge(mois,'depuis-avril','2026-11-06')), {ca:12000n,achats:7000n,marge:5000n});
