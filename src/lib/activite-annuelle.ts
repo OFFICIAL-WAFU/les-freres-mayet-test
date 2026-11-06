@@ -1,4 +1,5 @@
 import type { DocumentAvecDevis } from "@/data/documents";
+import { rentabilite, REGLAGES_DEFAUT } from "./rentabilite";
 import { dateDocumentIso } from "./suivi-clients";
 import { dateParis } from "./echeances";
 import { ttcBrut, type ModeMontant } from "./montants";
@@ -30,4 +31,34 @@ export function activiteAnnuelle(documents: DocumentAvecDevis[], aujourdHui = da
     detail[index]!.push({ doc: d, montant: d.type === "avoir" ? -ht : ht });
   }
   return { annee, mois, detail, total: mois.reduce((s,v) => s+v,0n), incomplets };
+}
+
+/**
+ * Marge HT par mois d'émission, pour les factures finalisées dont le devis d'origine porte des coûts
+ * (prix d'achat et/ou temps de pose). La marge d'une facture de solde est celle de son devis complet,
+ * comme le chiffre d'affaires (l'acompte est compté avec la facture de solde). Les avoirs ne sont pas déduits
+ * de la marge : ils sont signalés par la couverture. Aucune donnée inventée : une ligne sans coût n'a pas de marge.
+ */
+export function margeAnnuelle(documents: DocumentAvecDevis[], aujourdHui = dateParis()) {
+  const annee = aujourdHui.slice(0, 4);
+  const marge = Array<bigint>(12).fill(0n);
+  const ventes = Array<bigint>(12).fill(0n); // vente HT des lignes dont le coût est connu
+  const sansCout = Array<bigint>(12).fill(0n); // HT des lignes sans coût renseigné
+  const devisParId = new Map(documents.filter(d => d.type === "devis" && d.devis).map(d => [d.id, d.devis!]));
+  for (const d of documents) {
+    if (d.fictif || d.statut !== "Finalisé" || d.type !== "facture") continue;
+    const date = dateDocumentIso(d.date);
+    if (!date || !date.startsWith(annee) || date > aujourdHui) continue;
+    const source = d.devisSource ? devisParId.get(d.devisSource.id) : undefined;
+    const i = Number(date.slice(5, 7)) - 1;
+    if (!source) { sansCout[i] = sansCout[i]! + (d.montantHTCentimes ?? 0n); continue; }
+    const r = rentabilite(source.lignes, REGLAGES_DEFAUT);
+    marge[i] = marge[i]! + r.marge; ventes[i] = ventes[i]! + r.vente; sansCout[i] = sansCout[i]! + r.htSansCout;
+  }
+  const somme = (t: bigint[]) => t.reduce((s, v) => s + v, 0n);
+  const totalMarge = somme(marge), totalVentes = somme(ventes), totalSansCout = somme(sansCout);
+  const base = totalVentes + totalSansCout;
+  return { marge, ventes, totalMarge, totalVentes, totalSansCout,
+    /** Part (0–100) du chiffre d'affaires dont le coût est connu. */
+    couverture: base > 0n ? Number((totalVentes * 100n) / base) : 0 };
 }
