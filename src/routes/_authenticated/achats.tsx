@@ -10,7 +10,7 @@ import { filtrerAchats, libelleMois, METIERS_ACHATS, totalAchats } from "@/lib/a
 import { formaterCentimes } from "@/data/devis";
 
 export const Route = createFileRoute("/_authenticated/achats")({
-  validateSearch: (s: Record<string, unknown>) => ({ mois: typeof s.mois === "string" ? s.mois : "", fournisseur: typeof s.fournisseur === "string" ? s.fournisseur : "", metier: typeof s.metier === "string" ? s.metier : "", recherche: typeof s.recherche === "string" ? s.recherche : "" }),
+  validateSearch: (s: Record<string, unknown>) => ({ mois: typeof s["mois"] === "string" ? s["mois"] : "", fournisseur: typeof s["fournisseur"] === "string" ? s["fournisseur"] : "", metier: typeof s["metier"] === "string" ? s["metier"] : "", recherche: typeof s["recherche"] === "string" ? s["recherche"] : "" }),
   loader: ({ context }) => context.queryClient.ensureQueryData(achatsQueryOptions(context.user.id)),
   head: () => ({ meta: [{ title: "Achats — Les Frères Mayet" }, { name: "description", content: "Suivi des lignes d’achat, fournisseurs et montants HT." }, { property: "og:title", content: "Achats — Les Frères Mayet" }, { property: "og:description", content: "Suivi des lignes d’achat, fournisseurs et montants HT." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   pendingComponent: () => <AppLayout titre="Achats"><p role="status">Chargement des achats…</p></AppLayout>,

@@ -21,7 +21,7 @@ import { margeQueryOptions } from "@/data/achats";
 import type { PeriodeMarge } from "@/lib/achats-marge";
 
 export const Route = createFileRoute("/_authenticated/accueil")({
-  validateSearch: (s: Record<string, unknown>): { periodeMarge: PeriodeMarge } => ({ periodeMarge: s.periodeMarge === "annee" || s.periodeMarge === "mois" ? s.periodeMarge : "depuis-avril" }),
+  validateSearch: (s: Record<string, unknown>): { periodeMarge: PeriodeMarge } => ({ periodeMarge: s["periodeMarge"] === "annee" || s["periodeMarge"] === "mois" ? s["periodeMarge"] : "depuis-avril" }),
   loader: ({ context }) => context.queryClient.ensureQueryData(margeQueryOptions(context.user.id)),
   errorComponent: () => <AppLayout titre="Accueil"><p role="alert">La marge n’a pas pu être chargée.</p><Button variant="outline" onClick={() => window.location.reload()}>Réessayer</Button></AppLayout>,
   notFoundComponent: () => <AppLayout titre="Accueil"><p>Page introuvable.</p></AppLayout>,
