@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794003755190,
+      "tag": "0000_achats_et_marge_mensuelle",
+      "breakpoints": true
+    }
+  ]
+}
