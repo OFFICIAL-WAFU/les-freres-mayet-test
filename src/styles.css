@@ -74,11 +74,15 @@
   --color-doc-gold: var(--doc-gold);
   --color-doc-gold-ink: var(--doc-gold-ink);
   --color-doc-line: var(--doc-line);
+  --color-margin: var(--margin);
   --font-sans: var(--font-sans);
 }
 
 
 :root {
+  --margin: #c8ae6b;
+  --purchase-sales: oklch(0.55 0.075 190);
+  --purchase-cost: oklch(0.68 0.025 250);
   /* Charte Les Frères Mayet, reprise du site lesfreresmayet.fr */
   --radius: 0.875rem;
   --background: hsl(40 20% 98%);
@@ -136,6 +140,9 @@
 
 
 .dark {
+  --margin: #c8ae6b;
+  --purchase-sales: oklch(0.72 0.075 190);
+  --purchase-cost: oklch(0.68 0.025 250);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -194,6 +201,8 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
   margin: 0;
   padding: 26px 28px;
 }
+
+.marge-suivi h2 { letter-spacing: 0; }
 .khosmos-page-heading { background: linear-gradient(180deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 26px 26px 0 0; margin-bottom: 0; padding-bottom: 14px; position: relative; overflow: hidden; }
 .khosmos-page-heading > * { position: relative; z-index: 1; }
 .khosmos-page-filters { border-radius: 0 0 26px 26px; padding-top: 6px; margin-bottom: 20px; background: hsl(36 60% 60%); }
