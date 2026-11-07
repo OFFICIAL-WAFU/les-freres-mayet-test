@@ -8,12 +8,12 @@ assert.deepEqual(lireCsv('a,b\n1,2'),[['a','b'],['1','2']]);assert.deepEqual(lir
 const ex=[{id:'e1',type:'particulier',prenom:'Léa',nom:'Testmartin',raisonSociale:'',email:'lea@test.fr',telephone:'06 11 22 33 44'}];
 const H='type;prenom;nom;raison_sociale;telephone;email;siret;tva;adresse;complement;code_postal;ville;pays;notes;documents\n';
 const csv=H+[
- 'particulier;Alain;DUBOIS;;06 24 33 18 42;alain@x.fr;;;95 Chemin de la Plaine;;85440;Talmont;France;Importé;3',
- 'entreprise;;;NATEA;01 02 03 04 05;n@x.fr;10830586300012;FR96108305863;140 Av;;49100;Angers;France;;1',
+ 'particulier;Alain;FICTIF;;06 00 00 00 01;alain@x.fr;;;1 Rue Exemple;;85000;Ville-Test;France;Importé;3',
+ 'entreprise;;;SOCIETE TEST;01 02 03 04 05;n@x.fr;12345678200002;FR11123456782;140 Av;;49000;Ville-Test;France;;1',
  'particulier;Léa;TESTMARTIN;;;;;;;;;;;;',            // doublon nom (accents/casse/ordre) avec existant
  'particulier;Autre;Personne;;+33 6 11 22 33 44;;;;;;;;;;',   // doublon téléphone existant
  'particulier;Zoé;Neuve;;;lea@test.fr;;;;;;;;;',        // doublon e-mail existant
- 'particulier;Alain;DUBOIS;;;alain@x.fr;;;;;;;;;',       // doublon dans le fichier
+ 'particulier;Alain;FICTIF;;;alain@x.fr;;;;;;;;;',       // doublon dans le fichier
  'particulier;;;;;;;;;;;;;;',                             // sans nom (ligne vide ignorée par le CSV si tout vide)
  'particulier;X;;;;;;;;;;;;;',                            // nom manquant
  'entreprise;;;;;;;;;;;;;;x',                             // raison sociale manquante
@@ -25,7 +25,7 @@ const csv=H+[
 const r=analyserImportClients(csv,ex,id);
 const s=r.lignes.map(l=>l.statut);
 assert.deepEqual(s,['nouveau','nouveau','doublon','doublon','doublon','doublon','invalide','invalide','invalide','invalide','invalide','invalide','invalide']);
-assert.equal(r.lignes[0].client.pays,'France');assert.equal(r.lignes[0].documents,3);assert.equal(r.lignes[1].client.siret,'10830586300012');assert.equal(r.lignes[1].client.type,'entreprise');
+assert.equal(r.lignes[0].client.pays,'France');assert.equal(r.lignes[0].documents,3);assert.equal(r.lignes[1].client.siret,'12345678200002');assert.equal(r.lignes[1].client.type,'entreprise');
 assert.equal(r.lignes[2].doublonDe,'e1');assert.equal(r.lignes[3].doublonDe,'e1');assert.equal(r.lignes[4].doublonDe,'e1');assert.ok(r.lignes[5].avertissements.some(a=>/ligne 2 du fichier/.test(a)));
 assert.ok(r.lignes[6].erreurs.some(e=>/Nom manquant/.test(e)));assert.ok(r.lignes[7].erreurs.some(e=>/Nom manquant/.test(e)));assert.ok(r.lignes[8].erreurs.some(e=>/Raison sociale/.test(e)));assert.ok(r.lignes[9].erreurs.some(e=>/E-mail invalide/.test(e)));assert.ok(r.lignes[10].erreurs.some(e=>/SIRET/.test(e)));assert.ok(r.lignes[11].erreurs.some(e=>/Type/.test(e)));assert.ok(r.lignes[12].erreurs.some(e=>/trop long/.test(e)));
 assert.equal(new Set(r.lignes.map(l=>l.id)).size,r.lignes.length);
