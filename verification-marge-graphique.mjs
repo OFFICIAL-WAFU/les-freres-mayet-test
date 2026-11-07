@@ -39,5 +39,16 @@ try {
   const ttc = activiteAnnuelle(docs, '2026-11-07', 'ttc');
   assert.notEqual(ttc.mois[9], ca.mois[9]);
   assert.equal(margeGraphique(activiteAnnuelle(docs, '2026-11-07', 'ht').mois, achats, '2026').totalMarge, m.totalMarge);
+  // Imputation : rattaché → mois de la facture ; chantier en cours → exclu ; reste → mois d'achat.
+  const r = margeGraphique(Array(12).fill(0n), [
+    { date_achat: '2026-05-20', total_ht_centimes: 1000, facture_id: 'F1', date_facture: '2026-07-10' },
+    { date_achat: '2026-05-20', total_ht_centimes: 700, client_id: 'C1' },
+    { date_achat: '2026-05-20', total_ht_centimes: 300 },
+    { date_achat: '2025-12-20', total_ht_centimes: 400, facture_id: 'F2', date_facture: '2026-01-05' }], '2026');
+  assert.equal(r.achats[6], 1000n);
+  assert.equal(r.achats[4], 300n);
+  assert.equal(r.achats[0], 400n);
+  assert.equal(r.enCours, 700n);
+  assert.equal(r.totalAchats, 1700n);
   console.log('Marge du graphique : contrôles réussis');
 } finally { await srv.close(); }

@@ -8,12 +8,18 @@ export const achatsAnneeQueryOptions = (ownerId: string, annee: string) => query
   queryFn: async (): Promise<AchatGraphique[]> => {
     const lignes: AchatGraphique[] = [];
     for (let offset = 0; ; offset += 1000) {
+      // Un achat rattaché est imputé au mois de sa facture client, qui peut tomber l'année suivant la commande :
+      // on lit donc aussi l'année précédente ; le filtrage par année se fait dans margeGraphique.
       const { data, error } = await supabase.from("achats_lignes")
-        .select("date_achat,total_ht_centimes").eq("owner_id", ownerId)
-        .gte("date_achat", `${annee}-01-01`).lt("date_achat", `${Number(annee) + 1}-01-01`)
+        .select("date_achat,total_ht_centimes,facture_id,client_id,factures(date_facture)").eq("owner_id", ownerId)
+        .gte("date_achat", `${Number(annee) - 1}-01-01`).lt("date_achat", `${Number(annee) + 1}-01-01`)
         .order("date_achat").order("id").range(offset, offset + 999);
       if (error) throw new Error("Les achats de l’année n’ont pas pu être chargés.");
-      lignes.push(...(data ?? []));
+      lignes.push(...(data ?? []).map(l => ({
+        date_achat: l.date_achat, total_ht_centimes: l.total_ht_centimes,
+        facture_id: l.facture_id, client_id: l.client_id,
+        date_facture: (Array.isArray(l.factures) ? l.factures[0]?.date_facture : l.factures?.date_facture) ?? null,
+      })));
       if (!data || data.length < 1000) return lignes;
     }
   },

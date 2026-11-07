@@ -86,7 +86,7 @@ export function GraphiqueActivite({ documents, mode = "ht" }: { documents: Docum
         <div className={`text-[10px] ${!margeDisponible || vide ? "text-sidebar-foreground/60" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{!margeDisponible || vide ? "" : tauxMargeGraphique(marge, vente)}</div>
       </div>; })}
     </div>
-    <p className="mt-2 text-xs text-sidebar-foreground/70">Marge HT = facturé HT − achats de matériel du mois (main-d'œuvre comptée à 100 %). Achats comptés au mois de commande.</p>
+    <p className="mt-2 text-xs text-sidebar-foreground/70">Marge HT = facturé HT − achats de matériel du mois (main-d'œuvre comptée à 100 %). Achats rattachés à une facture comptés au mois de cette facture, les autres (stock, frais) au mois de commande{margeDisponible && m.enCours > 0n ? ` ; ${formaterCentimes(m.enCours)} d’achats de chantiers en cours ne sont pas encore comptés` : ""}.</p>
     {(achats.isError || caHT.incomplets > 0) && <p role="alert" className="mt-2 text-xs text-sidebar-foreground/70">Marge indisponible : {achats.isError ? "les achats n’ont pas pu être chargés." : "le chiffre d’affaires HT est incomplet."}</p>}
     {!aDesDonnees && <p className="mt-4 text-center text-sm text-sidebar-foreground/75">Aucune facture finalisée pour l’instant en {a.annee}. Les barres apparaîtront dès la première facture.</p>}
     <p className="mt-4 text-xs text-sidebar-foreground/70">Cliquez sur une barre pour voir les factures du mois. <span className="inline-block size-2 rounded-full bg-accent align-middle" /> mois en cours · <span className="inline-block size-2 rounded-full bg-primary align-middle" /> mois passés.</p>
