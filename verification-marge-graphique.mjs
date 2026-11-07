@@ -4,10 +4,10 @@ const srv = await createServer({ server: { middlewareMode: true }, appType: 'cus
 try {
   const { activiteAnnuelle } = await srv.ssrLoadModule('/src/lib/activite-annuelle.ts');
   const { margeGraphique, tauxMargeGraphique } = await srv.ssrLoadModule('/src/lib/marge-graphique.ts');
-  const facture = { id: 'F', type: 'facture', statut: 'Finalisé', date: '15/10/2026', montantHTCentimes: 25000n, montantCentimes: 30000n, deduction: { statut: 'finalise', ht: 5000n, ttc: 6000n } };
+  const facture = { id: 'F', type: 'facture', statut: 'Finalisé', date: '15/10/2026', montantHTCentimes: 25000n, montantTTC: 300, aRegler: 30000n, deduction: { statut: 'finalise', ht: 5000n, ttc: 6000n } };
   const docs = [facture,
     { id: 'A', type: 'acompte', statut: 'Finalisé', date: '15/10/2026', montantHTCentimes: 5000n },
-    { id: 'AV', type: 'avoir', statut: 'Finalisé', date: '16/10/2026', factureSource: { id: 'F' }, montantHTCentimes: 2000n, montantCentimes: 2400n },
+    { id: 'AV', type: 'avoir', statut: 'Finalisé', date: '16/10/2026', factureSource: { id: 'F' }, montantHTCentimes: 2000n, montantTTC: 24 },
     { ...facture, id: 'B', statut: 'Brouillon' },
     { ...facture, id: 'DEMO', fictif: true }];
   const ca = activiteAnnuelle(docs, '2026-11-07', 'ht');
