@@ -1,6 +1,23 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Achat, MoisMarge } from "@/lib/achats-marge";
+import type { AchatGraphique } from "@/lib/marge-graphique";
+
+export const achatsAnneeQueryOptions = (ownerId: string, annee: string) => queryOptions({
+  queryKey: ["achats-lignes", ownerId, "annee", annee],
+  queryFn: async (): Promise<AchatGraphique[]> => {
+    const lignes: AchatGraphique[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.from("achats_lignes")
+        .select("date_achat,total_ht_centimes").eq("owner_id", ownerId)
+        .gte("date_achat", `${annee}-01-01`).lt("date_achat", `${Number(annee) + 1}-01-01`)
+        .order("date_achat").order("id").range(offset, offset + 999);
+      if (error) throw new Error("Les achats de l’année n’ont pas pu être chargés.");
+      lignes.push(...(data ?? []));
+      if (!data || data.length < 1000) return lignes;
+    }
+  },
+});
 
 export const margeQueryOptions = (ownerId: string) => queryOptions({
   queryKey: ["marge-mensuelle", ownerId],

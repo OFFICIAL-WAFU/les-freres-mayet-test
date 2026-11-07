@@ -1,7 +1,10 @@
 import type { DocumentAvecDevis } from "@/data/documents";
 import { formaterCentimes } from "@/data/devis";
-import { activiteAnnuelle, margeAnnuelle } from "@/lib/activite-annuelle";
-import { pourcentage } from "@/lib/rentabilite";
+import { activiteAnnuelle } from "@/lib/activite-annuelle";
+import { margeGraphique, tauxMargeGraphique } from "@/lib/marge-graphique";
+import { achatsAnneeQueryOptions } from "@/data/achats";
+import { useQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import type { ModeMontant } from "@/lib/montants";
 import { useState } from "react";
 import { ListeDocumentsDialog } from "@/components/ListeDocumentsDialog";
@@ -20,12 +23,16 @@ function court(euros: number): string {
 
 export function GraphiqueActivite({ documents, mode = "ht" }: { documents: DocumentAvecDevis[]; mode?: ModeMontant }) {
   const a = activiteAnnuelle(documents, undefined, mode);
+  const caHT = activiteAnnuelle(documents, undefined, "ht");
+  const { user } = getRouteApi("/_authenticated").useRouteContext();
+  const achats = useQuery(achatsAnneeQueryOptions(user.id, a.annee));
   const tx = mode === "ttc" ? "TTC" : "HT";
   const [moisOuvert, setMoisOuvert] = useState<number | "annee" | null>(null);
   if (a.incomplets) return <p role="status" className="mt-3 rounded-xl bg-white/15 p-6">Graphique indisponible : {a.incomplets} document(s) sans montant HT ou date vérifiable. Rafraîchissez les documents pour réessayer.</p>;
 
-  const m = margeAnnuelle(documents);
-  const aMarge = m.totalVentes > 0n;
+  const m = margeGraphique(caHT.mois, achats.data ?? [], a.annee);
+  const margeDisponible = achats.isSuccess && caHT.incomplets === 0;
+  const aMarge = m.ventes.some(v => v !== 0n) || m.achats.some(v => v !== 0n);
   const margeMois = m.marge.map(v => Number(v) / 100);
   const valeurs = a.mois.map(v => Number(v) / 100);
   const maxAbs = Math.max(1, ...valeurs.map(v => Math.abs(v)));
@@ -48,7 +55,7 @@ export function GraphiqueActivite({ documents, mode = "ht" }: { documents: Docum
       </button>
       <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Ce mois-ci</dt><dd className="font-bold">{moisCourant >= 0 ? court(courant) : "—"}{evolution !== null && <span className={`ml-1 text-xs font-semibold ${evolution >= 0 ? "text-emerald-300" : "text-red-300"}`}>{evolution >= 0 ? "▲" : "▼"} {Math.abs(evolution)} %</span>}</dd></div>
-        <div className="rounded-xl bg-white/10 px-3 py-2" title="Marge = prix de vente HT − prix d’achat − temps de pose au coût réel"><dt className="text-xs text-sidebar-foreground/70">Marge HT</dt><dd className="font-bold">{aMarge ? <>{court(Number(m.totalMarge) / 100)}<span className="ml-1 text-xs font-semibold text-emerald-300">{pourcentage(m.totalMarge, m.totalVentes)}</span></> : "—"}</dd></div>
+        <div className="rounded-xl bg-white/10 px-3 py-2" title={`CA HT ${formaterCentimes(m.totalVentes)} − achats ${margeDisponible ? formaterCentimes(m.totalAchats) : "…"} = marge ${margeDisponible ? formaterCentimes(m.totalMarge) : "…"}`}><dt className="text-xs text-sidebar-foreground/70">Marge HT</dt><dd className="font-bold">{!margeDisponible ? (achats.isError ? "Indisponible" : "…") : aMarge ? <>{court(Number(m.totalMarge) / 100)}<span className={`ml-1 text-xs font-semibold ${m.totalMarge < 0n ? "text-red-300" : "text-emerald-300"}`}>{tauxMargeGraphique(m.totalMarge, m.totalVentes)}</span></> : "–"}</dd></div>
         <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Moyenne / mois</dt><dd className="font-bold">{ecoules.length ? court(moyenne) : "—"}</dd></div>
         <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Meilleur mois</dt><dd className="font-bold">{aDesDonnees ? `${MOIS[meilleur]} · ${court(valeurs[meilleur] ?? 0)}` : "—"}</dd></div>
       </dl>
@@ -74,12 +81,13 @@ export function GraphiqueActivite({ documents, mode = "ht" }: { documents: Docum
       </div>
     </div>
     <div className="mt-1 grid grid-cols-12 gap-1.5 sm:gap-3" aria-label="Marge HT par mois">
-      {margeMois.map((v, i) => { const vente = m.ventes[i]!; return <div key={i} className="rounded-lg bg-white/5 px-0.5 py-1.5 text-center" title={vente > 0n ? `${MOIS_LONGS[i]} : marge ${formaterCentimes(m.marge[i]!)} HT, soit ${pourcentage(m.marge[i]!, vente)} du prix de vente` : "Aucun coût renseigné ce mois-ci"}>
-        <div className={`text-[11px] font-bold sm:text-xs ${vente === 0n ? "text-sidebar-foreground/40" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{vente === 0n ? "–" : court(v)}</div>
-        <div className="text-[10px] text-sidebar-foreground/60">{vente === 0n ? "" : pourcentage(m.marge[i]!, vente)}</div>
+      {margeMois.map((v, i) => { const vente = m.ventes[i] ?? 0n; const achat = m.achats[i] ?? 0n; const marge = m.marge[i] ?? 0n; const vide = vente === 0n && achat === 0n; return <div key={i} className="rounded-lg bg-white/5 px-0.5 py-1.5 text-center" title={margeDisponible ? `CA HT ${formaterCentimes(vente)} − achats ${formaterCentimes(achat)} = marge ${formaterCentimes(marge)}` : "Marge HT indisponible tant que les achats ne sont pas chargés"}>
+        <div className={`text-[11px] font-bold sm:text-xs ${!margeDisponible || vide ? "text-sidebar-foreground/40" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{!margeDisponible ? "…" : vide ? "–" : court(v)}</div>
+        <div className={`text-[10px] ${!margeDisponible || vide ? "text-sidebar-foreground/60" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{!margeDisponible || vide ? "" : tauxMargeGraphique(marge, vente)}</div>
       </div>; })}
     </div>
-    <p className="mt-2 text-xs text-sidebar-foreground/70"><span className="font-semibold text-emerald-300">Marge HT (bénéfice sur chiffrage)</span> · {aMarge ? `calculée sur ${m.couverture} % du chiffre d’affaires : seules les lignes de devis avec un prix d’achat ou un temps de pose sont comptées.` : "renseignez le prix d’achat ou le temps de pose dans vos devis pour la voir apparaître ici."}</p>
+    <p className="mt-2 text-xs text-sidebar-foreground/70">Marge HT = facturé HT − achats de matériel du mois (main-d'œuvre comptée à 100 %). Achats comptés au mois de commande.</p>
+    {(achats.isError || caHT.incomplets > 0) && <p role="alert" className="mt-2 text-xs text-sidebar-foreground/70">Marge indisponible : {achats.isError ? "les achats n’ont pas pu être chargés." : "le chiffre d’affaires HT est incomplet."}</p>}
     {!aDesDonnees && <p className="mt-4 text-center text-sm text-sidebar-foreground/75">Aucune facture finalisée pour l’instant en {a.annee}. Les barres apparaîtront dès la première facture.</p>}
     <p className="mt-4 text-xs text-sidebar-foreground/70">Cliquez sur une barre pour voir les factures du mois. <span className="inline-block size-2 rounded-full bg-accent align-middle" /> mois en cours · <span className="inline-block size-2 rounded-full bg-primary align-middle" /> mois passés.</p>
     <details className="mt-2 text-xs text-sidebar-foreground/70"><summary className="cursor-pointer">Comment c’est calculé ?</summary><p className="mt-2">Factures finalisées (montant {tx} complet, acompte compris), moins les avoirs, au mois de leur émission. Les factures d’acompte sont comptées avec la facture de solde. Ce graphique suit la facturation, pas les encaissements ni le solde bancaire.</p></details>
