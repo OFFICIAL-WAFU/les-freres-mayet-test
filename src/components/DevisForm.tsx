@@ -6,7 +6,7 @@ import { useEtatEntreprise } from "@/data/entreprise";
 import { DeductionBloc } from "@/components/DeductionBloc";
 import type { Deduction } from "@/data/deduction";
 import { lireHabitudes, lireReglagesChiffrage } from "@/data/habitudes";
-import { REGLAGES_DEFAUT, coutVide, erreursCout, type ReglagesChiffrage } from "@/lib/rentabilite";
+import { REGLAGES_DEFAUT, coutDepuisCatalogue, coutVide, erreursCout, type ReglagesChiffrage } from "@/lib/rentabilite";
 import { CoutBloc, PastilleMarge, RentabiliteBloc, TableauDetaille } from "@/components/LignesChiffrage";
 import { Switch } from "@/components/ui/switch";
 import { appliquerHabitudesDevis, type Habitudes } from "@/lib/habitudes";
@@ -280,8 +280,8 @@ function DevisFormBase({
       quantite: "1",
       prix: a.prixHT.toFixed(2).replace(".", ","),
       taux: tauxGlobal,
-      // Le prix du catalogue est conservé tant qu'aucun prix d'achat ni temps de pose n'est saisi.
-      ...(chiffrage ? { cout: coutVide(reglages) } : {}),
+      // Le prix d'achat du catalogue est repris ; le prix de vente du catalogue est conservé (voir coutDepuisCatalogue).
+      ...(chiffrage ? { cout: coutDepuisCatalogue(a.prixAchat === null ? null : Math.round(a.prixAchat * 100), Math.round(a.prixHT * 100), reglages) } : {}),
     };
   }
   function ajouterDepuisCatalogue(a: Article) {
@@ -634,6 +634,7 @@ function DevisFormBase({
                         <p className="font-medium break-words">{a.designation}</p>
                         <p className="text-xs text-muted-foreground">
                           {a.reference} · {TYPE_ARTICLE_LABELS[a.type]} · {formaterPrix(a.prixHT, a.unite)}
+                          {chiffrage && a.prixAchat !== null && <> · achat {formaterPrix(a.prixAchat, a.unite)}</>}
                         </p>
                       </div>
                       <Button type="button" size="sm" variant="outline" onClick={() => ajouterDepuisCatalogue(a)}>

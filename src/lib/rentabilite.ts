@@ -72,6 +72,20 @@ export const coutVide = (r: ReglagesChiffrage): CoutSaisie => ({
   achat: "", coef: formaterDecimal(r.coefMilliemes, 3, 1), temps: "", taux: formaterDecimal(r.tauxHoraireCentimes, 2, 2), auto: true, coutHoraire: r.coutHoraireCentimes,
 });
 
+/**
+ * Coût d'une ligne créée depuis un article du catalogue.
+ * Prix d'achat connu : il est repris sur la ligne. Le prix de vente suit le calcul (achat × coefficient)
+ * seulement si le prix du catalogue est exactement ce calcul ; sinon le prix de vente fixé dans le catalogue
+ * est conservé et la marge est calculée sur ce prix. Prix d'achat inconnu : coût vide, prix du catalogue conservé.
+ */
+export function coutDepuisCatalogue(prixAchatCentimes: number | null, prixVenteCentimes: number, r: ReglagesChiffrage): CoutSaisie {
+  const base = coutVide(r);
+  if (prixAchatCentimes === null || !Number.isSafeInteger(prixAchatCentimes) || prixAchatCentimes < 0) return base;
+  const cout: CoutSaisie = { ...base, achat: formaterDecimal(BigInt(prixAchatCentimes), 2, 2) };
+  const calcule = prixCalcule(cout);
+  return { ...cout, auto: calcule !== null && calcule === BigInt(prixVenteCentimes) };
+}
+
 /** Applique un changement de coût ; si le prix suit le calcul, le prix de vente est mis à jour. */
 export function modifierCout(l: LigneSaisie, patch: Partial<CoutSaisie>, r: ReglagesChiffrage): LigneSaisie {
   const cout: CoutSaisie = { ...(l.cout ?? coutVide(r)), ...patch };

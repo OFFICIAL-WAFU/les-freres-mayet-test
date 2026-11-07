@@ -53,4 +53,15 @@ assert.equal(m.coutDepuisBase({prix_achat_centimes:null,coef_materiel_milliemes:
 assert.equal(m.coutDepuisBase({}),undefined);
 assert.equal(m.coutVersBase(undefined,R).prix_achat_centimes,'');
 assert.throws(()=>m.coutVersBase(c('x','1',''),R));
+// Ligne créée depuis le catalogue (07/11/2026) : prix d'achat repris, prix de vente du catalogue conservé.
+// Tableau REXEL : achat 47,12, vente 75,39 = 47,12 × 1,6 arrondi → le prix suit le calcul.
+assert.deepEqual(m.coutDepuisCatalogue(4712,7539,R),{achat:'47,12',coef:'1,6',temps:'',taux:'50,00',auto:true,coutHoraire:2500});
+// Ancien article Khosmos : achat 2,77, vente fixée 7,20 ≠ 4,43 → prix du catalogue conservé (auto faux), marge calculée dessus.
+const k=m.coutDepuisCatalogue(278,720,R);assert.equal(k.achat,'2,78');assert.equal(k.auto,false);
+const lk={cle:'k',articleId:'x',type:'materiel',reference:'',designation:'Prise',description:'',unite:'piece',quantite:'2',prix:'7,20',taux:100,cout:k};
+const ak=m.analyserLigne(lk,R);assert.deepEqual([ak.connu,ak.ht,ak.coutMateriel,ak.marge],[true,1440n,556n,884n]);
+// Prix d'achat inconnu : coût vide, rien n'est inventé.
+assert.deepEqual(m.coutDepuisCatalogue(null,1000,R),m.coutVide(R));
+// Fil au mètre : 0,23 × 1,6 = 0,368 → 0,37.
+assert.equal(m.coutDepuisCatalogue(23,37,R).auto,true);
 console.log('Rentabilité des devis : tous les contrôles réussis');

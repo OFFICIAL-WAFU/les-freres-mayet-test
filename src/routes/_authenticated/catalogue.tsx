@@ -206,6 +206,7 @@ function CataloguePage() {
                       <th className="px-4 py-3 font-semibold">Type</th>
                       <th className="px-4 py-3 font-semibold">Métier</th>
                       <th className="px-4 py-3 font-semibold">Unité</th>
+                      <th className="px-4 py-3 text-right font-semibold">Prix d'achat HT</th>
                       <th className="px-4 py-3 text-right font-semibold">Prix de vente HT</th>
                       <th className="px-4 py-3 text-right font-semibold">Action</th>
                     </tr>
@@ -221,6 +222,7 @@ function CataloguePage() {
                         <td className="px-4 py-3">{TYPE_ARTICLE_LABELS[a.type]}</td>
                         <td className="px-4 py-3">{METIER_LABELS[a.metier]}</td>
                         <td className="px-4 py-3">{UNITE_LABELS[a.unite]}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap text-muted-foreground">{a.prixAchat === null ? "—" : formaterPrix(a.prixAchat, a.unite)}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{formaterPrix(a.prixHT, a.unite)}</td>
                         <td className="px-4 py-3 text-right">
                           <Button variant="outline" size="sm" onClick={() => voir(a)}>Voir</Button>
@@ -247,7 +249,8 @@ function CataloguePage() {
                     <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                       <div><dt className="text-muted-foreground">Métier</dt><dd>{METIER_LABELS[a.metier]}</dd></div>
                       <div><dt className="text-muted-foreground">Unité</dt><dd>{UNITE_LABELS[a.unite]}</dd></div>
-                      <div className="col-span-2"><dt className="text-muted-foreground">Prix de vente HT</dt><dd className="font-medium">{formaterPrix(a.prixHT, a.unite)}</dd></div>
+                      <div><dt className="text-muted-foreground">Prix d'achat HT</dt><dd>{a.prixAchat === null ? "—" : formaterPrix(a.prixAchat, a.unite)}</dd></div>
+                      <div><dt className="text-muted-foreground">Prix de vente HT</dt><dd className="font-medium">{formaterPrix(a.prixHT, a.unite)}</dd></div>
                     </dl>
                     <Button variant="outline" className="mt-3 w-full" onClick={() => voir(a)}>Voir</Button>
                   </div>
@@ -333,6 +336,7 @@ function FicheArticle({ article: a, onModifier, onFermer }: { article: Article; 
         <Ligne label="Métier" valeur={METIER_LABELS[a.metier]} />
         <Ligne label="Description" valeur={a.description} />
         <Ligne label="Unité" valeur={UNITE_LABELS[a.unite]} />
+        <Ligne label="Prix d'achat HT (interne)" valeur={a.prixAchat === null ? "Non renseigné" : formaterPrix(a.prixAchat, a.unite)} />
         <Ligne label="Prix de vente HT" valeur={formaterPrix(a.prixHT, a.unite)} />
         {a.type === "materiel" && (
           <>

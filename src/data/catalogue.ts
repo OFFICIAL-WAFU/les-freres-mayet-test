@@ -16,6 +16,8 @@ export interface Article {
   metier: Metier;
   unite: Unite;
   prixHT: number;
+  /** Prix d'achat unitaire HT (€) ; null = inconnu, jamais inventé. Interne : n'apparaît jamais sur les documents clients. */
+  prixAchat: number | null;
   marque: string;
   referenceFabricant: string;
   notes: string;
@@ -77,6 +79,15 @@ export function analyserPrix(saisie: string): number | string {
   return n;
 }
 
+/** Prix d'achat facultatif : vide = inconnu (null), sinon un nombre positif à 2 décimales au plus. */
+export function analyserPrixAchat(saisie: string): number | null | string {
+  const s = saisie.trim().replace(/\s/g, "");
+  if (!s) return null;
+  if (!/^\d+([.,]\d+)?$/.test(s)) return "Le prix d'achat doit être un nombre positif (exemple : 47,12).";
+  if (/[.,]\d{3,}$/.test(s)) return "Le prix d'achat ne peut pas avoir plus de deux décimales.";
+  return Number(s.replace(",", "."));
+}
+
 // ---------------------------------------------------------------------------
 // Stockage : base Lovable Cloud (table articles, protégée par propriétaire).
 // Prix conservé en centimes entiers ; le navigateur ne garde qu'une copie de travail.
@@ -98,6 +109,7 @@ function depuisLigne(l: LigneArticle): Article {
     metier: l.metier as Metier,
     unite: l.unite as Unite,
     prixHT: Number(l.prix_ht_centimes) / 100,
+    prixAchat: l.prix_achat_centimes === null || l.prix_achat_centimes === undefined ? null : Number(l.prix_achat_centimes) / 100,
     marque: l.marque,
     referenceFabricant: l.reference_fabricant,
     notes: l.notes,
@@ -116,6 +128,7 @@ function versLigne(s: ArticleSaisie) {
     metier: s.metier,
     unite: s.unite,
     prix_ht_centimes: versCentimes(s.prixHT),
+    prix_achat_centimes: s.prixAchat === null ? null : versCentimes(s.prixAchat),
     marque: materiel ? s.marque.trim() : "",
     reference_fabricant: materiel ? s.referenceFabricant.trim() : "",
     notes: s.notes.trim(),

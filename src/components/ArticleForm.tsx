@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   ConflitVersionArticle,
   ReferenceDejaUtilisee,
   analyserPrix,
+  analyserPrixAchat,
   normaliserReference,
   type Article,
   type ArticleSaisie,
@@ -26,6 +27,8 @@ import {
   type Metier,
   type Unite,
 } from "@/data/catalogue";
+import { lireReglagesChiffrage } from "@/data/habitudes";
+import { REGLAGES_DEFAUT, formaterDecimal, type ReglagesChiffrage } from "@/lib/rentabilite";
 
 interface Valeurs {
   type: ArticleType;
@@ -35,6 +38,7 @@ interface Valeurs {
   metier: Metier | "";
   unite: Unite | "";
   prix: string;
+  prixAchat: string;
   marque: string;
   referenceFabricant: string;
   notes: string;
@@ -51,6 +55,7 @@ function versValeurs(a: Article): Valeurs {
     metier: a.metier,
     unite: a.unite,
     prix: String(a.prixHT).replace(".", ","),
+    prixAchat: a.prixAchat === null ? "" : a.prixAchat.toFixed(2).replace(".", ","),
     marque: a.marque,
     referenceFabricant: a.referenceFabricant,
     notes: a.notes,
@@ -73,7 +78,7 @@ export function genererReference(designation: string, articles: Article[]): stri
 function vide(type: ArticleType): Valeurs {
   return {
     type, reference: "", designation: "", description: "", metier: "general", unite: UNITE_PAR_DEFAUT[type],
-    prix: "", marque: "", referenceFabricant: "", notes: "",
+    prix: "", prixAchat: "", marque: "", referenceFabricant: "", notes: "",
   };
 }
 
@@ -115,6 +120,8 @@ export function ArticleForm({ initial, typeInitial = "materiel", articles, onCan
   const [enCours, setEnCours] = useState(false);
   const [echec, setEchec] = useState<"reseau" | "conflit" | null>(null);
   const idTentative = useRef<string>(crypto.randomUUID());
+  const [reglages, setReglages] = useState<ReglagesChiffrage>(REGLAGES_DEFAUT);
+  useEffect(() => { let actif = true; lireReglagesChiffrage().then((r) => { if (actif) setReglages(r); }).catch(() => {}); return () => { actif = false; }; }, []);
 
   const val = v;
   const set = (k: Cle, valeur: string) => {
@@ -148,6 +155,8 @@ export function ArticleForm({ initial, typeInitial = "materiel", articles, onCan
     if (!val.unite) e.unite = "Choisissez une unité.";
     const prix = analyserPrix(val.prix);
     if (typeof prix === "string") e.prix = prix;
+    const prixAchat = analyserPrixAchat(val.prixAchat);
+    if (typeof prixAchat === "string") e.prixAchat = prixAchat;
     let d: Article | null = null;
     if (val.reference.trim()) {
       const r = normaliserReference(val.reference);
@@ -156,7 +165,7 @@ export function ArticleForm({ initial, typeInitial = "materiel", articles, onCan
     }
     setDoublon(d);
     setErreurs(e);
-    if (Object.keys(e).length > 0 || typeof prix === "string") return;
+    if (Object.keys(e).length > 0 || typeof prix === "string" || typeof prixAchat === "string") return;
     if (enCours) return;
     const materiel = val.type === "materiel";
     const reference = val.reference.trim() || genererReference(val.designation, articles);
@@ -170,6 +179,7 @@ export function ArticleForm({ initial, typeInitial = "materiel", articles, onCan
       metier: val.metier as Metier,
       unite: val.unite as Unite,
       prixHT: prix,
+      prixAchat,
       marque: materiel ? val.marque.trim() : "",
       referenceFabricant: materiel ? val.referenceFabricant.trim() : "",
       notes: val.notes.trim(),
@@ -251,9 +261,31 @@ export function ArticleForm({ initial, typeInitial = "materiel", articles, onCan
           </Select>
         </Champ>
       </div>
-      <Champ id="a-prix" label="Prix de vente unitaire HT (€)" erreur={erreurs.prix}>
-        {inp("prix", { inputMode: "decimal", placeholder: "Exemple : 60,50" })}
-      </Champ>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Champ id="a-prixAchat" label="Prix d'achat unitaire HT (€)" facultatif erreur={erreurs.prixAchat}
+          aide="Ce qu'il vous coûte. Interne : jamais visible par le client.">
+          {inp("prixAchat", { inputMode: "decimal", placeholder: "Exemple : 47,12" })}
+        </Champ>
+        <Champ id="a-prix" label="Prix de vente unitaire HT (€)" erreur={erreurs.prix}>
+          {inp("prix", { inputMode: "decimal", placeholder: "Exemple : 60,50" })}
+        </Champ>
+      </div>
+      {(() => {
+        const achat = analyserPrixAchat(val.prixAchat);
+        if (typeof achat !== "number") return null;
+        const conseille = Math.floor((Math.round(achat * 100) * reglages.coefMilliemes + 500) / 1000);
+        const texte = formaterDecimal(BigInt(conseille), 2, 2);
+        const actuel = analyserPrix(val.prix);
+        const identique = typeof actuel === "number" && Math.round(actuel * 100) === conseille;
+        return (
+          <div className="-mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>Avec votre coefficient {formaterDecimal(reglages.coefMilliemes, 3, 1)} : prix de vente conseillé {texte} € HT.</span>
+            {!identique && (
+              <Button type="button" size="sm" variant="outline" onClick={() => set("prix", texte)}>Appliquer ce prix</Button>
+            )}
+          </div>
+        );
+      })()}
       {val.type === "materiel" && (
         <>
           <Champ id="a-marque" label="Marque" facultatif>{inp("marque")}</Champ>
