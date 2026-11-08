@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { uniteAccordee } from "@/data/catalogue";
 import { lireDevisPourSignature, signerDevisDistant } from "@/data/signature-distante";
 import { euros, jetonValide, messageErreurSignature, quantite, type LectureSignature } from "@/lib/signature-distante";
+import { notifierSignature, type SortieNotification } from "@/lib/signature-notification";
 
 export const Route = createFileRoute("/signer/$jeton")({
   head: () => ({ meta: [{ title: "Signature de votre devis" }, { name: "robots", content: "noindex,nofollow" }, { name: "referrer", content: "no-referrer" }] }),
@@ -31,6 +32,8 @@ function Page() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState("");
   const [fait, setFait] = useState<{ empreinte: string; signeLe: string } | null>(null);
+  const [trace, setTrace] = useState<string | null>(null);
+  const [copie, setCopie] = useState<"envoi" | SortieNotification | null>(null);
   const cadre = useRef<SignatureCadreRef>(null);
 
   useEffect(() => {
@@ -49,6 +52,7 @@ function Page() {
   }
   const d = lecture.devis, e = d.entreprise;
   const signe = lecture.etat === "signe" || !!fait;
+  const cgv = e.cgv.trim();
   const signer = async () => {
     setErreur("");
     const image = cadre.current?.exporter() ?? null;
@@ -56,7 +60,12 @@ function Page() {
     if (nom.trim().length < 2) { setErreur(messageErreurSignature("nom_invalide")); return; }
     if (!image) { setErreur(messageErreurSignature("image_invalide")); return; }
     setEnvoi(true);
-    try { setFait(await signerDevisDistant(jeton, nom.trim(), image, true)); }
+    try {
+      setFait(await signerDevisDistant(jeton, nom.trim(), image, true));
+      setTrace(image);
+      setCopie("envoi");
+      notifierSignature({ data: { jeton } }).then(setCopie).catch(() => setCopie({ alerte: false, copieClient: false, emailClient: "" }));
+    }
     catch (er) { setErreur(messageErreurSignature(er instanceof Error ? er.message : "")); } finally { setEnvoi(false); }
   };
 
@@ -82,16 +91,29 @@ function Page() {
       {d.remarques.trim() && <><h3 className="mt-4 text-sm font-semibold">Remarques</h3><p className="whitespace-pre-line break-words text-sm">{d.remarques}</p></>}
     </section>
 
+    {cgv && <section className="mt-4 rounded-2xl border bg-card p-5" aria-label="Conditions générales de vente">
+      <details open={!signe} className="group">
+        <summary className="cursor-pointer font-semibold">Conditions générales de vente</summary>
+        <div className="mt-3 max-h-80 overflow-y-auto whitespace-pre-line break-words rounded-md border bg-background p-3 text-xs leading-relaxed print:max-h-none print:overflow-visible">{cgv}</div>
+      </details>
+    </section>}
+
     {signe ? <section className="mt-4 rounded-2xl border border-emerald-600/40 bg-card p-5" role="status">
       <h2 className="text-lg font-semibold">Devis signé, merci</h2>
-      <p className="mt-1 text-sm">{fait ? `Votre signature a été enregistrée le ${frHeure(fait.signeLe)}.` : `Signé par ${lecture.signataire_nom ?? "le client"}${lecture.signe_le ? ` le ${frHeure(lecture.signe_le)}` : ""}.`} L’entreprise en est informée dès qu’elle consulte son espace. Conservez cette page ou une capture d’écran.</p>
+      <p className="mt-1 text-sm">{fait ? `Votre signature a été enregistrée le ${frHeure(fait.signeLe)}.` : `Signé par ${lecture.signataire_nom ?? "le client"}${lecture.signe_le ? ` le ${frHeure(lecture.signe_le)}` : ""}.`} L’entreprise en est informée.</p>
+      {trace && <img src={trace} alt="Votre signature" className="mt-3 h-24 rounded-md border bg-white" />}
       <p className="mt-2 break-all text-xs text-muted-foreground">Empreinte du devis signé (SHA-256) : {fait?.empreinte ?? lecture.empreinte}</p>
+      {copie === "envoi" && <p className="mt-3 text-sm text-muted-foreground print:hidden">Envoi de votre copie par e-mail…</p>}
+      {copie && copie !== "envoi" && <p className="mt-3 text-sm print:hidden">{copie.copieClient
+        ? `Une copie de votre devis signé vous a été envoyée à ${copie.emailClient}.`
+        : "Gardez une copie : utilisez le bouton ci-dessous pour enregistrer cette page en PDF ou l’imprimer."}</p>}
+      <Button className="mt-3 print:hidden" variant="outline" onClick={() => window.print()}>Enregistrer en PDF / imprimer</Button>
     </section> : <section className="mt-4 rounded-2xl border bg-card p-5" aria-label="Signer le devis">
       <h2 className="font-semibold">Signer ce devis</h2>
       <label className="mt-3 grid gap-1 text-sm">Votre nom et prénom<input className="rounded-md border bg-background p-2" maxLength={80} autoComplete="name" value={nom} onChange={ev => setNom(ev.target.value)} /></label>
       <p className="mt-3 text-sm">Votre signature (au doigt ou à la souris)</p>
       <div className="mt-1"><SignatureCadre ref={cadre} /></div>
-      <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={accord} onChange={ev => setAccord(ev.target.checked)} /><span><strong>Bon pour accord.</strong> J’ai lu le devis ci-dessus ({euros(d.total_ttc_centimes)} TTC) et je l’accepte.</span></label>
+      <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={accord} onChange={ev => setAccord(ev.target.checked)} /><span><strong>Bon pour accord.</strong> J’ai lu le devis ci-dessus ({euros(d.total_ttc_centimes)} TTC){cgv ? " et les conditions générales de vente" : ""} et je {cgv ? "les" : "l’"}accepte.</span></label>
       {erreur && <p role="alert" className="mt-3 text-sm text-destructive">{erreur}</p>}
       <Button className="mt-4 w-full sm:w-auto" variant="action" disabled={envoi} onClick={() => void signer()}>{envoi ? "Enregistrement…" : "Signer le devis"}</Button>
       <p className="mt-3 text-xs text-muted-foreground">Signature électronique simple : votre nom, votre tracé, la date et l’heure ainsi que l’empreinte numérique de ce devis sont enregistrés comme preuve. Le devis lui-même ne peut plus être modifié.</p>

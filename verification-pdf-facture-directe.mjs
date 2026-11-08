@@ -18,6 +18,7 @@ for(const [nom,source] of Object.entries({
  '@\/data/devis':lire('src/data/devis.ts'),
  '@\/data/deduction':lire('src/data/deduction.ts'),
  '@\/lib/lots':lire('src/lib/lots.ts'),
+ '@\/lib/mentions-obligatoires':lire('src/lib/mentions-obligatoires.ts'),
 })){const n=nom.replaceAll('\\/','/'),u=JSON.stringify(url(source));code=code.replace(JSON.stringify(n),u).replace("'"+n+"'",u);}
 const {definitionDevis}=await import(url(code));
 const ent={raisonSociale:'Entreprise TEST',nomCommercial:'',activite:'',adresse:'2 rue TEST',complement:'',codePostal:'85000',ville:'Testville',pays:'France',telephone:'',email:'',site:'',formeJuridique:'SARL',capital:'',siret:'',tva:'',immatriculation:'',iban:'',bic:'',assureur:'',contratAssurance:'',codeNaf:'',regimeTva:'',bandeau:'',logo:'',cgv:''};

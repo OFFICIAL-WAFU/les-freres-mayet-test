@@ -12,6 +12,7 @@ import {
   type DevisBrouillon,
 } from "@/data/devis";
 import { formaterCapital, formaterIban, type Entreprise } from "@/data/entreprise";
+import { mentionRetard } from "@/lib/mentions-obligatoires";
 
 const fr = (iso: string) => iso.split("-").reverse().join("/");
 
@@ -41,6 +42,7 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
     ent.tva && `TVA intracommunautaire : ${ent.tva}`,
     ent.immatriculation,
   ].filter(Boolean) as string[];
+  const retard = mentionRetard({ facture: !!facture, avoir: !!avoir, finalise, date: d.date, remarques: d.remarques });
   const recap = recapituler(d.lignes);
   const c = d.client;
   return (
@@ -195,6 +197,20 @@ export function DevisApercu({ devis: d, numero, entreprise: ent, finalise = fals
         <section className="mt-8">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Remarques</h2>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm">{d.remarques}</p>
+        </section>
+      )}
+
+      {retard && (
+        <section className="mt-8" data-testid="apercu-retard">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Retard de paiement</h2>
+          <p className="mt-2 break-words text-xs">{retard}</p>
+        </section>
+      )}
+
+      {retard && (
+        <section className="mt-8" data-testid="apercu-retard">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-doc-gold-ink">Retard de paiement</h2>
+          <p className="mt-2 break-words text-xs">{retard}</p>
         </section>
       )}
 

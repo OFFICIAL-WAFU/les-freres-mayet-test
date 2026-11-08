@@ -6,7 +6,7 @@ export type EtatLien = "ouvert" | "signe" | "revoque" | "expire" | "introuvable"
 export type LigneSignature = { position: number; type: string; designation: string; description: string; unite: string; quantite_milliemes: number; prix_ht_centimes: number; taux_tva_milliemes: number; ht_centimes: number; tva_centimes: number; ttc_centimes: number };
 export type DevisASigner = {
   reference: string; objet: string; date_devis: string; date_validite: string | null;
-  client: { nom: string; adresse: string[] }; entreprise: { raison_sociale: string; nom_commercial: string; adresse: string; code_postal: string; ville: string; telephone: string; email: string; siret: string };
+  client: { nom: string; adresse: string[]; email: string }; entreprise: { raison_sociale: string; nom_commercial: string; adresse: string; code_postal: string; ville: string; telephone: string; email: string; siret: string; cgv: string };
   remarques: string; conditions_paiement: string; total_ht_centimes: number; total_tva_centimes: number; total_ttc_centimes: number;
   lignes: LigneSignature[];
 };
@@ -51,8 +51,8 @@ export function lireReponseSignature(v: unknown): LectureSignature {
     etat, empreinte, signe_le: typeof o["signe_le"] === "string" ? o["signe_le"] : null, signataire_nom: typeof o["signataire_nom"] === "string" ? o["signataire_nom"] : null, expire_le: typeof o["expire_le"] === "string" ? o["expire_le"] : null,
     devis: {
       reference: txt(d["reference"], "référence", 60), objet: txt(d["objet"], "objet", 300), date_devis: txt(d["date_devis"], "date", 10), date_validite: typeof d["date_validite"] === "string" ? d["date_validite"] : null,
-      client: { nom: txt(c["nom"] ?? "", "client", 200), adresse: Array.isArray(c["adresse"]) ? c["adresse"].map(x => txt(x, "adresse", 200)) : [] },
-      entreprise: { raison_sociale: txt(e["raison_sociale"] ?? "", "entreprise"), nom_commercial: txt(e["nom_commercial"] ?? "", "entreprise"), adresse: txt(e["adresse"] ?? "", "entreprise"), code_postal: txt(e["code_postal"] ?? "", "entreprise"), ville: txt(e["ville"] ?? "", "entreprise"), telephone: txt(e["telephone"] ?? "", "entreprise"), email: txt(e["email"] ?? "", "entreprise"), siret: txt(e["siret"] ?? "", "entreprise") },
+      client: { nom: txt(c["nom"] ?? "", "client", 200), adresse: Array.isArray(c["adresse"]) ? c["adresse"].map(x => txt(x, "adresse", 200)) : [], email: typeof c["email"] === "string" ? c["email"].slice(0, 254) : "" },
+      entreprise: { raison_sociale: txt(e["raison_sociale"] ?? "", "entreprise"), nom_commercial: txt(e["nom_commercial"] ?? "", "entreprise"), adresse: txt(e["adresse"] ?? "", "entreprise"), code_postal: txt(e["code_postal"] ?? "", "entreprise"), ville: txt(e["ville"] ?? "", "entreprise"), telephone: txt(e["telephone"] ?? "", "entreprise"), email: txt(e["email"] ?? "", "entreprise"), siret: txt(e["siret"] ?? "", "entreprise"), cgv: typeof e["cgv"] === "string" ? e["cgv"].slice(0, 60000) : "" },
       remarques: txt(d["remarques"] ?? "", "remarques"), conditions_paiement: txt(d["conditions_paiement"] ?? "", "conditions"),
       total_ht_centimes: num(d["total_ht_centimes"], "total HT"), total_tva_centimes: num(d["total_tva_centimes"], "total TVA"), total_ttc_centimes: num(d["total_ttc_centimes"], "total TTC"),
       lignes: d["lignes"].map((x: unknown, i: number): LigneSignature => {

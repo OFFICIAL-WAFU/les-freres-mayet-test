@@ -18,6 +18,7 @@ import {
 } from "@/data/devis";
 import { formaterCapital, formaterIban, type Entreprise } from "@/data/entreprise";
 import type { DevisPublic } from "@/components/DevisApercu";
+import { mentionRetard } from "@/lib/mentions-obligatoires";
 
 const OR = "#b08d3c";
 const OR_TEXTE = "#8a6d2c";
@@ -240,6 +241,8 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   if (d.remarques.trim()) {
     content.push({ stack: [titreSection("Remarques"), { text: d.remarques }], margin: [0, 18, 0, 0] });
   }
+  const retard = mentionRetard({ facture: !!facture, avoir: !!av, finalise, date: d.date, remarques: d.remarques });
+  if (retard) content.push({ stack: [titreSection("Retard de paiement"), { text: retard, fontSize: 8 }], margin: [0, 18, 0, 0], unbreakable: true });
   const virement = !av && (ent.iban || ent.bic)
     ? [{ text: "Paiement par virement", style: "section" } as Content,
        { text: [ent.iban && `IBAN : ${formaterIban(ent.iban)}`, ent.bic && `BIC : ${ent.bic}`].filter(Boolean).join("   ·   ") } as Content]

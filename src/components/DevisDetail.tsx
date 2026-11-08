@@ -1,3 +1,4 @@
+import { MSG_DATE_REALISATION } from "@/lib/mentions-obligatoires";
 import { useState } from "react";
 import { RelanceDialogue } from "@/components/RelanceDialogue";
 import { SignatureDistanteBloc } from "@/components/SignatureDistanteBloc";
@@ -178,7 +179,7 @@ export function DevisDetail({ doc, onNavigate, encaisser = false }: { doc: Docum
           <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser l'acompte</Button>
         )}
         {!finalise && !estAcompte && !acompteBloquant && (
-          <Button variant="outline" onClick={() => setConfirmer(true)}>Finaliser la facture</Button>
+          <Button variant="outline" onClick={() => { if (!d.prestationDebut) { setEchec({ type: "texte", texte: `${MSG_DATE_REALISATION} Ouvrez « Modifier la facture brouillon » pour la renseigner.` }); return; } setConfirmer(true); }}>Finaliser la facture</Button>
         )}
         {!finalise && !estAcompte && acompteBloquant && (
           <p className="text-sm text-muted-foreground sm:basis-full">{MSG_ACOMPTE}</p>

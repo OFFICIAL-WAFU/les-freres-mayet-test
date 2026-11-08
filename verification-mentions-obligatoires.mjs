@@ -1,0 +1,14 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/lib/mentions-obligatoires.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {mentionRetard,MENTION_RETARD}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const f={facture:true,avoir:false,finalise:true,date:'2026-11-08',remarques:''};
+assert.equal(mentionRetard(f),MENTION_RETARD);
+assert.match(MENTION_RETARD,/40 €/);assert.match(MENTION_RETARD,/trois fois le taux d'intérêt légal/);
+assert.equal(mentionRetard({...f,facture:false}),null,'jamais sur un devis');
+assert.equal(mentionRetard({...f,avoir:true}),null,'jamais sur un avoir');
+assert.equal(mentionRetard({...f,date:'2026-11-07'}),null,'factures déjà émises inchangées');
+assert.equal(mentionRetard({...f,remarques:'Pénalité de retard (taux annuel) : 10 %'}),null,'pas de doublon');
+assert.equal(mentionRetard({...f,remarques:'En cas de retard de paiement, pénalité…'}),null,'pas de doublon');
+assert.equal(mentionRetard({...f,date:''}),null);
+assert.equal(mentionRetard({...f,finalise:false,date:'2026-11-01'}),MENTION_RETARD,'toujours sur un brouillon');
+console.log('Mentions obligatoires des factures : pénalités et indemnité de 40 € sur les factures et acomptes brouillons et finalisés datés du 08/11/2026 ou après, jamais sur devis ni avoirs, sans doublon.');

@@ -62,6 +62,7 @@ import {
   type TauxTVA,
 } from "@/data/devis";
 import { chargerDocuments, ConflitDevis, enregistrerBrouillon, enregistrerFacture, creerFactureDirecte } from "@/data/documents";
+import { MSG_DATE_REALISATION } from "@/lib/mentions-obligatoires";
 
 function aujourdhui() {
   return dateParis();
@@ -148,7 +149,11 @@ function DevisFormBase({
   const clients = etatClients.clients;
   const etatCatalogue = useEtatCatalogue();
   const articles = etatCatalogue.articles;
-  const depart = useMemo(() => JSON.stringify(initial ?? vide()), [initial]);
+  // Facture : date de réalisation obligatoire, pré-remplie avec la date de la facture si elle est vide (modifiable).
+  const depart = useMemo(() => {
+    const base = initial ?? vide();
+    return JSON.stringify(facture && !base.prestationDebut && /^\d{4}-\d{2}-\d{2}$/.test(base.date) ? { ...base, prestationDebut: base.date } : base);
+  }, [initial, facture]);
   const [v, setV] = useState<DevisBrouillon>(() => JSON.parse(depart));
   const [tentative, setTentative] = useState(false);
   const [rechercheClient, setRechercheClient] = useState("");
@@ -204,7 +209,7 @@ function DevisFormBase({
       : "La date de validité ne peut pas être antérieure à la date du devis.";
   if (facture && v.prestationDebut && v.prestationFin && v.prestationFin < v.prestationDebut)
     erreurs["d-prest-fin"] = "La fin de la période ne peut pas précéder son début.";
-  if (facture && v.prestationFin && !v.prestationDebut) erreurs["d-prest-debut"] = "Indiquez le début de la période (ou seulement une date).";
+  if (facture && !v.prestationDebut) erreurs["d-prest-debut"] = MSG_DATE_REALISATION;
   const validations = v.lignes.map((l) => ({ l, ...validerLigne(l) }));
   for (const { l, erreurs: e } of validations)
     for (const k of ["designation", "unite", "quantite", "prix", "taux"] as const)
@@ -451,7 +456,7 @@ function DevisFormBase({
             {facture && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="d-prest-debut">Date de réalisation des prestations <span className="font-normal text-muted-foreground">(ou début de période, facultatif)</span></Label>
+                  <Label htmlFor="d-prest-debut">Date de réalisation des prestations <span className="font-normal text-muted-foreground">(obligatoire ; début de période si les travaux ont duré plusieurs jours)</span></Label>
                   <Input id="d-prest-debut" type="date" value={v.prestationDebut ?? ""} onChange={(e) => maj({ prestationDebut: e.target.value })} aria-invalid={!!erreurs["d-prest-debut"]} />
                   <Erreur id="d-prest-debut" texte={erreurs["d-prest-debut"]} />
                 </div>

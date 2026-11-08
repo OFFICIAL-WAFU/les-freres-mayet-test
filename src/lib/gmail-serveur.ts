@@ -38,22 +38,25 @@ export const envoyerMailGmail = createServerFn({ method: "POST" })
     }
     return { a: d.a.trim(), sujet: d.sujet.trim(), texte: d.texte, ...(pdf ? { pdf } : {}) };
   })
-  .handler(async ({ data }): Promise<SortieGmail> => {
-    const c = cles();
-    if (!c) return { ok: false, raison: "non_connecte" };
-    const raw = versBase64Url(construireMime(data, `mayet-${crypto.randomUUID()}`));
-    try {
-      const rep = await fetch(`${PASSERELLE}/gmail/v1/users/me/messages/send`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${c.lovable}`, "x-connection-api-key": c.gmail },
-        body: JSON.stringify({ raw }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (rep.status === 401 || rep.status === 403) return { ok: false, raison: "refuse" };
-      if (!rep.ok) return { ok: false, raison: "service" };
-      const j = (await rep.json()) as { id?: string };
-      return j.id ? { ok: true, id: j.id } : { ok: false, raison: "service" };
-    } catch (e) {
-      return { ok: false, raison: e instanceof Error && e.name === "TimeoutError" ? "delai" : "service" };
-    }
-  });
+  .handler(async ({ data }): Promise<SortieGmail> => envoyerParPasserelle(data));
+
+/** Envoi effectif (côté serveur uniquement). Utilisé aussi par la notification de signature (src/lib/signature-notification.ts). */
+export async function envoyerParPasserelle(data: MailAEnvoyer): Promise<SortieGmail> {
+  const c = cles();
+  if (!c) return { ok: false, raison: "non_connecte" };
+  const raw = versBase64Url(construireMime(data, `mayet-${crypto.randomUUID()}`));
+  try {
+    const rep = await fetch(`${PASSERELLE}/gmail/v1/users/me/messages/send`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${c.lovable}`, "x-connection-api-key": c.gmail },
+      body: JSON.stringify({ raw }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (rep.status === 401 || rep.status === 403) return { ok: false, raison: "refuse" };
+    if (!rep.ok) return { ok: false, raison: "service" };
+    const j = (await rep.json()) as { id?: string };
+    return j.id ? { ok: true, id: j.id } : { ok: false, raison: "service" };
+  } catch (e) {
+    return { ok: false, raison: e instanceof Error && e.name === "TimeoutError" ? "delai" : "service" };
+  }
+}
