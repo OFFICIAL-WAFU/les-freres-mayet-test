@@ -582,30 +582,53 @@ export async function creerFactureDirecte(id: string, v: DevisBrouillon): Promis
 }
 
 const PAGE = 500;
+// Liste allégée (11/11/2026) : sans le logo (~125 Ko) ni les CGV (~10 Ko) figés dans chaque document (≈ 39 Mo par chargement).
+// Les valeurs distinctes sont lues une seule fois (pieces_entreprise_documents) puis remises dans la copie de l'entreprise : données identiques.
+// Si la migration 20261111190000_liste_sans_logos n'est pas installée (ou en cas d'erreur), lecture complète comme avant.
+const COLS = {
+  factures: "id,owner_id,reference,statut,devis_source_id,devis_source_reference,client_id,client_copie,objet,date_facture,date_echeance,remarques,notes,total_ht_centimes,total_tva_centimes,total_ttc_centimes,ventilation_tva,version,created_at,updated_at,reference_definitive,finalise_le,finalise_par,nature,pourcentage,acompte_deduit_id,deduction,conditions_paiement,prestation_debut,prestation_fin,lot_import",
+  avoirs: "id,owner_id,reference,statut,facture_source_id,facture_source_reference,client_id,client_copie,objet,lignes,total_ht_centimes,total_tva_centimes,total_ttc_centimes,ventilation_tva,date_avoir,motif,remarques,version,created_at,updated_at,reference_definitive,finalise_le,finalise_par,type_avoir,lot_import",
+  devis: "id,owner_id,reference,statut,client_id,client_copie,objet,date_devis,date_validite,remarques,notes,total_ht_centimes,total_tva_centimes,total_ttc_centimes,ventilation_tva,version,created_at,updated_at,reference_definitive,finalise_le,finalise_par,conditions_paiement,lot_import,reponse_client,reponse_le,reponse_mode,commande_passee_le",
+};
+const LEGER = ",entreprise_legere,logo_empreinte,cgv_empreinte";
+type Allege = { entreprise_legere?: Record<string, unknown> | null; logo_empreinte?: string | null; cgv_empreinte?: string | null; entreprise_copie?: Record<string, unknown> | null };
+function remettreLogo<T>(ligne: T, logos: Map<string, string>): T {
+  const r = ligne as T & Allege;
+  if (!("entreprise_legere" in r)) return ligne;
+  const { entreprise_legere: leg, logo_empreinte: empLogo, cgv_empreinte: empCgv, ...reste } = r;
+  const logo = empLogo ? logos.get(empLogo) : undefined, cgv = empCgv ? logos.get(empCgv) : undefined;
+  return { ...reste, entreprise_copie: leg ? { ...leg, ...(logo !== undefined ? { logo } : {}), ...(cgv !== undefined ? { cgv } : {}) } : null } as T;
+}
+
 let dernierChargement = 0;
 export async function chargerDocuments(): Promise<void> {
   dernierChargement = Date.now();
   publier({ statut: "chargement" });
   const tous: DocumentAvecDevis[] = [];
+  const rpc = supabase as unknown as RpcLibre;
+  const lu = await rpc.rpc("pieces_entreprise_documents", {}) as { data: { empreinte: string; valeur: string }[] | null; error: unknown };
+  const leger = !lu.error && Array.isArray(lu.data);
+  const logos = new Map((leger ? lu.data! : []).map((l) => [l.empreinte, l.valeur] as const));
+  const sel = (t: keyof typeof COLS) => (leger ? COLS[t] + LEGER : "*");
   for (let debut = 0; ; debut += PAGE) {
-    const { data, error } = await supabase.from("factures").select("*, deduction_calc:deduction_live, factures_lignes(*), reglements(*)")
+    const { data, error } = await supabase.from("factures").select(`${sel("factures")}, deduction_calc:deduction_live, factures_lignes(*), reglements(*)`)
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
-    tous.push(...(data as unknown as FactureBase[]).map(depuisFacture));
+    tous.push(...(data as unknown as FactureBase[]).map((x) => depuisFacture(remettreLogo(x, logos))));
     if (data.length < PAGE) break;
   }
   for (let debut = 0; ; debut += PAGE) {
-    const { data, error } = await supabase.from("avoirs").select("*")
+    const { data, error } = await supabase.from("avoirs").select(sel("avoirs"))
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
-    tous.push(...(data as unknown as AvoirBase[]).filter((a) => a.statut !== "abandonne").map(depuisAvoir));
+    tous.push(...(data as unknown as AvoirBase[]).filter((a) => a.statut !== "abandonne").map((x) => depuisAvoir(remettreLogo(x, logos))));
     if (data.length < PAGE) break;
   }
   for (let debut = 0; ; debut += PAGE) {
-    const { data, error } = await supabase.from("devis").select("*, devis_lignes(*)")
+    const { data, error } = await supabase.from("devis").select(`${sel("devis")}, devis_lignes(*)`)
       .order("created_at", { ascending: false }).order("id").range(debut, debut + PAGE - 1);
     if (error) { publier({ statut: "erreur" }); return; }
-    tous.push(...(data as unknown as DevisBase[]).map(depuisBase));
+    tous.push(...(data as unknown as DevisBase[]).map((x) => depuisBase(remettreLogo(x, logos))));
     if (data.length < PAGE) break;
   }
   // Seuls les avoirs finalisés réduisent le solde de leur facture source.
