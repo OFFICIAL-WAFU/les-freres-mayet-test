@@ -256,8 +256,15 @@ interface EtatDocs { statut: StatutDocuments; brouillons: DocumentAvecDevis[]; d
 const DEMO_MARQUES: DocumentAvecDevis[] = DOCUMENTS_DEMO.map((d) => ({ ...d, id: `demo-${d.id}`, fictif: true }));
 let etat: EtatDocs = { statut: "inactif", brouillons: [], demo: false, liste: [] };
 const abonnes = new Set<() => void>();
+/** JJ/MM/AAAA → AAAAMMJJ, pour trier. */
+const cleDate = (d: string) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d); return m ? `${m[3]}${m[2]}${m[1]}` : ""; };
+/** Liste Documents : du plus récent au plus ancien, tous types mêlés (comme Khosmos). Tri stable : à date égale, l'ordre de création est gardé. */
+export function trierParDate(docs: DocumentAvecDevis[]): DocumentAvecDevis[] {
+  return docs.map((d, i) => ({ d, i, k: cleDate(d.date) })).sort((a, b) => (a.k < b.k ? 1 : a.k > b.k ? -1 : a.i - b.i)).map((x) => x.d);
+}
 function publier(patch: Partial<EtatDocs>) {
   const n = { ...etat, ...patch };
+  if (patch.brouillons) n.brouillons = trierParDate(patch.brouillons);
   n.liste = n.demo ? [...n.brouillons, ...DEMO_MARQUES] : n.brouillons;
   etat = n;
   abonnes.forEach((f) => f());
@@ -270,7 +277,14 @@ export function useEtatDocuments(): EtatDocs {
     () => etat,
     () => VIDE,
   );
-  useEffect(() => { if (etat.statut === "inactif") void chargerDocuments(); }, []);
+  useEffect(() => {
+    if (etat.statut === "inactif") void chargerDocuments();
+    // Documents créés sur un autre appareil (téléphone, autre ordinateur) : relecture quand on revient sur l'onglet, au plus toutes les 2 minutes.
+    const revenir = () => { if (document.visibilityState === "visible" && etat.statut === "pret" && Date.now() - dernierChargement > 120_000) void chargerDocuments(); };
+    document.addEventListener("visibilitychange", revenir);
+    window.addEventListener("focus", revenir);
+    return () => { document.removeEventListener("visibilitychange", revenir); window.removeEventListener("focus", revenir); };
+  }, []);
   return e;
 }
 export function useDocuments(): DocumentAvecDevis[] {
@@ -568,7 +582,9 @@ export async function creerFactureDirecte(id: string, v: DevisBrouillon): Promis
 }
 
 const PAGE = 500;
+let dernierChargement = 0;
 export async function chargerDocuments(): Promise<void> {
+  dernierChargement = Date.now();
   publier({ statut: "chargement" });
   const tous: DocumentAvecDevis[] = [];
   for (let debut = 0; ; debut += PAGE) {
