@@ -37,3 +37,12 @@ des modèles de l'appareil quand la base est vide) écrite par `modifier_message
 `noter_envoi_devis(...)` (idempotent sur l'identifiant, devis finalisé du propriétaire, relance2 après relance1, une seule
 relance de chaque rang). Aucune ligne modifiée ni supprimée, devis jamais modifiés. Contrôles :
 `verification-relances-sql.mjs` et `verification-relances.mjs`.
+
+## 20261113200000_remise_facture.sql — appliquée sur TEST le 13/11/2026, PAS ENCORE en production
+Remise sur facture : ligne « REMISE » à prix négatif (prestation libre, forfait, quantité 1), factures ordinaires seulement.
+Arrondi `public.arrondi_millieme` (demi éloigné de zéro, identique à l'ancien calcul pour les positifs), nouvelle contrainte
+`factures_lignes_prix_ou_remise`, `factures_lignes_calculer` (refus sur acompte) et `finaliser_facture` (refus
+`remise_superieure` si un taux devient négatif). Chaque fonction n'est remplacée que si son empreinte md5 est celle relevée
+le 13/11/2026 (identique TEST / PRODUCTION). Essai complet dans une transaction annulée avant installation : positifs
+identiques, -10,01 € → TVA -1,00 €, négatif hors remise refusé, remise sur acompte refusée. Les 2 lignes Khosmos dont les
+montants d'origine diffèrent du calcul étaient déjà dans ce cas avant. Production : appliquer le même bloc après accord.

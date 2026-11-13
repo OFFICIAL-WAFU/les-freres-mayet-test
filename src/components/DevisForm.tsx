@@ -4,6 +4,8 @@ import { lireLot, ecrireLot, deplacerLigne, dupliquerLigne } from '@/lib/lots';
 import { dateParis } from "@/lib/echeances";
 import { useEtatEntreprise } from "@/data/entreprise";
 import { DeductionBloc } from "@/components/DeductionBloc";
+import { RemiseDialogue } from "@/components/RemiseDialogue";
+import { erreurRemise } from "@/lib/remise";
 import type { Deduction } from "@/data/deduction";
 import { lireHabitudes, lireReglagesChiffrage } from "@/data/habitudes";
 import { REGLAGES_DEFAUT, coutDepuisCatalogue, coutVide, erreursCout, type ReglagesChiffrage } from "@/lib/rentabilite";
@@ -216,6 +218,8 @@ function DevisFormBase({
       if (e[k]) erreurs[`l-${l.cle}-${k}`] = e[k]!;
   if (chiffrage) for (const l of v.lignes) for (const [k, m] of Object.entries(erreursCout(l))) erreurs[`l-${l.cle}-${k}`] = m;
   if (v.lignes.length === 0) erreurs["d-lignes"] = "Ajoutez au moins une ligne.";
+  const remiseKo = erreurRemise(v.lignes, !!facture);
+  if (remiseKo) erreurs["d-lignes"] = remiseKo;
   const recap = recapituler(v.lignes);
   const err = (id: string) => (tentative ? erreurs[id] : undefined);
 
@@ -569,6 +573,7 @@ function DevisFormBase({
               <Button type="button" variant="outline" onClick={ajouterLibre}>
                 <Plus /> Ajouter une ligne libre
               </Button>
+              {facture && <RemiseDialogue lignes={v.lignes} onChange={(lignes) => maj({ lignes })} />}
             </div>
 
             {catalogueOuvert && (

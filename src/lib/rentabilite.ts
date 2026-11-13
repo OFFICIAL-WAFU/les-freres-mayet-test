@@ -2,7 +2,7 @@
 // Prix de vente calculé = prix d'achat × coefficient matériel + temps de pose × taux horaire vendu.
 // Coût réel d'une ligne = prix d'achat + temps de pose × coût horaire réel (réglage, figé sur la ligne à la saisie).
 // Tous les calculs sont en entiers (centimes, millièmes, minutes), arrondi demi vers le haut, comme le reste du logiciel.
-import { analyserPrixCentimes, analyserQuantite, type LigneSaisie } from "@/data/devis";
+import { analyserPrixCentimes, analyserQuantite, estLigneRemise, type LigneSaisie } from "@/data/devis";
 
 /** Réglages de chiffrage (habitudes_documents). */
 export interface ReglagesChiffrage { coefMilliemes: number; coutHoraireCentimes: number; tauxHoraireCentimes: number }
@@ -19,7 +19,7 @@ export interface CoutSaisie {
   coutHoraire: number | null; // coût horaire réel figé (centimes)
 }
 
-const arrondi = (n: bigint, d: bigint) => (n * 2n + d) / (2n * d);
+const arrondi = (n: bigint, d: bigint) => (n >= 0n ? (n * 2n + d) / (2n * d) : -((-n * 2n + d) / (2n * d)));
 
 function decimal(s: string, dec: number): bigint | null | "invalide" {
   const t = s.trim().replace(/\s/g, "").replace(/€$/, "");
@@ -100,9 +100,12 @@ export interface AnalyseLigne {
 
 /** Analyse d'une ligne. « connu » = un prix d'achat ou un temps de pose est renseigné et la ligne est valide. */
 export function analyserLigne(l: LigneSaisie, r: ReglagesChiffrage): AnalyseLigne | null {
-  const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix);
+  const remise = estLigneRemise(l);
+  const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix, remise);
   if (typeof q === "string" || typeof p === "string") return null;
   const ht = arrondi(q * p, 1000n);
+  // Remise : sans coût, elle diminue la vente et la marge du même montant.
+  if (remise) return { connu: true, ht, coutMateriel: 0n, coutMainOeuvre: 0n, venteMateriel: ht, venteMainOeuvre: 0n, minutes: 0n, marge: ht };
   const vide: AnalyseLigne = { connu: false, ht, coutMateriel: 0n, coutMainOeuvre: 0n, venteMateriel: 0n, venteMainOeuvre: 0n, minutes: 0n, marge: 0n };
   if (!l.cout) return vide;
   const { valeur: v } = analyserCout(l.cout);

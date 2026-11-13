@@ -72,15 +72,26 @@ export function analyserQuantite(s: string): bigint | string {
   return v; // millièmes
 }
 
-export function analyserPrixCentimes(s: string): bigint | string {
+export function analyserPrixCentimes(s: string, negatifAutorise = false): bigint | string {
   const v = analyser(s, 2, "le prix");
   if (typeof v === "string") return v;
-  if (v < 0n) return "Le prix ne peut pas être négatif.";
+  if (v < 0n && !negatifAutorise) return "Le prix ne peut pas être négatif (sauf une ligne de remise de facture).";
   return v; // centimes
 }
 
-/** Division entière arrondie au plus proche, demi vers le haut (valeurs positives). */
-const arrondi = (n: bigint, d: bigint) => (n * 2n + d) / (2n * d);
+/**
+ * Ligne de remise (13/11/2026) : prestation libre « REMISE… », forfait, quantité 1. Seule ligne autorisée à un prix négatif,
+ * et seulement sur une facture (contrainte factures_lignes_prix_ou_remise en base).
+ */
+export function estLigneRemise(l: Pick<LigneSaisie, "type" | "articleId" | "unite" | "quantite" | "designation">): boolean {
+  return l.type === "prestation" && !l.articleId && l.unite === "forfait" && analyserQuantite(l.quantite) === 1000n && /^REMISE/i.test(l.designation.trim());
+}
+
+/**
+ * Division entière arrondie au plus proche, demi éloigné de zéro. Identique à l'ancien calcul pour les valeurs positives ;
+ * symétrique pour les remises (même règle que public.arrondi_millieme en base).
+ */
+const arrondi = (n: bigint, d: bigint) => (n >= 0n ? (n * 2n + d) / (2n * d) : -((-n * 2n + d) / (2n * d)));
 
 export interface CalculLigne {
   ht: bigint;
@@ -96,7 +107,7 @@ export function validerLigne(l: LigneSaisie): { erreurs: ErreursLigne; calcul: C
   if (!l.unite) e.unite = "Choisissez une unité.";
   const q = analyserQuantite(l.quantite);
   if (typeof q === "string") e.quantite = q;
-  const p = analyserPrixCentimes(l.prix);
+  const p = analyserPrixCentimes(l.prix, estLigneRemise(l));
   if (typeof p === "string") e.prix = p;
   if (l.taux === null) e.taux = "Choisissez un taux de TVA.";
   const ht = typeof q !== "string" && typeof p !== "string" ? arrondi(q * p, 1000n) : null;
@@ -158,6 +169,6 @@ export function formaterQuantite(s: string): string {
 }
 
 export function formaterPrixSaisi(s: string): string {
-  const v = analyserPrixCentimes(s);
+  const v = analyserPrixCentimes(s, true); // affichage seulement : une remise s'affiche « -12,00 € »
   return typeof v === "string" ? s : formaterCentimes(v);
 }

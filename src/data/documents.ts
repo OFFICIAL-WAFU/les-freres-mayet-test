@@ -9,6 +9,7 @@ import { depuisLigneEntreprise, type Entreprise } from "@/data/entreprise";
 import type { Json } from "@/integrations/supabase/types";
 import {
   analyserPrixCentimes,
+  estLigneRemise,
   analyserQuantite,
   type CoordonneesClient,
   type DevisBrouillon,
@@ -313,7 +314,7 @@ const echelle = (v: number, dec: number) => {
   const e = s.slice(0, -dec), d = s.slice(-dec).replace(/0+$/, "");
   return d ? `${e},${d}` : e;
 };
-const prixTexte = (c: number) => `${Math.trunc(c / 100)},${String(c % 100).padStart(2, "0")}`;
+const prixTexte = (c: number) => { const a = Math.abs(c); return `${c < 0 ? "-" : ""}${Math.trunc(a / 100)},${String(a % 100).padStart(2, "0")}`; };
 
 function depuisBase(d: DevisBase): DocumentAvecDevis {
   const lignes = [...(d.lignes ?? d.devis_lignes ?? [])].sort((a, b) => a.position - b.position);
@@ -675,7 +676,7 @@ export class ErreurDevis extends Error {}
  */
 function versLignes(v: DevisBrouillon) {
   return v.lignes.map((l) => {
-    const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix);
+    const q = analyserQuantite(l.quantite), p = analyserPrixCentimes(l.prix, estLigneRemise(l));
     if (typeof q === "string" || typeof p === "string" || l.taux === null) throw new ErreurDevis("Ligne invalide");
     return {
       id: l.cle, type: l.type, article_id: l.articleId ?? "", reference: l.reference, designation: l.designation.trim(),
