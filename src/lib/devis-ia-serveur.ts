@@ -38,7 +38,7 @@ export const proposerDevisIA = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({
-          model: process.env["DEVIS_IA_MODELE"]?.trim() || "claude-sonnet-5-5",
+          model: process.env["DEVIS_IA_MODELE"]?.trim() || "claude-haiku-5-5", // Haiku 5.5 : choix de Baptiste (13/11/2026), coût réduit
           max_tokens: 4000,
           // Consignes + catalogue + habitudes : bloc stable mis en cache (les demandes suivantes coûtent beaucoup moins).
           system: [{ type: "text", text: system }, { type: "text", text: contexte, cache_control: { type: "ephemeral" } }],
