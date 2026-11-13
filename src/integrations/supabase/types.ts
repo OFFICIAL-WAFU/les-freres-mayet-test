@@ -281,6 +281,30 @@ export type Database = {
           },
         ]
       }
+      bibliotheques_compte: {
+        Row: {
+          donnees: Json
+          maj_le: string
+          nom: string
+          owner_id: string
+          version: number
+        }
+        Insert: {
+          donnees: Json
+          maj_le?: string
+          nom: string
+          owner_id: string
+          version: number
+        }
+        Update: {
+          donnees?: Json
+          maj_le?: string
+          nom?: string
+          owner_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           adresse: string
@@ -1385,6 +1409,33 @@ export type Database = {
           },
         ]
       }
+      rapports_intervention: {
+        Row: {
+          donnees: Json
+          id: string
+          maj_le: string
+          numero: string
+          owner_id: string
+          signe: boolean
+        }
+        Insert: {
+          donnees: Json
+          id: string
+          maj_le?: string
+          numero: string
+          owner_id: string
+          signe?: boolean
+        }
+        Update: {
+          donnees?: Json
+          id?: string
+          maj_le?: string
+          numero?: string
+          owner_id?: string
+          signe?: boolean
+        }
+        Relationships: []
+      }
       reglements: {
         Row: {
           annule_le: string | null
@@ -1557,11 +1608,25 @@ export type Database = {
         Args: { p_id: string; p_motif: string }
         Returns: Json
       }
+      arrondi_millieme: { Args: { n: number }; Returns: number }
       avoir_calculer_lignes: {
         Args: { p_facture_id: string; p_lignes: Json }
         Returns: Json
       }
       caler_compteurs_historique: { Args: { p_owner: string }; Returns: Json }
+      cgv_empreinte:
+        | {
+            Args: { a: Database["public"]["Tables"]["avoirs"]["Row"] }
+            Returns: string
+          }
+        | {
+            Args: { d: Database["public"]["Tables"]["devis"]["Row"] }
+            Returns: string
+          }
+        | {
+            Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
+            Returns: string
+          }
       creer_lien_signature: {
         Args: { p_devis_id: string; p_jeton: string; p_validite_jours?: number }
         Returns: Json
@@ -1605,6 +1670,19 @@ export type Database = {
         }
         Returns: Json
       }
+      entreprise_legere:
+        | {
+            Args: { a: Database["public"]["Tables"]["avoirs"]["Row"] }
+            Returns: Json
+          }
+        | {
+            Args: { d: Database["public"]["Tables"]["devis"]["Row"] }
+            Returns: Json
+          }
+        | {
+            Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
+            Returns: Json
+          }
       facture_a_regler: {
         Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
         Returns: number
@@ -1625,13 +1703,41 @@ export type Database = {
         Args: { p_id: string; p_version: number }
         Returns: Json
       }
+      lire_bibliotheque: { Args: { p_nom: string }; Returns: Json }
       lire_devis: { Args: { p_id: string }; Returns: Json }
       lire_devis_pour_signature: { Args: { p_jeton: string }; Returns: Json }
       lire_facture: { Args: { p_id: string }; Returns: Json }
       lire_historique_khosmos: { Args: never; Returns: Json }
+      lire_rapports: { Args: never; Returns: Json }
       lire_tresorerie: { Args: never; Returns: Json }
+      logo_empreinte:
+        | {
+            Args: { a: Database["public"]["Tables"]["avoirs"]["Row"] }
+            Returns: string
+          }
+        | {
+            Args: { d: Database["public"]["Tables"]["devis"]["Row"] }
+            Returns: string
+          }
+        | {
+            Args: { f: Database["public"]["Tables"]["factures"]["Row"] }
+            Returns: string
+          }
+      modifier_bibliotheque: {
+        Args: { p_donnees: Json; p_nom: string; p_version: number }
+        Returns: Json
+      }
       modifier_messages: {
         Args: { p_modeles: Json; p_version: number }
+        Returns: Json
+      }
+      modifier_rapports: {
+        Args: {
+          p_ecrits: Json
+          p_prochain: number
+          p_supprimes: string[]
+          p_version: number
+        }
         Returns: Json
       }
       modifier_tresorerie: {
@@ -1658,6 +1764,13 @@ export type Database = {
       noter_reponse_devis: {
         Args: { p_date?: string; p_id: string; p_reponse: string }
         Returns: Json
+      }
+      pieces_entreprise_documents: {
+        Args: never
+        Returns: {
+          empreinte: string
+          valeur: string
+        }[]
       }
       preparer_acompte: {
         Args: { p_devis_id: string; p_pourcentage: number }
@@ -1690,6 +1803,7 @@ export type Database = {
         }
         Returns: Json
       }
+      supprimer_devis: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
