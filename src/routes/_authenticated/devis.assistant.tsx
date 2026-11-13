@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
-import { DevisForm } from "@/components/DevisForm";
+import { DevisForm, copierCoordonnees } from "@/components/DevisForm";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useEtatCatalogue } from "@/data/catalogue";
-import type { DevisBrouillon } from "@/data/devis";
-import { catalogueCompact, extraireJson, LIMITES, validerProposition, type Habitude, type PropositionControlee } from "@/lib/devis-ia";
+import { labelTaux, type DevisBrouillon } from "@/data/devis";
+import { nomClient, useEtatClients } from "@/data/clients";
+import { lireReglagesChiffrage } from "@/data/habitudes";
+import { REGLAGES_DEFAUT, type ReglagesChiffrage } from "@/lib/rentabilite";
+import { catalogueCompact, clientCorrespondant, extraireJson, LIMITES, validerProposition, type Habitude, type PropositionControlee } from "@/lib/devis-ia";
 import { lireConnaissances } from "@/data/reprise";
 import { connaissancesPourIA } from "@/lib/reprise";
 import { proposerDevisIA, statutDevisIA } from "@/lib/devis-ia-serveur";
@@ -25,14 +28,45 @@ const MSG: Record<string, string> = {
   reponse_vide: "Le service d'IA n'a rien renvoyé. Reformulez votre description.",
 };
 
+const LIBELLE_TRAVAUX: Record<string, string> = {
+  climatisation: "Climatisation", salle_de_bain: "Salle de bain", chauffe_eau: "Chauffe-eau", tableau_electrique: "Tableau électrique",
+  electricite: "Électricité", plomberie: "Plomberie", cuisine: "Cuisine", wc: "WC", autre: "Autres travaux",
+};
+
+/** Dictée vocale du navigateur (Chrome, Safari) : le texte s'ajoute à la description, rien n'est envoyé tant que vous ne cliquez pas. */
+type Reco = { lang: string; continuous: boolean; interimResults: boolean; start(): void; stop(): void;
+  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
+function useDictee(ajouter: (t: string) => void) {
+  const [actif, setActif] = useState(false);
+  const reco = useRef<Reco | null>(null);
+  const [possible, setPossible] = useState(false);
+  useEffect(() => { const w = window as unknown as Record<string, unknown>; setPossible(Boolean(w["SpeechRecognition"] ?? w["webkitSpeechRecognition"])); }, []);
+  function demarrer() {
+    const w = window as unknown as Record<string, new () => Reco>;
+    const C = w["SpeechRecognition"] ?? w["webkitSpeechRecognition"];
+    if (!C) return;
+    const r = new C(); r.lang = "fr-FR"; r.continuous = true; r.interimResults = false;
+    r.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]!; if (x.isFinal) ajouter(x[0].transcript.trim()); } };
+    r.onend = () => setActif(false); r.onerror = () => setActif(false);
+    reco.current = r; r.start(); setActif(true);
+  }
+  const arreter = () => { reco.current?.stop(); setActif(false); };
+  useEffect(() => () => reco.current?.stop(), []);
+  return { possible, actif, demarrer, arreter };
+}
+
 function Page() {
   const catalogue = useEtatCatalogue();
+  const etatClients = useEtatClients();
+  const [reglages, setReglages] = useState<ReglagesChiffrage>(REGLAGES_DEFAUT);
+  useEffect(() => { let actif = true; lireReglagesChiffrage().then((r) => { if (actif) setReglages(r); }).catch(() => {}); return () => { actif = false; }; }, []);
   const [cle, setCle] = useState<"chargement" | "oui" | "non" | "erreur">("chargement");
   const [demande, setDemande] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [prop, setProp] = useState<{ p: PropositionControlee; n: number } | null>(null);
   const [habitudes, setHabitudes] = useState<Habitude[]>([]);
+  const dictee = useDictee((t) => setDemande((d) => (d.trim() ? `${d.trimEnd()} ${t}` : t).slice(0, LIMITES.demande)));
   // Savoir-faire validé par l'artisan ; s'il est indisponible, l'assistant fonctionne sans.
   useEffect(() => { let actif = true; lireConnaissances().then(c => { if (actif) setHabitudes(connaissancesPourIA(c)); }).catch(() => {}); return () => { actif = false; }; }, []);
   useEffect(() => {
@@ -46,13 +80,15 @@ function Page() {
     try {
       const r = await proposerDevisIA({ data: { demande, catalogue: catalogueCompact(catalogue.articles), habitudes } });
       if (!r.ok) { setErreur(MSG[r.raison] ?? MSG["service"]!); return; }
-      const p = validerProposition(extraireJson(r.texte), catalogue.articles);
+      const p = validerProposition(extraireJson(r.texte), catalogue.articles, undefined, { reglages });
       if (!p) { setErreur("La proposition reçue est inexploitable. Reformulez ou précisez votre description."); return; }
       setProp((x) => ({ p, n: (x?.n ?? 0) + 1 }));
     } catch { setErreur("La proposition n'a pas pu être obtenue (connexion ou session). Votre texte est conservé."); } finally { setEnCours(false); }
   }
+  // Client cité dans la demande : repris seulement s'il correspond à UN client existant ; sinon choix ou création manuelle.
+  const clientTrouve = prop?.p.clientCite ? clientCorrespondant(prop.p.clientCite, etatClients.clients, nomClient) : null;
   const initial: DevisBrouillon | null = prop ? {
-    clientId: "", client: { nom: "", telephone: "", email: "", adresse: [] }, objet: prop.p.objet, date: dateParis(), validite: "",
+    clientId: clientTrouve?.id ?? "", client: clientTrouve ? copierCoordonnees(clientTrouve) : { nom: "", telephone: "", email: "", adresse: [] }, objet: prop.p.objet, date: dateParis(), validite: "",
     remarques: "", notes: "", lignes: prop.p.lignes,
   } : null;
   return (
@@ -71,6 +107,11 @@ function Page() {
             <Textarea rows={8} value={demande} maxLength={LIMITES.demande} onChange={(e) => setDemande(e.target.value)}
               placeholder="Ex. : Remplacement du tableau électrique d'une maison de 90 m², 3 rangées, mise aux normes NF C 15-100, 2 prises à ajouter dans la cuisine…" />
           </label>
+          {dictee.possible && (
+            <Button type="button" variant={dictee.actif ? "destructive" : "outline"} size="sm" className="mt-2" onClick={dictee.actif ? dictee.arreter : dictee.demarrer}>
+              {dictee.actif ? <><Square />Arrêter la dictée</> : <><Mic />Dicter</>}
+            </Button>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">Le texte saisi est envoyé au service d'IA pour analyse. Évitez d'y mettre des données inutiles (coordonnées bancaires, mots de passe).</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button variant="action" disabled={enCours || cle !== "oui" || demande.trim().length < 10 || catalogue.statut === "chargement"} onClick={() => void proposer()}>
@@ -84,7 +125,12 @@ function Page() {
         {prop && initial && (
           <section className="mt-6">
             <h2 className="text-lg font-semibold">Proposition à relire</h2>
-            <p className="mt-1 text-sm">{prop.p.lignes.length} ligne(s){prop.p.aChiffrer ? ` dont ${prop.p.aChiffrer} à chiffrer (prix vide)` : ""}. Choisissez le client, la TVA de chaque ligne, vérifiez tout, puis enregistrez le brouillon.</p>
+            <p className="mt-1 text-sm">{prop.p.lignes.length} ligne(s){prop.p.aChiffrer ? ` dont ${prop.p.aChiffrer} à chiffrer (prix vide)` : ""}. Vérifiez tout, complétez les prix manquants, puis enregistrez le brouillon.</p>
+            <ul className="mt-3 flex flex-col gap-1 rounded-xl border border-border bg-card p-3 text-sm" aria-label="Résumé de la proposition">
+              <li><span className="font-medium">Type de travaux :</span> {LIBELLE_TRAVAUX[prop.p.typeTravaux]}</li>
+              <li><span className="font-medium">TVA pré-remplie :</span> {labelTaux(prop.p.taux)}{prop.p.taux === 55 ? " (climatisation)" : " (rénovation d’un logement de plus de deux ans)"} — à changer si le client est une entreprise ou un logement neuf.</li>
+              <li><span className="font-medium">Client :</span> {clientTrouve ? `${nomClient(clientTrouve)} (reconnu dans votre liste — vérifiez)` : prop.p.clientCite ? `« ${prop.p.clientCite} » introuvable ou ambigu : choisissez-le ou créez-le ci-dessous.` : "à choisir ci-dessous."}</li>
+            </ul>
             {prop.p.alertes.length > 0 && (
               <ul className="mt-3 list-disc rounded-xl border border-border bg-secondary/50 p-3 pl-7 text-sm" aria-label="Points à vérifier">
                 {prop.p.alertes.map((a, i) => <li key={i}>{a}</li>)}

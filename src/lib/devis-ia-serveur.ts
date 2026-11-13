@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { LIMITES, construirePrompt, type ArticleCompact, type Habitude } from "@/lib/devis-ia";
+import { LIMITES, OUTIL_PROPOSITION, construirePrompt, type ArticleCompact, type Habitude } from "@/lib/devis-ia";
 import { LIMITES_CONNAISSANCES_IA } from "@/lib/reprise";
 
 /**
@@ -32,17 +32,28 @@ export const proposerDevisIA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<SortieIA> => {
     const cle = process.env["ANTHROPIC_API_KEY"]?.trim();
     if (!cle) return { ok: false, raison: "cle_absente" };
-    const { system, user } = construirePrompt(data.demande, data.catalogue, data.habitudes ?? []);
+    const { system, contexte, user } = construirePrompt(data.demande, data.catalogue, data.habitudes ?? []);
     try {
       const rep = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: process.env["DEVIS_IA_MODELE"]?.trim() || "claude-sonnet-5-5", max_tokens: 3000, system, messages: [{ role: "user", content: user }] }),
-        signal: AbortSignal.timeout(60_000),
+        body: JSON.stringify({
+          model: process.env["DEVIS_IA_MODELE"]?.trim() || "claude-sonnet-5-5",
+          max_tokens: 4000,
+          // Consignes + catalogue + habitudes : bloc stable mis en cache (les demandes suivantes coûtent beaucoup moins).
+          system: [{ type: "text", text: system }, { type: "text", text: contexte, cache_control: { type: "ephemeral" } }],
+          // Réponse imposée sous forme structurée : plus de texte à interpréter.
+          tools: [OUTIL_PROPOSITION],
+          tool_choice: { type: "tool", name: OUTIL_PROPOSITION.name },
+          messages: [{ role: "user", content: user }],
+        }),
+        signal: AbortSignal.timeout(90_000),
       });
       if (!rep.ok) return { ok: false, raison: "service" };
-      const j = (await rep.json()) as { content?: { type: string; text?: string }[] };
-      const texte = (j.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("").trim();
+      const j = (await rep.json()) as { content?: { type: string; text?: string; name?: string; input?: unknown }[] };
+      const outil = (j.content ?? []).find((c) => c.type === "tool_use" && c.name === OUTIL_PROPOSITION.name);
+      // Même chemin de contrôle que le texte : l'objet est resérialisé puis revalidé côté écran.
+      const texte = outil?.input ? JSON.stringify(outil.input) : (j.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("").trim();
       return texte ? { ok: true, texte } : { ok: false, raison: "reponse_vide" };
     } catch (e) {
       return { ok: false, raison: e instanceof Error && e.name === "TimeoutError" ? "delai" : "service" };
