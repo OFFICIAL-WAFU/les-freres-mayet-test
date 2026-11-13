@@ -15,6 +15,7 @@ import { lireConnaissances } from "@/data/reprise";
 import { connaissancesPourIA } from "@/lib/reprise";
 import { proposerDevisIA, statutDevisIA } from "@/lib/devis-ia-serveur";
 import { dateParis } from "@/lib/echeances";
+import { useDictee } from "@/lib/dictee";
 
 export const Route = createFileRoute("/_authenticated/devis/assistant")({
   head: () => ({ meta: [{ title: "Devis assisté par IA — Les Frères Mayet" }, { name: "description", content: "Préparer un brouillon de devis à partir d'une description, avec contrôle et validation par vous." }] }),
@@ -38,28 +39,6 @@ const LIBELLE_TRAVAUX: Record<string, string> = {
   climatisation: "Climatisation", salle_de_bain: "Salle de bain", chauffe_eau: "Chauffe-eau", tableau_electrique: "Tableau électrique",
   electricite: "Électricité", plomberie: "Plomberie", cuisine: "Cuisine", wc: "WC", autre: "Autres travaux",
 };
-
-/** Dictée vocale du navigateur (Chrome, Safari) : le texte s'ajoute à la description, rien n'est envoyé tant que vous ne cliquez pas. */
-type Reco = { lang: string; continuous: boolean; interimResults: boolean; start(): void; stop(): void;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
-function useDictee(ajouter: (t: string) => void) {
-  const [actif, setActif] = useState(false);
-  const reco = useRef<Reco | null>(null);
-  const [possible, setPossible] = useState(false);
-  useEffect(() => { const w = window as unknown as Record<string, unknown>; setPossible(Boolean(w["SpeechRecognition"] ?? w["webkitSpeechRecognition"])); }, []);
-  function demarrer() {
-    const w = window as unknown as Record<string, new () => Reco>;
-    const C = w["SpeechRecognition"] ?? w["webkitSpeechRecognition"];
-    if (!C) return;
-    const r = new C(); r.lang = "fr-FR"; r.continuous = true; r.interimResults = false;
-    r.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]!; if (x.isFinal) ajouter(x[0].transcript.trim()); } };
-    r.onend = () => setActif(false); r.onerror = () => setActif(false);
-    reco.current = r; r.start(); setActif(true);
-  }
-  const arreter = () => { reco.current?.stop(); setActif(false); };
-  useEffect(() => () => reco.current?.stop(), []);
-  return { possible, actif, demarrer, arreter };
-}
 
 function Page() {
   const catalogue = useEtatCatalogue();
@@ -113,11 +92,15 @@ function Page() {
             <Textarea rows={8} value={demande} maxLength={LIMITES.demande} onChange={(e) => setDemande(e.target.value)}
               placeholder="Ex. : Remplacement du tableau électrique d'une maison de 90 m², 3 rangées, mise aux normes NF C 15-100, 2 prises à ajouter dans la cuisine…" />
           </label>
-          {dictee.possible && (
-            <Button type="button" variant={dictee.actif ? "destructive" : "outline"} size="sm" className="mt-2" onClick={dictee.actif ? dictee.arreter : dictee.demarrer}>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button type="button" variant={dictee.actif ? "destructive" : "outline"} size="sm" onClick={dictee.actif ? dictee.arreter : dictee.demarrer}>
               {dictee.actif ? <><Square />Arrêter la dictée</> : <><Mic />Dicter</>}
             </Button>
-          )}
+            {dictee.actif && <span className="flex items-center gap-1 text-xs text-destructive" aria-live="polite"><span className="size-2 animate-pulse rounded-full bg-destructive" />J’écoute… parlez normalement.</span>}
+            {dictee.possible === false && !dictee.erreur && <span className="text-xs text-muted-foreground">Sur ce navigateur, utilisez le micro du clavier.</span>}
+          </div>
+          {dictee.provisoire && <p className="mt-1 text-sm italic text-muted-foreground" aria-live="polite">{dictee.provisoire}…</p>}
+          {dictee.erreur && <p role="alert" className="mt-1 text-sm text-destructive">{dictee.erreur}</p>}
           <p className="mt-2 text-xs text-muted-foreground">Le texte saisi est envoyé au service d'IA pour analyse. Évitez d'y mettre des données inutiles (coordonnées bancaires, mots de passe).</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button variant="action" disabled={enCours || cle !== "oui" || demande.trim().length < 10 || catalogue.statut === "chargement"} onClick={() => void proposer()}>
