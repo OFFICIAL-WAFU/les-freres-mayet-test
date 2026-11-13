@@ -24,6 +24,12 @@ export const Route = createFileRoute("/_authenticated/devis/assistant")({
 const MSG: Record<string, string> = {
   cle_absente: "Le service d'IA n'est pas encore configuré (clé manquante côté serveur).",
   service: "Le service d'IA n'a pas répondu correctement. Réessayez dans un instant.",
+  cle_refusee: "La clé API est refusée par Anthropic : vérifiez qu'elle a été copiée en entier dans le secret ANTHROPIC_API_KEY (ou créez-en une nouvelle).",
+  credit: "Le compte Anthropic n'a plus de crédit : ajoutez du crédit sur console.anthropic.com (rubrique Billing).",
+  modele: "Le modèle d'IA demandé n'est pas disponible pour ce compte.",
+  limite: "Trop de demandes en peu de temps (ou plafond de dépense atteint). Réessayez dans une minute.",
+  surcharge: "Le service d'IA est momentanément surchargé. Réessayez dans un instant.",
+  requete: "Le service d'IA a refusé la demande.",
   delai: "Le service d'IA a mis trop de temps à répondre. Réessayez.",
   reponse_vide: "Le service d'IA n'a rien renvoyé. Reformulez votre description.",
 };
@@ -79,7 +85,7 @@ function Page() {
     setEnCours(true); setErreur(null); setProp(null);
     try {
       const r = await proposerDevisIA({ data: { demande, catalogue: catalogueCompact(catalogue.articles), habitudes } });
-      if (!r.ok) { setErreur(MSG[r.raison] ?? MSG["service"]!); return; }
+      if (!r.ok) { setErreur(`${MSG[r.raison] ?? MSG["service"]!}${r.detail ? ` (détail : ${r.detail})` : ""}`); return; }
       const p = validerProposition(extraireJson(r.texte), catalogue.articles, undefined, { reglages });
       if (!p) { setErreur("La proposition reçue est inexploitable. Reformulez ou précisez votre description."); return; }
       setProp((x) => ({ p, n: (x?.n ?? 0) + 1 }));

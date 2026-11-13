@@ -15,7 +15,20 @@ export const statutDevisIA = createServerFn({ method: "GET" })
   });
 
 type Entree = { demande: string; catalogue: ArticleCompact[]; habitudes?: Habitude[] };
-export type SortieIA = { ok: true; texte: string } | { ok: false; raison: "cle_absente" | "service" | "delai" | "reponse_vide" };
+export type RaisonIA = "cle_absente" | "cle_refusee" | "credit" | "modele" | "limite" | "surcharge" | "requete" | "service" | "delai" | "reponse_vide";
+export type SortieIA = { ok: true; texte: string } | { ok: false; raison: RaisonIA; detail?: string };
+
+/** Traduit une erreur du service Anthropic (jamais la clé : seulement le code et le message d'erreur renvoyés par le service). */
+export function raisonErreurIA(statut: number, message: string): RaisonIA {
+  const m = message.toLowerCase();
+  if (statut === 401 || statut === 403) return "cle_refusee";
+  if (m.includes("credit balance") || m.includes("billing") || m.includes("credit")) return "credit";
+  if (statut === 404 || m.includes("model")) return "modele";
+  if (statut === 429) return "limite";
+  if (statut === 529 || statut === 503) return "surcharge";
+  if (statut === 400) return "requete";
+  return "service";
+}
 
 export const proposerDevisIA = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -49,13 +62,18 @@ export const proposerDevisIA = createServerFn({ method: "POST" })
         }),
         signal: AbortSignal.timeout(90_000),
       });
-      if (!rep.ok) return { ok: false, raison: "service" };
+      if (!rep.ok) {
+        let message = "";
+        try { const e = (await rep.json()) as { error?: { message?: unknown } }; message = typeof e.error?.message === "string" ? e.error.message : ""; } catch { /* corps illisible */ }
+        console.error("devis-ia : erreur du service", rep.status, message.slice(0, 300));
+        return { ok: false, raison: raisonErreurIA(rep.status, message), detail: `${rep.status} ${message}`.trim().slice(0, 300) };
+      }
       const j = (await rep.json()) as { content?: { type: string; text?: string; name?: string; input?: unknown }[] };
       const outil = (j.content ?? []).find((c) => c.type === "tool_use" && c.name === OUTIL_PROPOSITION.name);
       // Même chemin de contrôle que le texte : l'objet est resérialisé puis revalidé côté écran.
       const texte = outil?.input ? JSON.stringify(outil.input) : (j.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("").trim();
       return texte ? { ok: true, texte } : { ok: false, raison: "reponse_vide" };
     } catch (e) {
-      return { ok: false, raison: e instanceof Error && e.name === "TimeoutError" ? "delai" : "service" };
+      return { ok: false, raison: e instanceof Error && e.name === "TimeoutError" ? "delai" : "service", detail: e instanceof Error ? e.message.slice(0, 200) : "" };
     }
   });
