@@ -50,7 +50,10 @@ export function useDictee(ajouter: (texte: string) => void) {
     const C = w["SpeechRecognition"] ?? w["webkitSpeechRecognition"];
     if (!C) { setErreur(MESSAGES_DICTEE["indisponible"]!); return; }
     const r = new C();
-    r.lang = "fr-FR"; r.continuous = true; r.interimResults = true;
+    // Android (Chrome) : en mode continu, les résultats reviennent cumulés et le texte se répète (« bonjour bonjour je bonjour je
+    // voudrais… »). On y dicte donc phrase par phrase et on relance automatiquement : le texte n'est ajouté qu'une fois.
+    const android = /Android/i.test(navigator.userAgent);
+    r.lang = "fr-FR"; r.continuous = !android; r.interimResults = true;
     r.onresult = (e) => {
       let prov = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -69,7 +72,7 @@ export function useDictee(ajouter: (texte: string) => void) {
     r.onend = () => {
       setProvisoire("");
       // Chrome s'arrête seul après un silence : on reprend tant que l'utilisateur n'a pas cliqué sur « Arrêter ».
-      if (voulu.current && relances.current < 3) { relances.current++; try { r.start(); return; } catch { /* déjà relancée */ } }
+      if (voulu.current && relances.current < 3) { relances.current++; try { lancer(); return; } catch { /* déjà relancée */ } }
       if (voulu.current && !entendu.current) setErreur(MESSAGES_DICTEE["silence"]!);
       voulu.current = false; setActif(false);
     };
