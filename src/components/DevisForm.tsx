@@ -701,10 +701,10 @@ function DevisFormBase({
               </div>
             )}
             <div className="flex flex-wrap items-center justify-end gap-2">
-            <p className="mr-auto text-sm leading-tight"><span className="text-muted-foreground">Total TTC </span><span className="font-semibold tabular-nums">{recap.complet ? formaterCentimes(recap.ttc) : "à compléter"}</span></p>
+            <p className="mr-auto text-sm leading-tight"><span className="text-muted-foreground">TTC </span><span className="font-semibold tabular-nums">{recap.complet ? formaterCentimes(recap.ttc) : "—"}</span></p>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() =>
                 facture && documentId
                   ? navigate({ to: "/factures/$id", params: { id: documentId } })
