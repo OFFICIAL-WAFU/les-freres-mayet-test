@@ -683,9 +683,9 @@ function DevisFormBase({
             {tentative && Object.keys(erreurs).length > 0 && (
               <p className="text-sm font-medium text-destructive">Certains champs sont à corriger avant d'enregistrer.</p>
             )}
-            <p role="status" className="text-sm text-muted-foreground">
+            <p role="status" className="text-sm text-muted-foreground empty:hidden">
               {enCours ? "Enregistrement…" : modifie
-                ? "Modifications non enregistrées — enregistrez-les pour les retrouver dans l'aperçu et le PDF."
+                ? "Modifications non enregistrées."
                 : documentId ? "Version enregistrée." : ""}
             </p>
             {echec && (
@@ -701,7 +701,7 @@ function DevisFormBase({
               </div>
             )}
             <div className="flex flex-wrap items-center justify-end gap-2">
-            <p className="mr-auto text-sm"><span className="text-muted-foreground">Total TTC </span><span className="font-semibold tabular-nums">{recap.complet ? formaterCentimes(recap.ttc) : "à compléter"}</span></p>
+            <p className="mr-auto text-sm leading-tight"><span className="text-muted-foreground">Total TTC </span><span className="font-semibold tabular-nums">{recap.complet ? formaterCentimes(recap.ttc) : "à compléter"}</span></p>
             <Button
               type="button"
               variant="outline"
@@ -716,7 +716,7 @@ function DevisFormBase({
               Annuler
             </Button>
             <Button type="submit" variant="action" size="lg" disabled={enCours} aria-busy={enCours}>
-              {enCours ? "Enregistrement…" : "Enregistrer le brouillon"}
+              {enCours ? "Enregistrement…" : <>Enregistrer<span className="hidden sm:inline">&nbsp;le brouillon</span></>}
             </Button>
             </div>
           </div>
