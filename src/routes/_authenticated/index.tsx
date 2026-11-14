@@ -143,7 +143,7 @@ function DocumentsPage() {
           </Button>
           <div className={`${filtresOuverts ? "contents" : "hidden"} lg:contents`}>
           <Select value={type} onValueChange={(v) => changerType(v as DocumentType | "tous")}>
-            <SelectTrigger className="h-10 lg:w-56" aria-label="Filtrer par type">
+            <SelectTrigger className="h-10 lg:w-44" aria-label="Filtrer par type">
               <SelectValue>
                 {TYPE_FILTERS.find((t) => t.value === type)?.label ?? "Tous"}
               </SelectValue>
@@ -158,7 +158,7 @@ function DocumentsPage() {
             </SelectContent>
           </Select>
           <Select value={statut} onValueChange={(v) => setStatut(v as DocumentStatut | "tous")}>
-            <SelectTrigger className="h-10 lg:w-56" aria-label="Filtrer par statut">
+            <SelectTrigger className="h-10 lg:w-44" aria-label="Filtrer par statut">
               <SelectValue>{statut === "tous" ? "Tous les statuts" : statut}</SelectValue>
             </SelectTrigger>
             <SelectContent>

@@ -115,7 +115,7 @@ export function AppLayout({ titre, children }: { titre: string; children: ReactN
   }, []);
 
   return (
-    <div className="khosmos-ui min-h-screen w-full overflow-x-hidden bg-background" data-page={titre}>
+    <div className="khosmos-ui min-h-screen w-full overflow-x-clip bg-background" data-page={titre}>
       <div className="flex">
         <aside className="sticky top-0 hidden h-screen w-[230px] shrink-0 flex-col justify-between gap-4 overflow-y-auto border-r border-sidebar-border bg-sidebar p-4 lg:flex">
           <div className="flex flex-col gap-6">
