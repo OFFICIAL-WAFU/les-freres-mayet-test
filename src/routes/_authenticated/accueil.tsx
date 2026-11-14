@@ -60,7 +60,7 @@ function Accueil() {
     </div>
     {etat.statut === "erreur" ? <div role="alert" className="mt-6 rounded-xl border p-4">Impossible de charger les documents. <Button variant="outline" onClick={() => void chargerDocuments()}>Réessayer</Button></div>
       : etat.statut !== "pret" ? <p role="status" className="mt-6">Chargement de votre activité…</p> : <>
-      <SyntheseKhosmos documents={docs} />
+      {/* Audit 14/11/2026 : ce qui demande une action (à encaisser, relances) avant le graphique d'activité. */}
       <div className="khosmos-summary mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {([
           ["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", () => setListe({ titre: "À encaisser", elements: enAttente.map(d => ({ doc: d.doc, montant: enMode(d.doc, d.suivi.reste, mode) })), encaisser: true, description: "Reste à régler de chaque document." })],
@@ -71,6 +71,7 @@ function Accueil() {
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
       <RelancesDuJour documents={docs} />
+      <SyntheseKhosmos documents={docs} />
       <section className="mt-6 rounded-2xl border bg-card p-5">
         <h2 className="text-lg font-semibold">Paiements à suivre</h2>
         <p className="mt-2 text-sm text-muted-foreground">{retards.length} document(s) en retard · {sansDate.length} échéance(s) à renseigner. Les échéances les plus anciennes apparaissent en premier.</p>

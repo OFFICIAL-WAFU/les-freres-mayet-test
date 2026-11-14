@@ -19,7 +19,7 @@ export async function seDeconnecter() {
 
 /** N'accepte qu'un chemin interne ("/..."), jamais une adresse externe. */
 export function destinationSure(v: unknown): string {
-  if (typeof v !== "string") return "/";
+  if (typeof v !== "string") return "/accueil"; // audit 14/11/2026 : sans page demandée, on arrive sur l'Accueil
   if (!v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\")) return "/";
   if (/^\/(connexion|mot-de-passe-oublie|reinitialiser-mot-de-passe)\b/.test(v)) return "/";
   return v;

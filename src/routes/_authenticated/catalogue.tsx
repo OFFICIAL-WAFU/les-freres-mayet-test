@@ -136,11 +136,11 @@ function CataloguePage() {
   const voir = (a: Article) => setPanneau({ mode: "fiche", id: a.id });
 
   return (
-    <AppLayout titre="Inventaire">
-      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit">{([ ["prestation", "Services"], ["materiel", "Matériel"], ["tous", "Tout l’inventaire"] ] as const).map(([value,label]) => <Button key={value} variant={type === value ? "action" : "ghost"} onClick={() => setType(value)}>{label}</Button>)}</div>
+    <AppLayout titre="Catalogue">
+      <div className="mb-5 flex flex-wrap gap-2 rounded-xl bg-card p-2 w-fit">{([ ["prestation", "Services"], ["materiel", "Matériel"], ["tous", "Tout le catalogue"] ] as const).map(([value,label]) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => setType(value)}>{label}</Button>)}</div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Inventaire</h1>
+          <h1 className="text-2xl font-semibold text-foreground lg:text-3xl">Catalogue</h1>
           <p className="mt-2 text-sm text-muted-foreground">Votre matériel et vos prestations habituelles.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Votre catalogue est enregistré dans votre espace privé.

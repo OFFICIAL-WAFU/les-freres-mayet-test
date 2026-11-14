@@ -121,21 +121,21 @@ function DocumentsPage() {
             Retrouvez vos devis, factures, acomptes et avoirs.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3"><Button variant="outline" disabled={etatDocs.statut !== "pret" || resultats.length === 0} onClick={() => telechargerDocumentsCsv(resultats)}>Exporter</Button><Button variant="action" size="lg" onClick={() => setCreationOuverte(true)}>
+        <div className="flex flex-wrap gap-3"><Button variant="outline" title="Télécharge la liste affichée (fichier ouvrable dans Excel)" disabled={etatDocs.statut !== "pret" || resultats.length === 0} onClick={() => telechargerDocumentsCsv(resultats)}>Exporter</Button><Button variant="action" size="lg" onClick={() => setCreationOuverte(true)}>
           <Plus /> Créer un doc
         </Button></div>
       </div>
 
       <div className="khosmos-page-filters mt-6 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-wrap gap-3 lg:items-center">
-          <div className="relative w-full basis-full">
+          <div className="relative w-full basis-full lg:w-72 lg:basis-auto">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               placeholder="Client, N° de doc ou paiement…"
               aria-label="Rechercher un client ou un numéro"
-              className="h-12 max-w-sm pl-9"
+              className="h-10 pl-9 lg:max-w-sm"
             />
           </div>
           <Button type="button" variant="outline" className="h-10 lg:hidden" aria-expanded={filtresOuverts} onClick={() => setFiltresOuverts((o) => !o)}>
@@ -182,11 +182,9 @@ function DocumentsPage() {
             <SelectContent><SelectItem value="tous">Tous les règlements</SelectItem><SelectItem value="reste">Reste à régler</SelectItem><SelectItem value="retard">En retard</SelectItem><SelectItem value="sans-date">Échéance non renseignée</SelectItem><SelectItem value="solde">Solde à zéro</SelectItem><SelectItem value="credit">Crédit client à traiter</SelectItem></SelectContent>
           </Select>
 
-          <span className="text-xs text-muted-foreground">« Exporter » télécharge la liste affichée (fichier ouvrable dans Excel)</span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          {resultats.length} document{resultats.length > 1 ? "s" : ""} affiché
-          {resultats.length > 1 ? "s" : ""} sur {documents.length}
+          {etatDocs.statut !== "pret" ? "Chargement…" : <>{resultats.length} document{resultats.length > 1 ? "s" : ""} affiché{resultats.length > 1 ? "s" : ""} sur {documents.length}</>}
         </p>
       </div>
 

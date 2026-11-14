@@ -199,14 +199,16 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
   color: var(--primary-foreground);
   border: 0;
   margin: 0;
-  padding: 26px 28px;
+  padding: 18px 22px;
 }
+/* Audit 14/11/2026 : en-tête plus compact (il occupait ~40 % de l'écran avant la première ligne). */
+.khosmos-page-heading h1 { font-size: 1.5rem; line-height: 2rem; }
 
 .marge-suivi h2 { letter-spacing: 0; }
-.khosmos-page-heading { background: linear-gradient(180deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 26px 26px 0 0; margin-bottom: 0; padding-bottom: 14px; position: relative; overflow: hidden; }
+.khosmos-page-heading { background: linear-gradient(180deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 22px 22px 0 0; margin-bottom: 0; padding-bottom: 8px; position: relative; overflow: hidden; }
 .khosmos-page-heading > * { position: relative; z-index: 1; }
-.khosmos-page-filters { border-radius: 0 0 26px 26px; padding-top: 6px; margin-bottom: 20px; background: hsl(36 60% 60%); }
-.khosmos-page-heading:not(:has(+ .khosmos-page-filters)) { background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 26px; margin-bottom: 20px; padding-bottom: 26px; }
+.khosmos-page-filters { border-radius: 0 0 22px 22px; padding-top: 4px; padding-bottom: 14px; margin-bottom: 16px; background: hsl(36 60% 60%); }
+.khosmos-page-heading:not(:has(+ .khosmos-page-filters)) { background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 22px; margin-bottom: 16px; padding-bottom: 18px; }
 .khosmos-page-heading h1, .khosmos-page-heading p,
 .khosmos-page-filters > p, .khosmos-page-filters span.text-muted-foreground { color: var(--primary-foreground); }
 .khosmos-page-filters input { background: white; color: var(--foreground); border-radius: 999px; }

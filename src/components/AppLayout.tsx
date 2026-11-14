@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpenCheck, Building2, Calculator, CalendarDays, ClipboardList, FileText, Home, LogOut, Menu, Package, Settings, ShoppingCart, StickyNote, Users, Wallet } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ArrowLeftRight, BookOpenCheck, Building2, ChevronDown, History, Calculator, CalendarDays, ClipboardList, FileText, Home, LogOut, Menu, Package, Settings, ShoppingCart, StickyNote, Users, Wallet } from "lucide-react";
 
 import { useEtatDocuments } from "@/data/documents";
 import { seDeconnecter } from "@/lib/session";
@@ -25,29 +25,34 @@ function Marque() {
 
 const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground data-[status=active]:bg-primary data-[status=active]:font-semibold data-[status=active]:text-primary-foreground data-[status=active]:shadow-[0_6px_16px_-6px_hsl(40_44%_60%/0.7)]";
 
+// Audit 14/11/2026 : les usages quotidiens en haut, la gestion ensuite, les paramètres regroupés (repliés sauf s'ils sont ouverts).
 const GROUPES = [
   [
     { to: "/accueil", label: "Accueil", icone: Home },
     { to: "/", label: "Documents", icone: FileText },
     { to: "/clients", label: "Clients", icone: Users },
-    { to: "/catalogue", label: "Inventaire", icone: Package },
-    { to: "/achats", label: "Achats", icone: ShoppingCart },
+    { to: "/catalogue", label: "Catalogue", icone: Package },
+    { to: "/planning", label: "Planning", icone: CalendarDays },
   ],
   [
-    { to: "/planning", label: "Planning", icone: CalendarDays },
     { to: "/rapports", label: "Rapports", icone: ClipboardList },
+    { to: "/achats", label: "Achats", icone: ShoppingCart },
     { to: "/tresorerie", label: "Trésorerie", icone: Wallet },
     { to: "/marges", label: "Calcul de marge", icone: Calculator },
   ],
-  [
-    { to: "/entreprise", label: "Entreprise", icone: Building2 },
-    { to: "/connaissances", label: "Savoir-faire", icone: BookOpenCheck },
-    { to: "/mentions", label: "Mentions", icone: StickyNote },
-    { to: "/reglages", label: "Réglages", icone: Settings },
-  ],
+] as const;
+const PARAMETRES = [
+  { to: "/entreprise", label: "Entreprise", icone: Building2 },
+  { to: "/connaissances", label: "Savoir-faire", icone: BookOpenCheck },
+  { to: "/mentions", label: "Mentions", icone: StickyNote },
+  { to: "/reglages", label: "Réglages", icone: Settings },
+  { to: "/imports", label: "Exports et imports", icone: ArrowLeftRight },
+  { to: "/historique", label: "Historique Khosmos", icone: History },
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const chemin = useRouterState({ select: (s) => s.location.pathname });
+  const dansParametres = PARAMETRES.some((r) => chemin === r.to || chemin.startsWith(`${r.to}/`));
   return (
     <nav className="flex flex-col gap-1">
       {GROUPES.map((g, i) => (
@@ -59,11 +64,16 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </div>
       ))}
-      <details className="mt-2 border-t border-sidebar-border pt-3">
-        <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70">Autres outils</summary>
-        <div className="mt-1 flex flex-col gap-1">
-          <Link to="/imports" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground">Exports et imports</Link>
-          <Link to="/historique" onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground">Historique Khosmos</Link>
+      <details className="group mt-2 border-t border-sidebar-border pt-3" open={dansParametres || undefined}>
+        <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground">
+          <Settings className="size-4 shrink-0" aria-hidden="true" />Paramètres<ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="mt-1 flex flex-col gap-1 pl-2">
+          {PARAMETRES.map((r) => (
+            <Link key={r.to} to={r.to} onClick={onNavigate} className={lienNav}>
+              <r.icone className="size-4 shrink-0" aria-hidden="true" />{r.label}
+            </Link>
+          ))}
         </div>
       </details>
     </nav>
@@ -137,7 +147,8 @@ export function AppLayout({ titre, children }: { titre: string; children: ReactN
             <span className="truncate text-base font-semibold text-foreground">{titre}</span>
           </header>
 
-          <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:px-8">
+          {/* Sur ordinateur, le menu affiche déjà le nom et les Réglages : cette barre n'est utile que sur téléphone. */}
+          <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:hidden">
             <Link to="/entreprise" className="flex min-w-0 items-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold hover:bg-secondary/70"><Building2 className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">Les Frères Mayet</span></Link>
             <Link to="/reglages" aria-label="Réglages" className="shrink-0 rounded-xl bg-secondary p-2.5 text-foreground hover:bg-secondary/70"><Settings className="size-5" /></Link>
           </div>
