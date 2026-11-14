@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AdresseAutocomplete } from "@/components/AdresseAutocomplete";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -209,7 +210,9 @@ export function ClientForm({
         </>
       )}
       <Champ id="f-adresse" label="Adresse" facultatif>
-        {inp("adresse")}
+        <AdresseAutocomplete id="f-adresse" value={v.adresse} placeholder="Tapez l’adresse, ex. 12 rue des pins Jard"
+          onChange={(x) => setValeurs({ ...v, adresse: x })}
+          onChoix={(a) => setValeurs({ ...v, adresse: a.adresse, codePostal: a.codePostal, ville: a.ville, pays: v.pays.trim() ? v.pays : "France" })} />
       </Champ>
       <Champ id="f-complement" label="Complément d'adresse" facultatif>
         {inp("complement")}
