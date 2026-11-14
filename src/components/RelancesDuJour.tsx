@@ -16,6 +16,7 @@ export function RelancesDuJour({ documents }: { documents: DocumentAvecDevis[] }
   const [envois, setEnvois] = useState<EnvoiDevis[] | null | undefined>(undefined);
   const [signes, setSignes] = useState<Record<string, unknown>>({});
   const [gmail, setGmail] = useState<boolean | null>(null);
+  const [toutes, setToutes] = useState(false);
   const [erreur, setErreur] = useState("");
   const recharger = useCallback(() => {
     lireEnvoisDevis().then(e => { setEnvois(e); setErreur(""); }).catch(e => setErreur(e instanceof Error ? e.message : "Suivi indisponible."));
@@ -35,6 +36,8 @@ export function RelancesDuJour({ documents }: { documents: DocumentAvecDevis[] }
   }, [documents, envois, signes, aujourdHui]);
 
   if (envois === null) return null; // fonctionnalité pas encore installée dans la base
+  // Audit 14/11/2026 : 5 relances affichées d'abord (les plus gros montants sont déjà en tête), le reste sur demande.
+  const visibles = toutes ? aFaire : aFaire.slice(0, 5);
   return <section className="mt-6 rounded-2xl border bg-card p-5" aria-labelledby="relances-titre">
     <div className="flex flex-wrap items-baseline justify-between gap-2">
       <h2 id="relances-titre" className="text-lg font-semibold">Relances du jour{aFaire.length ? ` (${aFaire.length})` : ""}</h2>
@@ -44,7 +47,7 @@ export function RelancesDuJour({ documents }: { documents: DocumentAvecDevis[] }
     {erreur && <p role="alert" className="mt-3 text-sm text-destructive">{erreur}</p>}
     {envois === undefined ? <p className="mt-3 text-sm text-muted-foreground">Chargement…</p>
       : !aFaire.length ? <p className="mt-3 text-sm text-muted-foreground">Aucune relance à faire aujourd’hui.</p>
-      : <ul className="mt-3 divide-y">{aFaire.map(r => {
+      : <><ul className="mt-3 divide-y">{visibles.map(r => {
         const d = parId.get(r.devisId)!;
         const aEnvoi = (envois ?? []).some(e => e.devis_id === d.id && e.nature === "envoi" && e.canal !== "aucun");
         const prioritaire = r.montantHTCentimes >= SEUIL_PRIORITAIRE_CENTIMES;
@@ -60,6 +63,8 @@ export function RelancesDuJour({ documents }: { documents: DocumentAvecDevis[] }
             <Button asChild size="sm" variant="ghost"><Link to="/devis/$id" params={{ id: d.id }}>Ouvrir</Link></Button>
           </div>
         </li>;
-      })}</ul>}
+      })}</ul>
+      {aFaire.length > visibles.length && <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setToutes(true)}>Voir les {aFaire.length - visibles.length} autres relances</Button>}
+      {toutes && aFaire.length > 5 && <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => setToutes(false)}>Réduire la liste</Button>}</>}
   </section>;
 }
