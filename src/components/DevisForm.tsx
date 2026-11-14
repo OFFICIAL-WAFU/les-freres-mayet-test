@@ -164,6 +164,8 @@ function DevisFormBase({
   // Taux appliqué par défaut aux nouvelles lignes ; pré-rempli si toutes les lignes existantes ont le même taux.
   const [tauxGlobal, setTauxGlobal] = useState<TauxTVA | null>(() => {
     const l = (JSON.parse(depart) as DevisBrouillon).lignes;
+    // Audit 14/11/2026 : document vide → 10 % proposé (taux de la plupart des travaux en logement de plus de 2 ans), modifiable.
+    if (l.length === 0) return 100;
     const premier = l[0]?.taux ?? null;
     return premier !== null && l.every((x) => x.taux === premier) ? premier : null;
   });
@@ -530,18 +532,22 @@ function DevisFormBase({
               if (chiffrage && !ouvertes.includes(l.cle)) {
                 return (
                   <button key={l.cle} type="button" data-ligne={i + 1} onClick={() => basculer(l.cle)} aria-expanded={false}
-                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/50 sm:grid-cols-[minmax(0,1fr)_4rem_7rem_7rem_auto_1.25rem]">
-                    <span className="min-w-0">
-                      <span className="block truncate font-semibold">{l.designation || "Ligne sans désignation"}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {l.type === "materiel" ? "Matériel" : "Prestation"}{l.cout && analyserTempsTexte(l.cout.temps)}{l.taux !== null ? ` · TVA ${labelTaux(l.taux)}` : ""}
+                    className="flex w-full flex-col gap-1.5 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/50">
+                    {/* Audit 14/11/2026 : la désignation garde toute la largeur (elle était réduite à une lettre sur ordinateur portable). */}
+                    <span className="flex w-full items-start justify-between gap-3">
+                      <span className="line-clamp-2 min-w-0 font-semibold leading-snug">{l.designation || "Ligne sans désignation"}</span>
+                      <ChevronDown aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </span>
+                    <span className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                      <span className="min-w-0 text-xs text-muted-foreground">
+                        {l.type === "materiel" ? "Matériel" : "Prestation"}{l.cout && analyserTempsTexte(l.cout.temps)}{l.taux !== null ? ` · TVA ${labelTaux(l.taux)}` : " · TVA à choisir"}
+                      </span>
+                      <span className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm tabular-nums">
+                        <span className="text-muted-foreground">{l.quantite || "—"} × {l.prix ? `${l.prix} €` : "—"}</span>
+                        <span className="font-semibold">{htTexte}</span>
+                        <PastilleMarge ligne={l} reglages={reglages} />
                       </span>
                     </span>
-                    <span className="hidden text-right sm:block">{l.quantite}</span>
-                    <span className="hidden text-right sm:block">{l.prix ? `${l.prix} €` : "—"}</span>
-                    <span className="text-right font-semibold">{htTexte}</span>
-                    <span className="col-span-2 sm:col-span-1 sm:justify-self-end"><PastilleMarge ligne={l} reglages={reglages} /></span>
-                    <ChevronDown aria-hidden="true" className="hidden size-4 text-muted-foreground sm:block" />
                   </button>
                 );
               }
@@ -666,7 +672,14 @@ function DevisFormBase({
             {facture?.deduction && <DeductionBloc recap={recap} deduction={facture.deduction} />}
           </div>
           {chiffrage && <RentabiliteBloc lignes={v.lignes} reglages={reglages} />}
-          <div className="flex flex-col gap-2">
+          <details open className="rounded-2xl border border-border bg-card p-3">
+            <summary className="cursor-pointer text-sm font-semibold">Aperçu pendant la saisie</summary>
+            <p className="mt-2 text-xs text-muted-foreground">Prévisualisation non enregistrée. Les notes internes restent absentes du document.</p>
+            {entrepriseApercu.statut === "pret" ? <div className="saisie-apercu mt-3 max-h-[700px] overflow-y-auto rounded-xl border border-border"><DevisApercu devis={versPublic(v)} numero={numero ?? "À attribuer après enregistrement"} entreprise={entrepriseApercu.fiche} {...(facture ? {facture} : {})} /></div> : <p className="mt-3 text-sm text-muted-foreground">Enregistrez votre fiche entreprise pour afficher cet aperçu.</p>}
+          </details>
+        </aside>
+        {/* Audit 14/11/2026 : barre d'enregistrement toujours visible en bas de l'écran (elle partait en haut de page pendant la saisie des lignes). */}
+        <div className="sticky bottom-0 z-30 -mx-1 flex flex-col gap-2 rounded-2xl border border-border bg-card/95 p-3 shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.25)] backdrop-blur xl:col-span-2">
             {tentative && Object.keys(erreurs).length > 0 && (
               <p className="text-sm font-medium text-destructive">Certains champs sont à corriger avant d'enregistrer.</p>
             )}
@@ -687,9 +700,8 @@ function DevisFormBase({
                 )}
               </div>
             )}
-            <Button type="submit" variant="action" size="lg" disabled={enCours} aria-busy={enCours}>
-              {enCours ? "Enregistrement…" : "Enregistrer le brouillon"}
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+            <p className="mr-auto text-sm"><span className="text-muted-foreground">Total TTC </span><span className="font-semibold tabular-nums">{recap.complet ? formaterCentimes(recap.ttc) : "à compléter"}</span></p>
             <Button
               type="button"
               variant="outline"
@@ -703,13 +715,11 @@ function DevisFormBase({
             >
               Annuler
             </Button>
+            <Button type="submit" variant="action" size="lg" disabled={enCours} aria-busy={enCours}>
+              {enCours ? "Enregistrement…" : "Enregistrer le brouillon"}
+            </Button>
+            </div>
           </div>
-          <details open className="rounded-2xl border border-border bg-card p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Aperçu pendant la saisie</summary>
-            <p className="mt-2 text-xs text-muted-foreground">Prévisualisation non enregistrée. Les notes internes restent absentes du document.</p>
-            {entrepriseApercu.statut === "pret" ? <div className="saisie-apercu mt-3 max-h-[700px] overflow-y-auto rounded-xl border border-border"><DevisApercu devis={versPublic(v)} numero={numero ?? "À attribuer après enregistrement"} entreprise={entrepriseApercu.fiche} {...(facture ? {facture} : {})} /></div> : <p className="mt-3 text-sm text-muted-foreground">Enregistrez votre fiche entreprise pour afficher cet aperçu.</p>}
-          </details>
-        </aside>
       </form>
 
       {confirmerRecharge && (

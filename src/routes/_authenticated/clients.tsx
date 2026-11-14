@@ -108,9 +108,12 @@ function ClientsPage() {
   function montantClient(c: Client, cle: "facture" | "attente" | "retard" | "paye", suivi: FiltreSuiviClient) {
     if (etatDocs.statut !== "pret") return <span className="text-xs text-muted-foreground">{etatDocs.statut === "erreur" ? "Indisponible" : "Chargement…"}</span>;
     const s = syntheseClient(etatDocs.liste, c.id, periode, undefined, mode);
-    const couleurs = { facture: "text-primary", attente: "text-orange-600", retard: "text-rose-600", paye: "text-teal-600" };
+    const couleurs = { facture: "text-foreground", attente: "text-amber-800", retard: "text-rose-700", paye: "text-emerald-700" };
+    const montant = cle === "facture" ? s.facture - s.credite : s[cle];
+    // Audit 14/11/2026 : un montant nul n'est ni rouge ni orange (il n'alarme pas pour rien).
+    if (montant === 0n) return <span className="px-1 text-muted-foreground" aria-label="Aucun montant">—</span>;
     return <button type="button" className={`rounded px-1 py-1 font-semibold underline-offset-4 hover:underline focus-visible:outline-2 ${couleurs[cle]}`} onClick={() => setPanneau({ mode: "fiche", id: c.id, suivi })} aria-label={`${cle === "facture" ? "Total facturé" : cle === "paye" ? "Payé" : cle === "retard" ? "En retard" : "En attente"} pour ${nomClient(c)}`}>
-      {formaterCentimes(cle === "facture" ? s.facture - s.credite : s[cle])}
+      {formaterCentimes(montant)}
     </button>;
   }
 
@@ -232,9 +235,9 @@ function ClientsPage() {
                     <tr className="border-b border-border bg-secondary/60 text-left">
                       <th className="px-4 py-3 font-semibold">Nom ou raison sociale</th>
                       <th className="px-4 py-3 font-semibold text-primary">Total facturé {mode === "ttc" ? "TTC" : "HT"}</th>
-                      <th className="px-4 py-3 font-semibold text-orange-600">En attente</th>
-                      <th className="px-4 py-3 font-semibold text-rose-600">En retard</th>
-                      <th className="px-4 py-3 font-semibold text-teal-600">Payé</th>
+                      <th className="px-4 py-3 font-semibold text-amber-800">En attente</th>
+                      <th className="px-4 py-3 font-semibold text-rose-700">En retard</th>
+                      <th className="px-4 py-3 font-semibold text-emerald-700">Payé</th>
                       <th className="px-4 py-3 text-right font-semibold">Action</th>
                     </tr>
                   </thead>

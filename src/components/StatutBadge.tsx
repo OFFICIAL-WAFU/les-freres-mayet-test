@@ -1,13 +1,18 @@
 import { cn } from "@/lib/utils";
 import { tonDuStatut, type DocumentStatut } from "@/data/documents";
 
-const CLASSES: Record<string, string> = {
-  neutre: "bg-neutral-soft text-muted-foreground border-border",
-  attente: "bg-warning-soft text-accent border-accent/30",
-  valide: "bg-success-soft text-success border-success/30",
-  info: "bg-info-soft text-primary border-primary/20",
-  alerte: "bg-destructive/10 text-destructive border-destructive/30",
-};
+/**
+ * Audit 14/11/2026 : texte foncé sur fond pâle (contraste ≥ 4,5:1, lisible au soleil) et plus d'orange vif dans les statuts :
+ * l'orange est réservé aux boutons d'action (« Créer », « Encaisser »). Classes partagées avec StatutDocument.
+ */
+export const TONS_STATUT = {
+  neutre: "bg-stone-100 text-stone-700 border-stone-200",
+  attente: "bg-amber-50 text-amber-900 border-amber-300",
+  valide: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  info: "bg-sky-50 text-sky-900 border-sky-200",
+  alerte: "bg-rose-50 text-rose-800 border-rose-200",
+} as const;
+const CLASSES: Record<string, string> = TONS_STATUT;
 
 export function StatutBadge({ statut, libelle }: { statut: DocumentStatut; libelle?: string | undefined }) {
   return (
