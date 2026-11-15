@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/connaissances")({
 });
 
 const COULEURS: Record<StatutConnaissance, string> = {
-  a_valider: "border-amber-300 bg-amber-50 text-amber-900",
+  a_valider: "border-warning-line bg-warning-soft text-warning-ink",
   valide: "border-success/40 bg-success-soft text-foreground",
   rejete: "border-border bg-muted text-muted-foreground",
 };
@@ -101,7 +101,7 @@ function Page() {
       {liste && modeles && (
         <Tabs defaultValue="connaissances" className="mt-6">
           <TabsList>
-            <TabsTrigger value="connaissances">Connaissances{aValider > 0 && <span className="ml-2 rounded-full bg-amber-100 px-2 text-xs text-amber-900">{aValider} à valider</span>}</TabsTrigger>
+            <TabsTrigger value="connaissances">Connaissances{aValider > 0 && <span className="ml-2 rounded-full bg-warning-soft px-2 text-xs text-warning-ink">{aValider} à valider</span>}</TabsTrigger>
             <TabsTrigger value="modeles">Modèles de devis ({modeles.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="connaissances">

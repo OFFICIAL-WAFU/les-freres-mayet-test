@@ -60,7 +60,8 @@ function Accueil() {
     </div>
     {etat.statut === "erreur" ? <div role="alert" className="mt-6 rounded-xl border p-4">Impossible de charger les documents. <Button variant="outline" onClick={() => void chargerDocuments()}>Réessayer</Button></div>
       : etat.statut !== "pret" ? <p role="status" className="mt-6">Chargement de votre activité…</p> : <>
-      {/* Audit 14/11/2026 : ce qui demande une action (à encaisser, relances) avant le graphique d'activité. */}
+      {/* Choix de Baptiste (15/11/2026) : tableau de suivi d'abord, relances clients en bas. */}
+      <SyntheseKhosmos documents={docs} />
       <div className="khosmos-summary mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {([
           ["À encaisser", formaterCentimes(reste), "Factures et acomptes finalisés, après avoirs et règlements", () => setListe({ titre: "À encaisser", elements: enAttente.map(d => ({ doc: d.doc, montant: enMode(d.doc, d.suivi.reste, mode) })), encaisser: true, description: "Reste à régler de chaque document." })],
@@ -71,7 +72,6 @@ function Accueil() {
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Ces montants concernent cet espace. Ils ne représentent pas votre solde bancaire.</p>
       <RelancesDuJour documents={docs} />
-      <SyntheseKhosmos documents={docs} />
       <section className="mt-6 rounded-2xl border bg-card p-5">
         <h2 className="text-lg font-semibold">Paiements à suivre</h2>
         <p className="mt-2 text-sm text-muted-foreground">{retards.length} document(s) en retard · {sansDate.length} échéance(s) à renseigner. Les échéances les plus anciennes apparaissent en premier.</p>
@@ -82,7 +82,7 @@ function Accueil() {
           {(recherche || filtre !== "tous") && <Button variant="ghost" onClick={() => { setRecherche(""); setFiltre("tous"); }}>Réinitialiser</Button>}
         </div>
         <p aria-live="polite" className="mt-3 text-sm font-medium">{visibles.length} paiement(s) affiché(s) · reste à encaisser : <MontantBasculable>{formaterCentimes(totalVisible)}</MontantBasculable></p>
-        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold"><MontantBasculable>{formaterCentimes(enMode(doc, suivi.reste, mode))}</MontantBasculable></span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="action"><Link to="/factures/$id" params={{id:doc.id}} search={{ encaisser: true }}><Wallet className="size-4" /> Encaisser</Link></Button><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
+        {visibles.length === 0 ? <p className="mt-3 text-muted-foreground">{enAttente.length === 0 ? "Aucun paiement en attente." : "Aucun paiement ne correspond à cette recherche."}</p> : <div className="mt-3 divide-y">{visibles.map(({doc, suivi}) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words font-medium">{doc.client}</p><p className="break-words text-sm text-muted-foreground">{TYPE_LABELS[doc.type]} · {doc.numero}</p><p className={suiviEcheance(doc.devis?.validite, suivi.reste).etat === "retard" ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>{suiviEcheance(doc.devis?.validite, suivi.reste).libelle}</p></div><div className="flex flex-wrap items-center gap-3"><span className="font-semibold"><MontantBasculable>{formaterCentimes(enMode(doc, suivi.reste, mode))}</MontantBasculable></span><RelanceDialogue doc={doc} compact /><Button asChild size="sm" variant="default"><Link to="/factures/$id" params={{id:doc.id}} search={{ encaisser: true }}><Wallet className="size-4" /> Encaisser</Link></Button><Button asChild size="sm" variant="outline"><Link to="/factures/$id" params={{id:doc.id}}>Ouvrir</Link></Button></div></div>)}</div>}
         <p className="mt-3 text-xs text-muted-foreground">Les rappels sont des messages à relire et envoyer vous-même. L’export reprend uniquement les paiements affichés ; aucun email n’est envoyé automatiquement.</p>
       </section>
       <DevisASuivre documents={docs} />

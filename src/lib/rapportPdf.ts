@@ -2,7 +2,7 @@ import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { Entreprise } from "@/data/entreprise";
 import { formaterDuree, formaterQuantiteRapport, type Rapport } from "@/lib/rapports";
 
-const OR_TEXTE = "#8a6d2c";
+const OR_TEXTE = "#776231";
 const ENCRE = "#1f2328";
 const GRIS = "#5b6168";
 const FILET = "#e8e3d8";

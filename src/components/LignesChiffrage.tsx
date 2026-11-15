@@ -106,12 +106,12 @@ export function RentabiliteBloc({ lignes, reglages }: { lignes: LigneSaisie[]; r
         <>
           <div role="img" aria-label={`Répartition : matériel ${formaterCentimes(r.coutMateriel)}, main-d’œuvre ${formaterCentimes(r.coutMainOeuvre)}, marge ${formaterCentimes(r.marge)}`} className="flex h-3 overflow-hidden rounded-full bg-secondary">
             <span style={{ width: `${part(r.coutMateriel)}%` }} className="bg-primary/60" />
-            <span style={{ width: `${part(r.coutMainOeuvre)}%` }} className="bg-accent" />
+            <span style={{ width: `${part(r.coutMainOeuvre)}%` }} className="bg-chart-3" />
             <span style={{ width: `${part(r.marge)}%` }} className="bg-success" />
           </div>
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-primary/60" />Matériel</span>
-            <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-accent" />Main-d’œuvre</span>
+            <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-3" />Main-d’œuvre</span>
             <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-success" />Marge</span>
           </div>
         </>

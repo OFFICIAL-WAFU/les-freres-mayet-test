@@ -54,8 +54,8 @@ export function GraphiqueActivite({ documents, mode = "ht" }: { documents: Docum
         <span className="block text-4xl font-extrabold tracking-tight text-[hsl(41_60%_72%)] sm:text-5xl">{formaterCentimes(a.total)}</span>
       </button>
       <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-        <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Ce mois-ci</dt><dd className="font-bold">{moisCourant >= 0 ? court(courant) : "—"}{evolution !== null && <span className={`ml-1 text-xs font-semibold ${evolution >= 0 ? "text-emerald-300" : "text-red-300"}`}>{evolution >= 0 ? "▲" : "▼"} {Math.abs(evolution)} %</span>}</dd></div>
-        <div className="rounded-xl bg-white/10 px-3 py-2" title={`CA HT ${formaterCentimes(m.totalVentes)} − achats ${margeDisponible ? formaterCentimes(m.totalAchats) : "…"} = marge ${margeDisponible ? formaterCentimes(m.totalMarge) : "…"}`}><dt className="text-xs text-sidebar-foreground/70">Marge HT</dt><dd className="font-bold">{!margeDisponible ? (achats.isError ? "Indisponible" : "…") : aMarge ? <>{court(Number(m.totalMarge) / 100)}<span className={`ml-1 text-xs font-semibold ${m.totalMarge < 0n ? "text-red-300" : "text-emerald-300"}`}>{tauxMargeGraphique(m.totalMarge, m.totalVentes)}</span></> : "–"}</dd></div>
+        <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Ce mois-ci</dt><dd className="font-bold">{moisCourant >= 0 ? court(courant) : "—"}{evolution !== null && <span className={`ml-1 text-xs font-semibold ${evolution >= 0 ? "text-success-line" : "text-danger-line"}`}>{evolution >= 0 ? "▲" : "▼"} {Math.abs(evolution)} %</span>}</dd></div>
+        <div className="rounded-xl bg-white/10 px-3 py-2" title={`CA HT ${formaterCentimes(m.totalVentes)} − achats ${margeDisponible ? formaterCentimes(m.totalAchats) : "…"} = marge ${margeDisponible ? formaterCentimes(m.totalMarge) : "…"}`}><dt className="text-xs text-sidebar-foreground/70">Marge HT</dt><dd className="font-bold">{!margeDisponible ? (achats.isError ? "Indisponible" : "…") : aMarge ? <>{court(Number(m.totalMarge) / 100)}<span className={`ml-1 text-xs font-semibold ${m.totalMarge < 0n ? "text-danger-line" : "text-success-line"}`}>{tauxMargeGraphique(m.totalMarge, m.totalVentes)}</span></> : "–"}</dd></div>
         <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Moyenne / mois</dt><dd className="font-bold">{ecoules.length ? court(moyenne) : "—"}</dd></div>
         <div className="rounded-xl bg-white/10 px-3 py-2"><dt className="text-xs text-sidebar-foreground/70">Meilleur mois</dt><dd className="font-bold">{aDesDonnees ? `${MOIS[meilleur]} · ${court(valeurs[meilleur] ?? 0)}` : "—"}</dd></div>
       </dl>
@@ -73,23 +73,23 @@ export function GraphiqueActivite({ documents, mode = "ht" }: { documents: Docum
             className={`group flex h-full flex-col justify-end rounded-lg text-center outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-primary ${futur ? "opacity-40" : ""}`}>
             <span className={`mb-1 text-[11px] font-bold sm:text-xs ${v === 0 ? "text-sidebar-foreground/40" : "text-sidebar-foreground"}`}>{v === 0 ? "–" : court(v)}</span>
             <span className="flex min-h-0 flex-1 flex-col justify-end">
-              <span className={`block w-full rounded-t-lg transition-all group-hover:brightness-110 ${negatif ? "bg-red-400" : estCourant ? "bg-accent" : "bg-primary"}`} style={{ height: `${hauteur}%` }} />
+              <span className={`block w-full rounded-t-lg transition-all group-hover:brightness-110 ${negatif ? "bg-danger-line" : estCourant ? "bg-primary-soft" : "bg-primary"}`} style={{ height: `${hauteur}%` }} />
             </span>
-            <span className={`mt-2 border-t border-white/15 pt-1.5 text-[11px] sm:text-xs ${estCourant ? "font-extrabold text-accent" : "text-sidebar-foreground/75"}`}>{MOIS[i]}</span>
+            <span className={`mt-2 border-t border-white/15 pt-1.5 text-[11px] sm:text-xs ${estCourant ? "font-extrabold text-primary-soft" : "text-sidebar-foreground/75"}`}>{MOIS[i]}</span>
           </button>;
         })}
       </div>
     </div>
     <div className="mt-1 grid grid-cols-12 gap-1.5 sm:gap-3" aria-label="Marge HT par mois">
       {margeMois.map((v, i) => { const vente = m.ventes[i] ?? 0n; const achat = m.achats[i] ?? 0n; const marge = m.marge[i] ?? 0n; const vide = vente === 0n && achat === 0n; return <div key={i} className="rounded-lg bg-white/5 px-0.5 py-1.5 text-center" title={margeDisponible ? `CA HT ${formaterCentimes(vente)} − achats ${formaterCentimes(achat)} = marge ${formaterCentimes(marge)}` : "Marge HT indisponible tant que les achats ne sont pas chargés"}>
-        <div className={`text-[11px] font-bold sm:text-xs ${!margeDisponible || vide ? "text-sidebar-foreground/40" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{!margeDisponible ? "…" : vide ? "–" : court(v)}</div>
-        <div className={`text-[10px] ${!margeDisponible || vide ? "text-sidebar-foreground/60" : v < 0 ? "text-red-300" : "text-emerald-300"}`}>{!margeDisponible || vide ? "" : tauxMargeGraphique(marge, vente)}</div>
+        <div className={`text-[11px] font-bold sm:text-xs ${!margeDisponible || vide ? "text-sidebar-foreground/40" : v < 0 ? "text-danger-line" : "text-success-line"}`}>{!margeDisponible ? "…" : vide ? "–" : court(v)}</div>
+        <div className={`text-[10px] ${!margeDisponible || vide ? "text-sidebar-foreground/60" : v < 0 ? "text-danger-line" : "text-success-line"}`}>{!margeDisponible || vide ? "" : tauxMargeGraphique(marge, vente)}</div>
       </div>; })}
     </div>
     <p className="mt-2 text-xs text-sidebar-foreground/70">Marge HT = facturé HT − achats de matériel du mois (main-d'œuvre comptée à 100 %). Achats rattachés à une facture comptés au mois de cette facture, les autres (stock, frais) au mois de commande{margeDisponible && m.enCours > 0n ? ` ; ${formaterCentimes(m.enCours)} d’achats de chantiers en cours ne sont pas encore comptés` : ""}.</p>
     {(achats.isError || caHT.incomplets > 0) && <p role="alert" className="mt-2 text-xs text-sidebar-foreground/70">Marge indisponible : {achats.isError ? "les achats n’ont pas pu être chargés." : "le chiffre d’affaires HT est incomplet."}</p>}
     {!aDesDonnees && <p className="mt-4 text-center text-sm text-sidebar-foreground/75">Aucune facture finalisée pour l’instant en {a.annee}. Les barres apparaîtront dès la première facture.</p>}
-    <p className="mt-4 text-xs text-sidebar-foreground/70">Cliquez sur une barre pour voir les factures du mois. <span className="inline-block size-2 rounded-full bg-accent align-middle" /> mois en cours · <span className="inline-block size-2 rounded-full bg-primary align-middle" /> mois passés.</p>
+    <p className="mt-4 text-xs text-sidebar-foreground/70">Cliquez sur une barre pour voir les factures du mois. <span className="inline-block size-2 rounded-full bg-primary-soft align-middle" /> mois en cours · <span className="inline-block size-2 rounded-full bg-primary align-middle" /> mois passés.</p>
     <details className="mt-2 text-xs text-sidebar-foreground/70"><summary className="cursor-pointer">Comment c’est calculé ?</summary><p className="mt-2">Factures finalisées (montant {tx} complet, acompte compris), moins les avoirs, au mois de leur émission. Les factures d’acompte sont comptées avec la facture de solde. Ce graphique suit la facturation, pas les encaissements ni le solde bancaire.</p></details>
     <ListeDocumentsDialog ouvert={moisOuvert !== null} onFermer={() => setMoisOuvert(null)} mode={mode}
       titre={moisOuvert === "annee" ? `Chiffre d’affaires ${a.annee}` : moisOuvert !== null ? `Chiffre d’affaires — ${MOIS[moisOuvert]} ${a.annee}` : ""}

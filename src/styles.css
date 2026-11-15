@@ -65,8 +65,22 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-soft: var(--warning-soft);
+  --color-success-ink: var(--success-ink);
+  --color-success-line: var(--success-line);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-line: var(--warning-line);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-line: var(--danger-line);
+  --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-info-ink: var(--info-ink);
+  --color-info-line: var(--info-line);
   --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-ink: var(--neutral-ink);
+  --color-neutral-line: var(--neutral-line);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
   --color-doc-paper: var(--doc-paper);
   --color-doc-ink: var(--doc-ink);
   --color-doc-muted: var(--doc-muted);
@@ -91,91 +105,72 @@
   --card-foreground: hsl(0 0% 20%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(0 0% 20%);
-  --primary: hsl(40 44% 60%);
+  /* Thème du 15/11/2026 : un seul doré, celui de la charte (#c8ae6b), décliné en encre (texte) et en pâle (fonds). */
+  --primary: #c8ae6b;
   --primary-foreground: hsl(0 0% 15%);
-  --primary-ink: hsl(40 48% 30%);
+  --primary-ink: hsl(43 46% 30%);
+  --primary-soft: hsl(43 46% 93%);
   --secondary: hsl(40 25% 93%);
   --secondary-foreground: hsl(0 0% 20%);
   --muted: hsl(40 15% 95%);
   --muted-foreground: hsl(0 0% 40%);
-  --accent: hsl(21 99% 65%);
+  /* Orange du site lesfreresmayet.fr (#fe8b4d) : réservé au bouton principal de chaque page. */
+  --accent: #fe8b4d;
   --accent-foreground: hsl(0 0% 15%);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
   --border: hsl(40 15% 90%);
   --input: hsl(40 15% 86%);
-  --ring: hsl(40 44% 50%);
-  --success: oklch(0.55 0.13 150);
+  --ring: hsl(43 46% 45%);
+  /* 4 couleurs d'état : un fond pâle (soft), une encre foncée (ink, ≥ 4,5:1 sur le fond pâle), une couleur pleine. */
+  --success: oklch(0.5 0.12 155);
   --success-foreground: oklch(1 0 0);
-  --success-soft: oklch(0.945 0.05 150);
-  --warning: hsl(21 99% 65%);
-  --warning-foreground: hsl(0 0% 15%);
-  --warning-soft: oklch(0.955 0.045 55);
-  --info-soft: hsl(40 44% 92%);
+  --success-soft: oklch(0.955 0.04 155);
+  --success-ink: oklch(0.38 0.09 155);
+  --success-line: oklch(0.85 0.07 155);
+  --warning: hsl(33 85% 32%);
+  --warning-foreground: oklch(1 0 0);
+  --warning-soft: hsl(42 90% 94%);
+  --warning-ink: hsl(30 80% 25%);
+  --warning-line: hsl(40 80% 75%);
+  --danger-soft: oklch(0.955 0.03 20);
+  --danger-ink: oklch(0.42 0.15 25);
+  --danger-line: oklch(0.85 0.07 20);
+  --info: hsl(205 60% 38%);
+  --info-ink: hsl(205 65% 25%);
+  --info-line: hsl(205 50% 80%);
+  --info-soft: hsl(205 60% 95%);
   --neutral-soft: hsl(40 12% 92%);
-  --chart-1: hsl(40 44% 60%);
-  --chart-2: hsl(21 99% 65%);
-  --chart-3: hsl(230 100% 66%);
-  --chart-4: oklch(0.6 0.118 184.704);
+  --neutral-ink: hsl(30 6% 30%);
+  --neutral-line: hsl(40 10% 82%);
+  /* Graphiques : doré, anthracite, vert sourd, sable, gris (plus de bleu hérité de Khosmos). */
+  --chart-1: #c8ae6b;
+  --chart-2: hsl(30 8% 28%);
+  --chart-3: oklch(0.6 0.07 160);
+  --chart-4: hsl(40 30% 75%);
   --chart-5: hsl(0 0% 35%);
   --sidebar: hsl(30 12% 10%);
   --sidebar-foreground: hsl(40 25% 93%);
-  --sidebar-primary: hsl(40 44% 60%);
+  --sidebar-primary: #c8ae6b;
   --sidebar-primary-foreground: hsl(0 0% 15%);
   --sidebar-accent: hsl(30 10% 18%);
   --sidebar-accent-foreground: hsl(40 25% 93%);
   --sidebar-border: hsl(0 0% 100% / 0.1);
-  --sidebar-ring: hsl(40 44% 50%);
+  --sidebar-ring: hsl(43 46% 45%);
   /* Habillage du document de devis (indépendant de l'interface) */
   --doc-paper: oklch(1 0 0);
   --doc-ink: oklch(0.25 0.008 250);
   --doc-muted: oklch(0.48 0.012 250);
   --doc-faint: oklch(0.63 0.01 250);
-  --doc-gold: oklch(0.65 0.1 80);
-  --doc-gold-ink: oklch(0.52 0.09 78);
+  --doc-gold: #c8ae6b;
+  --doc-gold-ink: hsl(43 46% 32%);
   --doc-line: oklch(0.93 0.012 85);
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
 
-.dark {
-  --margin: #c8ae6b;
-  --purchase-sales: oklch(0.72 0.075 190);
-  --purchase-cost: oklch(0.68 0.025 250);
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
+/* Mode sombre retiré le 15/11/2026 : jamais activé dans le logiciel. */
 
 @layer base {
   * {
@@ -195,7 +190,7 @@
 }
 h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0.02em; font-weight: 800; }
 .khosmos-page-heading, .khosmos-page-filters {
-  background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%));
+  background: var(--primary);
   color: var(--primary-foreground);
   border: 0;
   margin: 0;
@@ -205,10 +200,10 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
 .khosmos-page-heading h1 { font-size: 1.5rem; line-height: 2rem; }
 
 .marge-suivi h2 { letter-spacing: 0; }
-.khosmos-page-heading { background: linear-gradient(180deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 22px 22px 0 0; margin-bottom: 0; padding-bottom: 8px; position: relative; overflow: hidden; }
+.khosmos-page-heading { background: var(--primary); border-radius: 22px 22px 0 0; margin-bottom: 0; padding-bottom: 8px; position: relative; overflow: hidden; }
 .khosmos-page-heading > * { position: relative; z-index: 1; }
-.khosmos-page-filters { border-radius: 0 0 22px 22px; padding-top: 4px; padding-bottom: 14px; margin-bottom: 16px; background: hsl(36 60% 60%); }
-.khosmos-page-heading:not(:has(+ .khosmos-page-filters)) { background: linear-gradient(135deg, hsl(41 52% 66%), hsl(36 60% 60%)); border-radius: 22px; margin-bottom: 16px; padding-bottom: 18px; }
+.khosmos-page-filters { border-radius: 0 0 22px 22px; padding-top: 4px; padding-bottom: 14px; margin-bottom: 16px; background: var(--primary); }
+.khosmos-page-heading:not(:has(+ .khosmos-page-filters)) { background: var(--primary); border-radius: 22px; margin-bottom: 16px; padding-bottom: 18px; }
 .khosmos-page-heading h1, .khosmos-page-heading p,
 .khosmos-page-filters > p, .khosmos-page-filters span.text-muted-foreground { color: var(--primary-foreground); }
 .khosmos-page-filters input { background: white; color: var(--foreground); border-radius: 999px; }
@@ -224,7 +219,7 @@ h1, h2, h3, .font-heading { font-family: var(--font-heading); letter-spacing: -0
 .khosmos-list td:last-child { border-radius: 0 12px 12px 0; }
 .khosmos-list td { border: 0; }
 .khosmos-summary { background: var(--primary); padding: 24px; border-radius: 16px; }
-.khosmos-summary section { background: oklch(0.52 0.2 264); border: 0; color: white; }
+.khosmos-summary section { background: var(--sidebar); border: 0; color: var(--sidebar-foreground); }
 .khosmos-summary section h2, .khosmos-summary section p { color: white; }
 
 
@@ -250,7 +245,7 @@ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   box-shadow: 0 1px 2px hsl(30 20% 20% / 0.04), 0 12px 28px -14px hsl(30 30% 25% / 0.18);
 }
 .khosmos-ui input, .khosmos-ui textarea, .khosmos-ui [role="combobox"] { border-radius: 14px; border-color: hsl(36 18% 84%); background: white; }
-.khosmos-ui input:focus-visible, .khosmos-ui textarea:focus-visible { outline: none; box-shadow: 0 0 0 3px hsl(40 44% 60% / 0.35); border-color: hsl(40 44% 50%); }
+.khosmos-ui input:focus-visible, .khosmos-ui textarea:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent); border-color: var(--ring); }
 .khosmos-ui > div > aside { background: linear-gradient(180deg, hsl(30 12% 12%), hsl(30 12% 8%)); }
 .khosmos-ui aside nav a svg { opacity: .9; }
 .khosmos-ui table th { letter-spacing: .04em; text-transform: uppercase; font-size: 11px; font-weight: 700; color: hsl(30 8% 40%); }

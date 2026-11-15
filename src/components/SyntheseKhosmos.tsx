@@ -54,24 +54,24 @@ export function SyntheseKhosmos({ documents }: { documents: DocumentAvecDevis[] 
     </div>
     <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       <Colonne titre="Devis" {...col} cases={[
-        ["devis.attente", "En attente de signature", "bg-amber-200 text-amber-950"],
-        ["devis.signe", "Signé", "bg-emerald-200 text-emerald-950"],
-        ["devis.refuse", "Refusé", "bg-stone-300 text-stone-900"],
-        ["devis.expire", "Expiré", "bg-stone-200 text-stone-800"],
+        ["devis.attente", "En attente de signature", "bg-warning-soft text-warning-ink"],
+        ["devis.signe", "Signé", "bg-success-soft text-success-ink"],
+        ["devis.refuse", "Refusé", "bg-neutral-soft text-neutral-ink"],
+        ["devis.expire", "Expiré", "bg-neutral-soft text-neutral-ink"],
       ]} />
       <Colonne titre="Factures" {...col} cases={[
-        ["factures.attente", "En attente de paiement", "bg-amber-200 text-amber-950"],
-        ["factures.paye", "Payé", "bg-emerald-200 text-emerald-950"],
-        ["factures.retard", "En retard", "bg-rose-200 text-rose-950"],
+        ["factures.attente", "En attente de paiement", "bg-warning-soft text-warning-ink"],
+        ["factures.paye", "Payé", "bg-success-soft text-success-ink"],
+        ["factures.retard", "En retard", "bg-danger-soft text-danger-ink"],
       ]} />
       <Colonne titre="Acomptes" {...col} cases={[
-        ["acomptes.attente", "En attente de paiement", "bg-amber-200 text-amber-950"],
-        ["acomptes.paye", "Payé", "bg-emerald-200 text-emerald-950"],
-        ["acomptes.retard", "En retard", "bg-rose-200 text-rose-950"],
+        ["acomptes.attente", "En attente de paiement", "bg-warning-soft text-warning-ink"],
+        ["acomptes.paye", "Payé", "bg-success-soft text-success-ink"],
+        ["acomptes.retard", "En retard", "bg-danger-soft text-danger-ink"],
       ]} />
       <Colonne titre="Autres repères" {...col} cases={[
-        ["aFacturer", "Devis à facturer", "bg-sky-200 text-sky-950", "signés, pas encore facturés"],
-        ["encaisse", "Total encaissé", "bg-emerald-200 text-emerald-950", "règlements enregistrés"],
+        ["aFacturer", "Devis à facturer", "bg-info-soft text-info-ink", "signés, pas encore facturés"],
+        ["encaisse", "Total encaissé", "bg-success-soft text-success-ink", "règlements enregistrés"],
       ]} />
     </div>
     <p className="mt-4 text-xs text-sidebar-foreground/80">Montants {mode === "ttc" ? "TTC" : "HT"} sur la période choisie, mêmes définitions que dans Khosmos. Cliquez sur une case pour voir ses documents ; l’interrupteur en haut passe tous les montants en {mode === "ttc" ? "HT" : "TTC"}. Les factures annulées par avoir sont exclues. En HT, la part hors taxes d’un règlement ou d’un reste à payer suit la proportion HT/TTC de son document.</p>

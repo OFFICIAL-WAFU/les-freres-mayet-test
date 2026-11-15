@@ -6,11 +6,11 @@ import { tonDuStatut, type DocumentStatut } from "@/data/documents";
  * l'orange est réservé aux boutons d'action (« Créer », « Encaisser »). Classes partagées avec StatutDocument.
  */
 export const TONS_STATUT = {
-  neutre: "bg-stone-100 text-stone-700 border-stone-200",
-  attente: "bg-amber-50 text-amber-900 border-amber-300",
-  valide: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  info: "bg-sky-50 text-sky-900 border-sky-200",
-  alerte: "bg-rose-50 text-rose-800 border-rose-200",
+  neutre: "bg-neutral-soft text-neutral-ink border-neutral-line",
+  attente: "bg-warning-soft text-warning-ink border-warning-line",
+  valide: "bg-success-soft text-success-ink border-success-line",
+  info: "bg-info-soft text-info-ink border-info-line",
+  alerte: "bg-danger-soft text-danger-ink border-danger-line",
 } as const;
 const CLASSES: Record<string, string> = TONS_STATUT;
 

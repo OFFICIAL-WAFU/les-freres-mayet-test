@@ -41,8 +41,8 @@ export function SuiviDevisBloc({ doc }: { doc: DocumentAvecDevis }) {
       <h3 className="font-semibold">Suivi du devis</h3>
       <ol className="mt-3 grid gap-3 sm:grid-cols-3">
         {etapes.map((e) => (
-          <li key={e.cle} className={cn("flex gap-2 rounded-lg border p-3", e.fait ? ("refus" in e && e.refus ? "border-destructive/40 bg-destructive/5" : "border-teal-300 bg-teal-50") : "border-dashed text-muted-foreground")}>
-            <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-white", e.fait ? ("refus" in e && e.refus ? "bg-destructive" : "bg-teal-600") : "bg-muted")}>
+          <li key={e.cle} className={cn("flex gap-2 rounded-lg border p-3", e.fait ? ("refus" in e && e.refus ? "border-destructive/40 bg-destructive/5" : "border-success-line bg-success-soft") : "border-dashed text-muted-foreground")}>
+            <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-white", e.fait ? ("refus" in e && e.refus ? "bg-destructive" : "bg-success") : "bg-muted")}>
               {e.fait ? ("refus" in e && e.refus ? <X className="size-3" /> : <Check className="size-3" />) : null}
             </span>
             <span><span className="block font-medium text-foreground">{e.titre}</span>{e.detail && <span className="text-xs text-muted-foreground">{e.detail}</span>}</span>

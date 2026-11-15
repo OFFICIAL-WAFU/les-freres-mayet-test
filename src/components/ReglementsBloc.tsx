@@ -77,11 +77,11 @@ export function ReglementsBloc({ doc, ouvrirAuDemarrage = false }: { doc: Docume
   }
 
   return (
-    <section ref={bloc} aria-label="Règlements" className={`scroll-mt-4 rounded-xl border-2 p-4 ${s.reste > 0n ? "border-orange-300 bg-orange-50/60" : "border-teal-300 bg-teal-50/60"}`}>
+    <section ref={bloc} aria-label="Règlements" className={`scroll-mt-4 rounded-xl border-2 p-4 ${s.reste > 0n ? "border-warning-line bg-warning-soft/60" : "border-success-line bg-success-soft/60"}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold"><Wallet className="size-5" /> Règlements</h3>
-          <p className="mt-1 font-medium">{s.reste > 0n ? <>Reste à régler : <span className="text-lg font-semibold">{formaterCentimes(s.reste)}</span></> : <span className="inline-flex items-center gap-1 text-teal-700"><CheckCircle2 className="size-4" /> {s.etat}</span>}</p>
+          <p className="mt-1 font-medium">{s.reste > 0n ? <>Reste à régler : <span className="text-lg font-semibold">{formaterCentimes(s.reste)}</span></> : <span className="inline-flex items-center gap-1 text-success-ink"><CheckCircle2 className="size-4" /> {s.etat}</span>}</p>
         </div>
         {s.reste > 0n && !form && <Button size="lg" variant="action" onClick={ouvrir}><Wallet className="size-4" /> Enregistrer un règlement</Button>}
       </div>

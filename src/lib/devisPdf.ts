@@ -20,8 +20,8 @@ import { formaterCapital, formaterIban, type Entreprise } from "@/data/entrepris
 import type { DevisPublic } from "@/components/DevisApercu";
 import { mentionRetard } from "@/lib/mentions-obligatoires";
 
-const OR = "#b08d3c";
-const OR_TEXTE = "#8a6d2c";
+const OR = "#c8ae6b"; // doré de la charte (filets, monogramme) — 15/11/2026
+const OR_TEXTE = "#776231"; // même doré, foncé pour le texte (contraste ≥ 4,5:1)
 const ENCRE = "#1f2328";
 const GRIS = "#5b6168";
 const PALE = "#8b9096";
@@ -87,7 +87,7 @@ export function definitionDevis(d: DevisPublic, numero: string, ent: Entreprise,
   d.lignes.forEach((l,i) => {
     const calc = validerLigne(l).calcul;
     const p=presentationLigne(l),titre=debutLot(d.lignes,i);
-    if(titre)corps.push([{text:titre.toUpperCase(),bold:true,colSpan:6,fillColor:'#edf3fa',margin:[0,2,0,2]} as Content,'','','','','']);
+    if(titre)corps.push([{text:titre.toUpperCase(),bold:true,colSpan:6,fillColor:'#f6f1e4',margin:[0,2,0,2]} as Content,'','','','','']);
     const morceaux = decouper(p.description.trim());
     const desig: Content[] = [{ text: l.designation, bold: true }];
     if (morceaux[0]) desig.push({ text: morceaux[0], color: GRIS, margin: [0, 2, 0, 0] });

@@ -243,7 +243,7 @@ function DocumentsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        {aEncaisser(d) && <Button asChild size="sm" variant="action"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
+                        {aEncaisser(d) && <Button asChild size="sm" variant="default"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
                         <Button variant="outline" size="sm" onClick={() => setDocumentOuvert(d)}>
                           Voir
                         </Button>
@@ -281,7 +281,7 @@ function DocumentsPage() {
                   </div>
                 </dl>
                 <div className="mt-3 flex gap-2">
-                  {aEncaisser(d) && <Button asChild variant="action" className="flex-1"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
+                  {aEncaisser(d) && <Button asChild variant="default" className="flex-1"><Link to="/factures/$id" params={{ id: d.id }} search={{ encaisser: true }}>Encaisser</Link></Button>}
                   <Button variant="outline" className="flex-1" onClick={() => setDocumentOuvert(d)}>
                     Voir
                   </Button>

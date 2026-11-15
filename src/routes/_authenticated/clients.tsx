@@ -108,7 +108,7 @@ function ClientsPage() {
   function montantClient(c: Client, cle: "facture" | "attente" | "retard" | "paye", suivi: FiltreSuiviClient) {
     if (etatDocs.statut !== "pret") return <span className="text-xs text-muted-foreground">{etatDocs.statut === "erreur" ? "Indisponible" : "Chargement…"}</span>;
     const s = syntheseClient(etatDocs.liste, c.id, periode, undefined, mode);
-    const couleurs = { facture: "text-foreground", attente: "text-amber-800", retard: "text-rose-700", paye: "text-emerald-700" };
+    const couleurs = { facture: "text-foreground", attente: "text-warning-ink", retard: "text-danger-ink", paye: "text-success-ink" };
     const montant = cle === "facture" ? s.facture - s.credite : s[cle];
     // Audit 14/11/2026 : un montant nul n'est ni rouge ni orange (il n'alarme pas pour rien).
     if (montant === 0n) return <span className="px-1 text-muted-foreground" aria-label="Aucun montant">—</span>;
@@ -235,9 +235,9 @@ function ClientsPage() {
                     <tr className="border-b border-border bg-secondary/60 text-left">
                       <th className="px-4 py-3 font-semibold">Nom ou raison sociale</th>
                       <th className="px-4 py-3 font-semibold text-primary">Total facturé {mode === "ttc" ? "TTC" : "HT"}</th>
-                      <th className="px-4 py-3 font-semibold text-amber-800">En attente</th>
-                      <th className="px-4 py-3 font-semibold text-rose-700">En retard</th>
-                      <th className="px-4 py-3 font-semibold text-emerald-700">Payé</th>
+                      <th className="px-4 py-3 font-semibold text-warning-ink">En attente</th>
+                      <th className="px-4 py-3 font-semibold text-danger-ink">En retard</th>
+                      <th className="px-4 py-3 font-semibold text-success-ink">Payé</th>
                       <th className="px-4 py-3 text-right font-semibold">Action</th>
                     </tr>
                   </thead>

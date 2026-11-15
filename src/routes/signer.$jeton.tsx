@@ -98,7 +98,7 @@ function Page() {
       </details>
     </section>}
 
-    {signe ? <section className="mt-4 rounded-2xl border border-emerald-600/40 bg-card p-5" role="status">
+    {signe ? <section className="mt-4 rounded-2xl border border-success-line/40 bg-card p-5" role="status">
       <h2 className="text-lg font-semibold">Devis signé, merci</h2>
       <p className="mt-1 text-sm">{fait ? `Votre signature a été enregistrée le ${frHeure(fait.signeLe)}.` : `Signé par ${lecture.signataire_nom ?? "le client"}${lecture.signe_le ? ` le ${frHeure(lecture.signe_le)}` : ""}.`} L’entreprise en est informée.</p>
       {trace && <img src={trace} alt="Votre signature" className="mt-3 h-24 rounded-md border bg-white" />}

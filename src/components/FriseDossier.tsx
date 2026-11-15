@@ -37,7 +37,7 @@ export function FriseDossier({ doc }: { doc: DocumentAvecDevis }) {
           className={cn(
             "flex items-start gap-2 rounded-xl border p-3 text-sm",
             e.ton === "fait" && "border-success/30 bg-success-soft",
-            e.ton === "cours" && "border-accent/30 bg-warning-soft",
+            e.ton === "cours" && "border-warning-line bg-warning-soft",
             e.ton === "vide" && "border-border bg-neutral-soft text-muted-foreground",
           )}
         >

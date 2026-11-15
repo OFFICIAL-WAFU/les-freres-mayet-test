@@ -23,7 +23,7 @@ function Marque() {
   );
 }
 
-const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground data-[status=active]:bg-primary data-[status=active]:font-semibold data-[status=active]:text-primary-foreground data-[status=active]:shadow-[0_6px_16px_-6px_hsl(40_44%_60%/0.7)]";
+const lienNav = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground data-[status=active]:bg-primary data-[status=active]:font-semibold data-[status=active]:text-primary-foreground data-[status=active]:shadow-[0_6px_16px_-6px_hsl(43_46%_60%/0.7)]";
 
 // Audit 14/11/2026 : les usages quotidiens en haut, la gestion ensuite, les paramètres regroupés (repliés sauf s'ils sont ouverts).
 const GROUPES = [
@@ -152,7 +152,7 @@ export function AppLayout({ titre, children }: { titre: string; children: ReactN
             <Link to="/entreprise" className="flex min-w-0 items-center gap-2 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold hover:bg-secondary/70"><Building2 className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">Les Frères Mayet</span></Link>
             <Link to="/reglages" aria-label="Réglages" className="shrink-0 rounded-xl bg-secondary p-2.5 text-foreground hover:bg-secondary/70"><Settings className="size-5" /></Link>
           </div>
-          {import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "azulrjtrntkophlvdaio" && <div className="border-b border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-900">Environnement TEST — utilisez uniquement des données fictives.</div>}
+          {import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "azulrjtrntkophlvdaio" && <div className="border-b border-warning-line bg-warning-soft px-4 py-2 text-sm text-warning-ink">Environnement TEST — utilisez uniquement des données fictives.</div>}
           <main className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-[30px] lg:py-6">{children}</main>
         </div>
       </div>

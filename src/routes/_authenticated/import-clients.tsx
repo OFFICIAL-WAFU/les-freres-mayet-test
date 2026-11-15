@@ -92,9 +92,9 @@ function Page() {
                         <span className="font-medium break-words">{nomClient(l.client) || `Ligne ${l.numero}`}</span>
                         <span className="ml-2 text-xs text-muted-foreground">{l.client.type === "entreprise" ? "Entreprise" : "Particulier"} · ligne {l.numero}{l.documents ? ` · ${l.documents} document(s) Khosmos` : ""}</span>
                         <span className="block text-xs text-muted-foreground break-words">{[l.client.adresse, l.client.complement, [l.client.codePostal, l.client.ville].filter(Boolean).join(" "), l.client.email, l.client.telephone].filter(Boolean).join(" · ") || "Aucune coordonnée"}</span>
-                        {fait && <span className="block text-xs font-medium text-green-700">Enregistré</span>}
+                        {fait && <span className="block text-xs font-medium text-success-ink">Enregistré</span>}
                         {l.statut === "invalide" && l.erreurs.map((e, i) => <span key={i} role="alert" className="block text-xs text-destructive">{e}</span>)}
-                        {l.statut !== "invalide" && l.avertissements.map((e, i) => <span key={i} className="block text-xs text-amber-700">{e}</span>)}
+                        {l.statut !== "invalide" && l.avertissements.map((e, i) => <span key={i} className="block text-xs text-warning-ink">{e}</span>)}
                       </span>
                     </label>
                   </li>
